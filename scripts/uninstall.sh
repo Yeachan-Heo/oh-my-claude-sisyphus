@@ -27,8 +27,20 @@ echo "  - Hooks (keyword-detector, silent-auto-update, stop-continuation)"
 echo "  - Version and state files"
 echo "  - Hook configurations from settings.json"
 echo ""
-read -p "Continue? (y/N) " -n 1 -r
-echo
+if [ -t 0 ]; then
+    read -p "Continue? (y/N) " -n 1 -r
+    echo
+else
+    # Try reading from terminal if script is piped
+    if [ -c /dev/tty ]; then
+        echo -n "Continue? (y/N) " >&2
+        read -n 1 -r < /dev/tty
+        echo
+    else
+        echo "Non-interactive mode detected or terminal not available. Uninstallation cancelled."
+        exit 1
+    fi
+fi
 
 if [[ ! $REPLY =~ ^[Yy]$ ]]; then
     echo "Cancelled."
