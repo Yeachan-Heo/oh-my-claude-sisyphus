@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.11.1] - 2026-01-13
+
+### Fixed
+- **Rate Limit Loop Bug** - Fixed infinite loop when `/rate-limit-options` triggers during ultrawork mode (closes #29)
+  - Added internal CLI command filtering to `keyword-detector.sh` and `keyword-detector.mjs`
+  - Commands starting with `rate-limit`, `internal-`, `___`, `---` are now skipped
+  - Bare slash commands (e.g., `/rate-limit-options`) no longer trigger keyword detection
+  - Updated `hooks.ts` template with the same fix for npm installations
+
+### Technical Details
+- Internal commands are detected via regex: `^/?(rate-limit|internal-|___|---)|^/[a-z-]+$`
+- Fix applied to both Bash (.sh) and Node.js (.mjs) versions
+- Ultrawork mode now gracefully handles rate limit interruptions
+
 ## [1.11.0] - 2026-01-13
 
 ### Added
