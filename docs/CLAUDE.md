@@ -40,6 +40,7 @@ Stack these on top of default behavior when needed:
 | Skill | What It Adds | When to Use |
 |-------|--------------|-------------|
 | `/ultrawork` | Maximum intensity, parallel everything, don't wait | Speed critical, large tasks |
+| `/deepinit` | Hierarchical AGENTS.md generation, codebase indexing | New projects, documentation |
 | `/git-master` | Atomic commits, style detection, history expertise | Multi-file changes |
 | `/frontend-ui-ux` | Bold aesthetics, design sensibility | UI/component work |
 | `/ralph-loop` | Cannot stop until verified complete | Must-finish tasks |
@@ -57,6 +58,7 @@ Automatically activate skills based on task signals:
 | "ultrawork" / "maximum speed" / "parallel" | + ultrawork |
 | Multi-file git changes | + git-master |
 | "plan this" / strategic discussion | prometheus |
+| "index codebase" / "create AGENTS.md" / "document structure" | deepinit |
 
 ## THE BOULDER NEVER STOPS
 
@@ -102,12 +104,62 @@ Use the Task tool to delegate to specialized agents:
 |---------|-------------|
 | `/ultrawork <task>` | Maximum performance mode - parallel everything |
 | `/deepsearch <query>` | Thorough codebase search |
+| `/deepinit [path]` | Index codebase recursively with hierarchical AGENTS.md files |
 | `/analyze <target>` | Deep analysis and investigation |
 | `/plan <description>` | Start planning session with Prometheus |
 | `/review [plan-path]` | Review a plan with Momus |
 | `/prometheus <task>` | Strategic planning with interview workflow |
 | `/ralph-loop <task>` | Self-referential loop until task completion |
 | `/cancel-ralph` | Cancel active Ralph Loop |
+
+## AGENTS.md System
+
+The `/deepinit` command creates hierarchical documentation for AI agents to understand your codebase.
+
+### What It Creates
+
+```
+/AGENTS.md                          ← Root documentation
+├── src/AGENTS.md                   ← Source code docs
+│   ├── src/components/AGENTS.md    ← Component docs
+│   └── src/utils/AGENTS.md         ← Utility docs
+└── tests/AGENTS.md                 ← Test docs
+```
+
+### Hierarchical Tagging
+
+Each AGENTS.md (except root) includes a parent reference:
+
+```markdown
+<!-- Parent: ../AGENTS.md -->
+```
+
+This enables agents to navigate up the hierarchy for broader context.
+
+### AGENTS.md Contents
+
+- **Purpose**: What the directory contains
+- **Key Files**: Important files with descriptions
+- **Subdirectories**: Links to child AGENTS.md files
+- **For AI Agents**: Special instructions for working in this area
+- **Dependencies**: Relationships with other parts of the codebase
+
+### Usage
+
+```bash
+/deepinit              # Index current directory
+/deepinit ./src        # Index specific path
+/deepinit --update     # Update existing AGENTS.md files
+```
+
+### Preserving Manual Notes
+
+Add `<!-- MANUAL -->` in AGENTS.md to preserve content during updates:
+
+```markdown
+<!-- MANUAL: Custom notes below are preserved on regeneration -->
+Important project-specific information here...
+```
 
 ## Planning Workflow
 
