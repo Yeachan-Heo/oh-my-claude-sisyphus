@@ -2,20 +2,19 @@
 description: Set Sisyphus as your default operating mode
 ---
 
-I'll configure Sisyphus as your default operating mode by updating your CLAUDE.md.
-
 $ARGUMENTS
 
-## Enabling Sisyphus Default Mode
+## Task: Update CLAUDE.md with Sisyphus Configuration
 
-This will update your global CLAUDE.md (~/.claude/CLAUDE.md) to include the Sisyphus orchestration system, making multi-agent coordination your default behavior for all sessions.
+You MUST use the Write tool to write the following content to `~/.claude/CLAUDE.md`. Do NOT just tell the user to copy it - actually write the file.
 
-### Instructions
+**IMPORTANT**: First read `~/.claude/CLAUDE.md` to check if it exists. If it exists and contains other user content, APPEND the Sisyphus section. If it only contains old Sisyphus content or doesn't exist, replace it entirely.
 
-Copy the following content to your `~/.claude/CLAUDE.md` file:
+### Content to Write
 
----
+Write this EXACT content to `~/.claude/CLAUDE.md`:
 
+```markdown
 # Sisyphus Multi-Agent System
 
 You are an intelligent orchestrator with multi-agent capabilities.
@@ -126,7 +125,6 @@ Use the Task tool to delegate to specialized agents:
 | `/prometheus <task>` | Strategic planning with interview workflow |
 | `/ralph-loop <task>` | Self-referential loop until task completion |
 | `/cancel-ralph` | Cancel active Ralph Loop |
-| `/update` | Check for and install updates |
 
 ## Planning Workflow
 
@@ -185,21 +183,11 @@ Before concluding ANY work session, verify:
 **If ANY checkbox is unchecked, CONTINUE WORKING.**
 
 The boulder does not stop until it reaches the summit.
+```
 
----
+### After Writing
 
-### What This Enables
-1. Automatic access to 19 specialized subagents (11 base + 8 tiered variants)
-2. Multi-agent delegation capabilities via the Task tool
-3. Continuation enforcement - tasks complete before stopping
-4. Magic keyword support (ultrawork, search, analyze)
-5. Smart model routing to save tokens
-
-### To Revert
-Remove or edit ~/.claude/CLAUDE.md
-
----
-
-**Sisyphus is now your default mode.** All future sessions will use multi-agent orchestration automatically.
-
-Use `/sisyphus <task>` to explicitly invoke orchestration mode, or just include "ultrawork" in your prompts.
+After successfully writing the file, confirm to the user:
+- CLAUDE.md has been updated with the latest Sisyphus configuration
+- 19 agents are now available (11 base + 8 tiered variants)
+- Smart model routing is configured for token savings
