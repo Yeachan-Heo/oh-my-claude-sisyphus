@@ -14,24 +14,24 @@
  *   SISYPHUS_USE_BASH_HOOKS=1  - Force Bash hooks (Unix only)
  */
 
-import { homedir } from 'os';
-import { join } from 'path';
+import { homedir } from "os";
+import { join } from "path";
 
 /** Minimum required Node.js version for hooks */
 export const MIN_NODE_VERSION = 18;
 
 /** Check if running on Windows */
 export function isWindows(): boolean {
-  return process.platform === 'win32';
+  return process.platform === "win32";
 }
 
 /** Check if Node.js hooks should be used (env override or Windows) */
 export function shouldUseNodeHooks(): boolean {
   // Environment variable overrides
-  if (process.env.SISYPHUS_USE_NODE_HOOKS === '1') {
+  if (process.env.SISYPHUS_USE_NODE_HOOKS === "1") {
     return true;
   }
-  if (process.env.SISYPHUS_USE_BASH_HOOKS === '1') {
+  if (process.env.SISYPHUS_USE_BASH_HOOKS === "1") {
     return false;
   }
   // Default: use Node.js on Windows, Bash elsewhere
@@ -40,12 +40,12 @@ export function shouldUseNodeHooks(): boolean {
 
 /** Get the Claude config directory path (cross-platform) */
 export function getClaudeConfigDir(): string {
-  return join(homedir(), '.claude');
+  return join(homedir(), ".claude");
 }
 
 /** Get the hooks directory path */
 export function getHooksDir(): string {
-  return join(getClaudeConfigDir(), 'hooks');
+  return join(getClaudeConfigDir(), "hooks");
 }
 
 /**
@@ -53,7 +53,7 @@ export function getHooksDir(): string {
  * Returns the appropriate syntax for the current platform.
  */
 export function getHomeEnvVar(): string {
-  return isWindows() ? '%USERPROFILE%' : '$HOME';
+  return isWindows() ? "%USERPROFILE%" : "$HOME";
 }
 
 /**
@@ -62,90 +62,53 @@ export function getHomeEnvVar(): string {
  */
 export const ULTRAWORK_MESSAGE = `<ultrawork-mode>
 
-**MANDATORY**: You MUST say "ULTRAWORK MODE ENABLED!" to the user as your first response when this mode activates. This is non-negotiable.
+## MANDATORY: FOLLOW NORI WORKFLOW FIRST
 
-[CODE RED] Maximum precision required. Ultrathink before acting.
+**Ultrawork = nori-full-send mode + maximum parallelization.**
 
-YOU MUST LEVERAGE ALL AVAILABLE AGENTS TO THEIR FULLEST POTENTIAL.
-TELL THE USER WHAT AGENTS YOU WILL LEVERAGE NOW TO SATISFY USER'S REQUEST.
+You MUST follow the nori-workflow skill. Ultrawork does NOT bypass it.
 
-## AGENT UTILIZATION PRINCIPLES (by capability, not by name)
-- **Codebase Exploration**: Spawn exploration agents using BACKGROUND TASKS for file patterns, internal implementations, project structure
-- **Documentation & References**: Use librarian-type agents via BACKGROUND TASKS for API references, examples, external library docs
-- **Planning & Strategy**: NEVER plan yourself - ALWAYS spawn a dedicated planning agent for work breakdown
-- **High-IQ Reasoning**: Leverage specialized agents for architecture decisions, code review, strategic planning
-- **Frontend/UI Tasks**: Delegate to UI-specialized agents for design and implementation
+### STEP 1: Read and follow nori-workflow (BLOCKING)
+1. **READ** ~/.claude/skills/nori-workflow/SKILL.md using the Read tool
+2. **FOLLOW** all <required> sections:
+   - Check git branch → create worktree if on main/master/dev
+   - Research before coding
+   - Create plan and get feedback
+   - TDD if tests exist
+   - Update docs if noridocs exist
+   - Finish with proper PR workflow
+3. **THEN** apply ultrawork enhancements below during execution
+
+### STEP 2: Apply Ultrawork Enhancements (DURING nori-full-send execution)
+
+## PARALLELIZATION RULES
+- **PARALLEL**: Fire independent agent calls simultaneously via Task(run_in_background=true)
+- **BACKGROUND FIRST**: Use Task tool for exploration/research agents (10+ concurrent if needed)
+- **NEVER** wait sequentially when tasks are independent
+
+## DELEGATION RULES
+- **Codebase Exploration**: Spawn exploration agents via BACKGROUND TASKS
+- **Documentation & References**: Use librarian agents via BACKGROUND TASKS
+- **High-IQ Reasoning**: Use oracle for architecture decisions, complex debugging
+- **Frontend/UI Tasks**: Delegate to frontend-engineer agents
 
 ## EXECUTION RULES
 - **TODO**: Track EVERY step. Mark complete IMMEDIATELY after each.
-- **PARALLEL**: Fire independent agent calls simultaneously via Task(run_in_background=true) - NEVER wait sequentially.
-- **BACKGROUND FIRST**: Use Task tool for exploration/research agents (10+ concurrent if needed).
-- **VERIFY**: Re-read request after completion. Check ALL requirements met before reporting done.
-- **DELEGATE**: Don't do everything yourself - orchestrate specialized agents for their strengths.
+- **VERIFY**: Re-read request after completion. Check ALL requirements met.
+- **DELEGATE**: Orchestrate specialized agents for their strengths.
 
-## WORKFLOW
-1. Analyze the request and identify required capabilities
-2. Spawn exploration/librarian agents via Task(run_in_background=true) in PARALLEL (10+ if needed)
-3. Always Use Plan agent with gathered context to create detailed work breakdown
-4. Execute with continuous verification against original requirements
-
-## VERIFICATION GUARANTEE (NON-NEGOTIABLE)
-
-**NOTHING is "done" without PROOF it works.**
-
-### Pre-Implementation: Define Success Criteria
-
-BEFORE writing ANY code, you MUST define:
-
-| Criteria Type | Description | Example |
-|---------------|-------------|---------|
-| **Functional** | What specific behavior must work | "Button click triggers API call" |
-| **Observable** | What can be measured/seen | "Console shows 'success', no errors" |
-| **Pass/Fail** | Binary, no ambiguity | "Returns 200 OK" not "should work" |
-
-Write these criteria explicitly. Share with user if scope is non-trivial.
-
-### Execution & Evidence Requirements
-
-| Phase | Action | Required Evidence |
-|-------|--------|-------------------|
-| **Build** | Run build command | Exit code 0, no errors |
-| **Test** | Execute test suite | All tests pass (screenshot/output) |
-| **Manual Verify** | Test the actual feature | Demonstrate it works (describe what you observed) |
-| **Regression** | Ensure nothing broke | Existing tests still pass |
+## VERIFICATION (NON-NEGOTIABLE)
+- **Build**: Exit code 0, no errors
+- **Test**: All tests pass
+- **Evidence**: Show what you ran and observed
 
 **WITHOUT evidence = NOT verified = NOT done.**
 
-### TDD Workflow (when test infrastructure exists)
-
-1. **SPEC**: Define what "working" means (success criteria above)
-2. **RED**: Write failing test -> Run it -> Confirm it FAILS
-3. **GREEN**: Write minimal code -> Run test -> Confirm it PASSES
-4. **REFACTOR**: Clean up -> Tests MUST stay green
-5. **VERIFY**: Run full test suite, confirm no regressions
-6. **EVIDENCE**: Report what you ran and what output you saw
-
-### Verification Anti-Patterns (BLOCKING)
-
-| Violation | Why It Fails |
-|-----------|--------------|
-| "It should work now" | No evidence. Run it. |
-| "I added the tests" | Did they pass? Show output. |
-| "Fixed the bug" | How do you know? What did you test? |
-| "Implementation complete" | Did you verify against success criteria? |
-| Skipping test execution | Tests exist to be RUN, not just written |
-
-**CLAIM NOTHING WITHOUT PROOF. EXECUTE. VERIFY. SHOW EVIDENCE.**
-
-## ZERO TOLERANCE FAILURES
-- **NO Scope Reduction**: Never make "demo", "skeleton", "simplified", "basic" versions - deliver FULL implementation
-- **NO MockUp Work**: When user asked you to do "port A", you must "port A", fully, 100%. No Extra feature, No reduced feature, no mock data, fully working 100% port.
-- **NO Partial Completion**: Never stop at 60-80% saying "you can extend this..." - finish 100%
-- **NO Assumed Shortcuts**: Never skip requirements you deem "optional" or "can be added later"
-- **NO Premature Stopping**: Never declare done until ALL TODOs are completed and verified
-- **NO TEST DELETION**: Never delete or skip failing tests to make the build pass. Fix the code, not the tests.
-
-THE USER ASKED FOR X. DELIVER EXACTLY X. NOT A SUBSET. NOT A DEMO. NOT A STARTING POINT.
+## ZERO TOLERANCE
+- NO Scope Reduction - deliver FULL implementation
+- NO Partial Completion - finish 100%
+- NO Premature Stopping - ALL TODOs must be complete
+- NO TEST DELETION - fix code, not tests
 
 </ultrawork-mode>
 
@@ -1290,32 +1253,32 @@ export const HOOKS_SETTINGS_CONFIG_BASH = {
         hooks: [
           {
             type: "command" as const,
-            command: "bash $HOME/.claude/hooks/keyword-detector.sh"
-          }
-        ]
-      }
+            command: "bash $HOME/.claude/hooks/keyword-detector.sh",
+          },
+        ],
+      },
     ],
     SessionStart: [
       {
         hooks: [
           {
             type: "command" as const,
-            command: "bash $HOME/.claude/hooks/session-start.sh"
-          }
-        ]
-      }
+            command: "bash $HOME/.claude/hooks/session-start.sh",
+          },
+        ],
+      },
     ],
     Stop: [
       {
         hooks: [
           {
             type: "command" as const,
-            command: "bash $HOME/.claude/hooks/persistent-mode.sh"
-          }
-        ]
-      }
-    ]
-  }
+            command: "bash $HOME/.claude/hooks/persistent-mode.sh",
+          },
+        ],
+      },
+    ],
+  },
 };
 
 /**
@@ -1333,10 +1296,10 @@ export const HOOKS_SETTINGS_CONFIG_NODE = {
             // On Unix with node hooks, $HOME is expanded by the shell
             command: isWindows()
               ? 'node "%USERPROFILE%\\.claude\\hooks\\keyword-detector.mjs"'
-              : 'node "$HOME/.claude/hooks/keyword-detector.mjs"'
-          }
-        ]
-      }
+              : 'node "$HOME/.claude/hooks/keyword-detector.mjs"',
+          },
+        ],
+      },
     ],
     SessionStart: [
       {
@@ -1345,10 +1308,10 @@ export const HOOKS_SETTINGS_CONFIG_NODE = {
             type: "command" as const,
             command: isWindows()
               ? 'node "%USERPROFILE%\\.claude\\hooks\\session-start.mjs"'
-              : 'node "$HOME/.claude/hooks/session-start.mjs"'
-          }
-        ]
-      }
+              : 'node "$HOME/.claude/hooks/session-start.mjs"',
+          },
+        ],
+      },
     ],
     Stop: [
       {
@@ -1357,19 +1320,21 @@ export const HOOKS_SETTINGS_CONFIG_NODE = {
             type: "command" as const,
             command: isWindows()
               ? 'node "%USERPROFILE%\\.claude\\hooks\\persistent-mode.mjs"'
-              : 'node "$HOME/.claude/hooks/persistent-mode.mjs"'
-          }
-        ]
-      }
-    ]
-  }
+              : 'node "$HOME/.claude/hooks/persistent-mode.mjs"',
+          },
+        ],
+      },
+    ],
+  },
 };
 
 /**
  * Get the appropriate hooks settings config for the current platform
  */
 export function getHooksSettingsConfig(): typeof HOOKS_SETTINGS_CONFIG_BASH {
-  return shouldUseNodeHooks() ? HOOKS_SETTINGS_CONFIG_NODE : HOOKS_SETTINGS_CONFIG_BASH;
+  return shouldUseNodeHooks()
+    ? HOOKS_SETTINGS_CONFIG_NODE
+    : HOOKS_SETTINGS_CONFIG_BASH;
 }
 
 /**
@@ -1386,20 +1351,20 @@ export const HOOKS_SETTINGS_CONFIG = HOOKS_SETTINGS_CONFIG_BASH;
  * Bash hook scripts (Unix only)
  */
 export const HOOK_SCRIPTS_BASH: Record<string, string> = {
-  'keyword-detector.sh': KEYWORD_DETECTOR_SCRIPT,
-  'stop-continuation.sh': STOP_CONTINUATION_SCRIPT,
-  'persistent-mode.sh': PERSISTENT_MODE_SCRIPT,
-  'session-start.sh': SESSION_START_SCRIPT
+  "keyword-detector.sh": KEYWORD_DETECTOR_SCRIPT,
+  "stop-continuation.sh": STOP_CONTINUATION_SCRIPT,
+  "persistent-mode.sh": PERSISTENT_MODE_SCRIPT,
+  "session-start.sh": SESSION_START_SCRIPT,
 };
 
 /**
  * Node.js hook scripts (Cross-platform)
  */
 export const HOOK_SCRIPTS_NODE: Record<string, string> = {
-  'keyword-detector.mjs': KEYWORD_DETECTOR_SCRIPT_NODE,
-  'stop-continuation.mjs': STOP_CONTINUATION_SCRIPT_NODE,
-  'persistent-mode.mjs': PERSISTENT_MODE_SCRIPT_NODE,
-  'session-start.mjs': SESSION_START_SCRIPT_NODE
+  "keyword-detector.mjs": KEYWORD_DETECTOR_SCRIPT_NODE,
+  "stop-continuation.mjs": STOP_CONTINUATION_SCRIPT_NODE,
+  "persistent-mode.mjs": PERSISTENT_MODE_SCRIPT_NODE,
+  "session-start.mjs": SESSION_START_SCRIPT_NODE,
 };
 
 /**
