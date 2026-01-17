@@ -10,20 +10,91 @@ $ARGUMENTS
 
 You have entered the Ralph Loop - an INESCAPABLE development cycle that binds you to your task until VERIFIED completion. There is no early exit. There is no giving up. The only way out is through.
 
+## PHASE 0: TDD Decision (FIRST STEP)
+
+**Before starting, ASK the user:**
+
+> "Do you want to use TDD (Test-Driven Development) for this task?"
+> - **Yes**: Start with Phase 1 (Hephaestus creates tests first)
+> - **No**: Skip to Phase 2 (Direct implementation)
+
+**When to recommend TDD:**
+- New features with clear acceptance criteria
+- Bug fixes that need regression tests
+- Refactoring where behavior must be preserved
+
+**When TDD may not be needed:**
+- Simple config changes
+- Documentation updates
+- Trivial one-line fixes
+- Exploratory prototyping
+
 ## How The Loop Works
 
-1. **WORK CONTINUOUSLY** - Break tasks into todos, execute systematically
-2. **VERIFY THOROUGHLY** - Test, check, confirm every completion claim
-3. **PROMISE COMPLETION** - ONLY output `<promise>DONE</promise>` when 100% verified
-4. **AUTO-CONTINUATION** - If you stop without the promise, YOU WILL BE REMINDED TO CONTINUE
+**With TDD (Yes):**
+1. **PHASE 1: TEST FIRST** - Create tests from acceptance criteria (Hephaestus)
+2. **PHASE 2: IMPLEMENT** - Make all tests pass (sisyphus-junior, oracle, frontend-engineer)
+3. **PHASE 3: VERIFY** - Confirm completion and determine next action
+
+**Without TDD (No):**
+1. ~~PHASE 1: Skipped~~
+2. **PHASE 2: IMPLEMENT** - Direct implementation
+3. **PHASE 3: VERIFY** - Run existing tests + Oracle review
+
+4. **PROMISE COMPLETION** - ONLY output `<promise>DONE</promise>` when 100% verified
+5. **AUTO-CONTINUATION** - If you stop without the promise, YOU WILL BE REMINDED TO CONTINUE
+
+## The Three Phases
+
+### PHASE 1: Test Scaffolding (Hephaestus)
+
+Before ANY implementation, create the tests that will guide development.
+
+```
+Task(subagent_type="hephaestus", prompt="
+Create test scaffold for: [describe the feature]
+Work plan location: .sisyphus/plans/[plan-name].md
+")
+```
+
+**Phase 1 Exit Criteria:**
+- [ ] All acceptance criteria have corresponding tests
+- [ ] All tests FAIL (expected - nothing implemented yet)
+- [ ] Test files follow project conventions
+
+### PHASE 2: Implementation
+
+Now implement the functionality to make tests pass.
+
+**Use these agents:**
+- **sisyphus-junior**: Direct implementation
+- **oracle**: Architecture guidance (READ-ONLY)
+- **frontend-engineer**: UI/UX work
+
+**Phase 2 Exit Criteria:**
+- [ ] All tests pass
+- [ ] No build errors
+- [ ] Code follows project conventions
+
+### PHASE 3: Verification
+
+Run tests and Oracle review to determine next action.
+
+| Verification Result | Action |
+|---------------------|--------|
+| All tests pass + Oracle approves | Output `<promise>DONE</promise>` |
+| Tests fail - implementation bug | → Return to PHASE 2 |
+| Tests fail - test is wrong | → Return to PHASE 1 |
+| Missing test coverage | → Return to PHASE 1 |
 
 ## The Promise Mechanism
 
 The `<promise>DONE</promise>` tag is a SACRED CONTRACT. You may ONLY output it when:
 
+✓ PHASE 1: Tests exist for all acceptance criteria
+✓ PHASE 2: All tests pass
+✓ PHASE 3: Oracle has approved the implementation
 ✓ ALL todo items are marked 'completed'
-✓ ALL requested functionality is implemented AND TESTED
-✓ ALL errors have been resolved
 ✓ You have VERIFIED (not assumed) completion
 
 **LYING IS DETECTED**: If you output the promise prematurely, your incomplete work will be exposed and you will be forced to continue.
@@ -45,8 +116,8 @@ If you attempt to stop without the promise tag:
 
 ## Working Style
 
-1. **Create Todo List First** - Map out ALL subtasks
-2. **Execute Systematically** - One task at a time, verify each
+1. **Start with PHASE 1** - Create tests from plan before implementation
+2. **Execute Systematically** - One phase at a time, verify each
 3. **Delegate to Specialists** - Use subagents for specialized work
 4. **Parallelize When Possible** - Multiple agents for independent tasks
 5. **Verify Before Promising** - Test everything before the promise
@@ -56,11 +127,11 @@ If you attempt to stop without the promise tag:
 Before outputting `<promise>DONE</promise>`, verify:
 
 - [ ] Todo list shows 100% completion
-- [ ] All code changes compile/run without errors
-- [ ] All tests pass (if applicable)
+- [ ] All tests exist (PHASE 1 complete)
+- [ ] All tests pass (PHASE 2 complete)
+- [ ] Oracle has approved (PHASE 3 complete)
 - [ ] User's original request is FULLY addressed
 - [ ] No obvious bugs or issues remain
-- [ ] You have TESTED the changes, not just written them
 
 **If ANY checkbox is unchecked, DO NOT output the promise. Continue working.**
 
@@ -74,7 +145,11 @@ Task(subagent_type="oracle", prompt="VERIFY COMPLETION:
 Original task: [describe the task]
 What I implemented: [list changes]
 Tests run: [test results]
-Please verify this is truly complete and production-ready.")
+
+Please verify:
+1. Is implementation complete and correct?
+2. If tests fail, is it an IMPLEMENTATION bug or a TEST bug?
+3. Are there any issues I missed?")
 ```
 
 ### Step 2: Runtime Verification (Choose ONE)
@@ -100,11 +175,13 @@ Task(subagent_type="qa-tester", prompt="VERIFY BEHAVIOR: ...")
 **Gating Rule**: If `npm test` (or equivalent) passes, you do NOT need qa-tester.
 
 ### Step 3: Based on Verification Results
-- **If Oracle APPROVED + Tests/QA-Tester PASS**: Output `<promise>DONE</promise>`
+- **If Oracle APPROVED + Tests PASS**: Output `<promise>DONE</promise>`
+- **If tests fail (implementation bug)**: Return to PHASE 2
+- **If tests fail (test bug)**: Return to PHASE 1
 - **If any REJECTED/FAILED**: Fix issues and re-verify
 
 **NO PROMISE WITHOUT VERIFICATION.**
 
 ---
 
-Begin working on the task now. The loop will not release you until you earn your `<promise>DONE</promise>`.
+Begin working on the task now. Start with PHASE 1 (Hephaestus). The loop will not release you until you earn your `<promise>DONE</promise>`.

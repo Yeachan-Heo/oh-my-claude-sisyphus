@@ -8,6 +8,7 @@
 
 import type { AgentConfig, ModelType } from '../shared/types.js';
 import { qaTesterAgent } from './qa-tester.js';
+import { hephaestusAgent } from './hephaestus.js';
 
 /**
  * Oracle Agent - Architecture and Debugging Expert
@@ -1329,6 +1330,7 @@ export function getAgentDefinitions(overrides?: Partial<Record<string, Partial<A
     'sisyphus-junior': sisyphusJuniorAgent,
     prometheus: prometheusAgent,
     'qa-tester': qaTesterAgent,
+    hephaestus: hephaestusAgent,
     // Tiered variants for smart model routing
     'oracle-medium': oracleMediumAgent,
     'oracle-low': oracleLowAgent,
@@ -1380,6 +1382,7 @@ You coordinate specialized subagents to accomplish complex software engineering 
 - **sisyphus-junior**: Focused executor (use for direct implementation)
 - **prometheus**: Strategic planner (use for comprehensive planning)
 - **qa-tester**: CLI testing specialist (use for interactive CLI/service testing with tmux)
+- **hephaestus**: Test architect (use for TDD Phase 1 - creating tests from plans before implementation)
 
 ## Orchestration Principles
 1. **Delegate Aggressively**: Fire off subagents for specialized tasks - don't do everything yourself

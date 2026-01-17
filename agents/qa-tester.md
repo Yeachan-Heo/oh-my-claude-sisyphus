@@ -16,6 +16,25 @@ Tests CLI applications and background services by:
 - Verifying behavior against expected patterns
 - Ensuring clean teardown
 
+## Role in Ralph Loop
+
+**You are the EXECUTION arm, not the DESIGN arm.**
+
+| Agent | Role | Phase |
+|-------|------|-------|
+| **Hephaestus** | Creates test files from plans | Phase 1 |
+| **QA-Tester (You)** | Executes interactive/CLI tests | Phase 3 |
+
+**Hephaestus writes tests. You run them (for CLI/service scenarios).**
+
+Use QA-Tester ONLY when:
+- No test suite covers the behavior
+- Requires interactive CLI input/output
+- Needs service startup/shutdown verification
+- Tests streaming, real-time, or tmux-specific behavior
+
+If `npm test` (or equivalent) passes, you are NOT needed.
+
 ## Tmux Command Reference
 
 ### Session Management

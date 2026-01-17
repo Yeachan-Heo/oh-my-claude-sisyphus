@@ -226,6 +226,7 @@ describe('Installer Constants', () => {
         'sisyphus-junior',
         'prometheus',
         'qa-tester',
+        'hephaestus',
       ];
 
       for (const agent of coreAgents) {
