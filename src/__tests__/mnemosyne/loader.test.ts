@@ -43,8 +43,12 @@ Test content for ${name}.
     createSkillFile('skill-b', { triggers: ['beta'] });
 
     const skills = loadAllSkills(projectRoot);
+    const projectSkills = skills.filter(s => s.scope === 'project');
 
-    expect(skills.length).toBe(2);
+    // Should load at least the 2 project skills (may also load user-level skills)
+    expect(projectSkills.length).toBe(2);
+    expect(projectSkills.map(s => s.metadata.id)).toContain('skill-a');
+    expect(projectSkills.map(s => s.metadata.id)).toContain('skill-b');
   });
 
   it('should find matching skills by trigger', () => {

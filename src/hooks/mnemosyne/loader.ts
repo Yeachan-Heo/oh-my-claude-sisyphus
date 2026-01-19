@@ -90,11 +90,13 @@ export function findMatchingSkills(
 
   const scored = skills.map(skill => {
     let score = 0;
+    let hasMatch = false;
 
     // Check trigger matches
     for (const trigger of skill.metadata.triggers) {
       if (messageLower.includes(trigger.toLowerCase())) {
         score += 10;
+        hasMatch = true;
       }
     }
 
@@ -103,18 +105,22 @@ export function findMatchingSkills(
       for (const tag of skill.metadata.tags) {
         if (messageLower.includes(tag.toLowerCase())) {
           score += 5;
+          hasMatch = true;
         }
       }
     }
 
-    // Boost by quality score
-    if (skill.metadata.quality) {
-      score += skill.metadata.quality / 20;
-    }
+    // Only apply quality/usage boosts if there was a trigger or tag match
+    if (hasMatch) {
+      // Boost by quality score
+      if (skill.metadata.quality) {
+        score += skill.metadata.quality / 20;
+      }
 
-    // Boost by usage count
-    if (skill.metadata.usageCount) {
-      score += Math.min(skill.metadata.usageCount, 10);
+      // Boost by usage count
+      if (skill.metadata.usageCount) {
+        score += Math.min(skill.metadata.usageCount, 10);
+      }
     }
 
     return { skill, score };

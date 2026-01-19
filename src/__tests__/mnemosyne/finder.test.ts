@@ -23,10 +23,12 @@ describe('Skill Finder', () => {
     writeFileSync(skillPath, '# Test Skill');
 
     const candidates = findSkillFiles(projectRoot);
+    const projectCandidates = candidates.filter(c => c.scope === 'project');
 
-    expect(candidates.length).toBe(1);
-    expect(candidates[0].scope).toBe('project');
-    expect(candidates[0].path).toBe(skillPath);
+    // Should find at least the project skill (may also find user-level skills)
+    expect(projectCandidates.length).toBe(1);
+    expect(projectCandidates[0].scope).toBe('project');
+    expect(projectCandidates[0].path).toBe(skillPath);
   });
 
   it('should prioritize project skills over user skills', () => {
