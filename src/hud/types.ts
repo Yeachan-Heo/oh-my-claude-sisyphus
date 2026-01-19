@@ -145,8 +145,10 @@ export type HudPreset = 'minimal' | 'focused' | 'full';
  * - codes: agents:Oes (type-coded with model tier casing)
  * - codes-duration: agents:O(2m)es (codes with duration)
  * - detailed: agents:[oracle(2m),explore,sj]
+ * - descriptions: O:analyzing code | e:searching (codes + what they're doing)
+ * - tasks: [analyzing code, searching...] (just descriptions - most readable)
  */
-export type AgentsFormat = 'count' | 'codes' | 'codes-duration' | 'detailed';
+export type AgentsFormat = 'count' | 'codes' | 'codes-duration' | 'detailed' | 'descriptions' | 'tasks';
 
 export interface HudElementConfig {
   sisyphusLabel: boolean;
@@ -184,7 +186,7 @@ export const DEFAULT_HUD_CONFIG: HudConfig = {
     activeSkills: true,
     contextBar: true,
     agents: true,
-    agentsFormat: 'codes',
+    agentsFormat: 'tasks', // Show what agents are doing - no learning curve
     backgroundTasks: true,
     todos: true,
   },
@@ -214,7 +216,7 @@ export const PRESET_CONFIGS: Record<HudPreset, Partial<HudElementConfig>> = {
     activeSkills: true,
     contextBar: true,
     agents: true,
-    agentsFormat: 'codes',
+    agentsFormat: 'tasks', // Show what agents are doing - most readable
     backgroundTasks: true,
     todos: true,
   },
@@ -225,7 +227,7 @@ export const PRESET_CONFIGS: Record<HudPreset, Partial<HudElementConfig>> = {
     activeSkills: true,
     contextBar: true,
     agents: true,
-    agentsFormat: 'codes-duration',
+    agentsFormat: 'descriptions', // Codes + descriptions for power users
     backgroundTasks: true,
     todos: true,
   },

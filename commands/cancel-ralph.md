@@ -11,9 +11,11 @@ The Ralph Loop has been cancelled. You MUST now deactivate the state files.
 Execute this command to fully cancel ALL persistent modes:
 
 ```bash
-mkdir -p .sisyphus && \
+mkdir -p .sisyphus ~/.claude && \
 echo '{"active": false, "cancelled_at": "'$(date -Iseconds)'", "reason": "User cancelled via /cancel-ralph"}' > .sisyphus/ralph-state.json && \
 echo '{"active": false, "cancelled_at": "'$(date -Iseconds)'", "reason": "User cancelled via /cancel-ralph"}' > .sisyphus/ultrawork-state.json && \
+echo '{"active": false, "cancelled_at": "'$(date -Iseconds)'", "reason": "User cancelled via /cancel-ralph"}' > ~/.claude/ralph-state.json && \
+echo '{"active": false, "cancelled_at": "'$(date -Iseconds)'", "reason": "User cancelled via /cancel-ralph"}' > ~/.claude/ultrawork-state.json && \
 rm -f .sisyphus/ralph-verification.json
 ```
 

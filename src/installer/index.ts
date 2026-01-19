@@ -87,6 +87,24 @@ export function isClaudeInstalled(): boolean {
 }
 
 /**
+ * Check if we're running in Claude Code plugin context
+ *
+ * When installed as a plugin, we should NOT copy files to ~/.claude/
+ * because the plugin system already handles file access via ${CLAUDE_PLUGIN_ROOT}.
+ *
+ * Detection method:
+ * - Check if CLAUDE_PLUGIN_ROOT environment variable is set (primary method)
+ * - This env var is set by the Claude Code plugin system when running plugin hooks
+ *
+ * @returns true if running in plugin context, false otherwise
+ */
+export function isRunningAsPlugin(): boolean {
+  // Check for CLAUDE_PLUGIN_ROOT env var (set by plugin system)
+  // This is the most reliable indicator that we're running as a plugin
+  return !!process.env.CLAUDE_PLUGIN_ROOT;
+}
+
+/**
  * Agent definitions - exactly matching oh-my-opencode prompts
  *
  * IMPORTANT: Each agent MUST have full frontmatter to be recognized by Claude Code:
@@ -2770,6 +2788,16 @@ export function install(options: InstallOptions = {}): InstallResult {
 
   // Log platform info
   log(`Platform: ${process.platform} (${shouldUseNodeHooks() ? 'Node.js hooks' : 'Bash hooks'})`);
+
+  // Check if running as a plugin
+  const runningAsPlugin = isRunningAsPlugin();
+  if (runningAsPlugin) {
+    log('Detected Claude Code plugin context - skipping file installation');
+    log('Plugin files are managed by Claude Code plugin system');
+    result.success = true;
+    result.message = 'Running as plugin - no installation needed (managed by plugin system)';
+    return result;
+  }
 
   // Check Claude installation (optional)
   if (!options.skipClaudeCheck && !isClaudeInstalled()) {

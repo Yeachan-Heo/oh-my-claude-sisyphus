@@ -215,6 +215,114 @@ export function renderAgentsDetailed(agents: ActiveAgent[]): string | null {
 }
 
 /**
+ * Truncate description to fit in statusline.
+ */
+function truncateDescription(desc: string | undefined, maxLen: number = 20): string {
+  if (!desc) return '...';
+  if (desc.length <= maxLen) return desc;
+  return desc.slice(0, maxLen - 3) + '...';
+}
+
+/**
+ * Get short agent type name.
+ */
+function getShortAgentName(agentType: string): string {
+  const parts = agentType.split(':');
+  let name = parts[parts.length - 1] || agentType;
+
+  // Abbreviate common names
+  const abbrevs: Record<string, string> = {
+    'sisyphus-junior': 'sj',
+    'sisyphus-junior-low': 'sj',
+    'sisyphus-junior-high': 'sj',
+    'frontend-engineer': 'fe',
+    'frontend-engineer-low': 'fe',
+    'frontend-engineer-high': 'fe',
+    'document-writer': 'doc',
+    'multimodal-looker': 'visual',
+    'oracle-low': 'oracle',
+    'oracle-medium': 'oracle',
+    'explore-medium': 'explore',
+    'librarian-low': 'lib',
+  };
+
+  return abbrevs[name] || name;
+}
+
+/**
+ * Render agents with descriptions - most informative format.
+ * Shows what each agent is actually doing.
+ *
+ * Format: O:analyzing code | e:searching files
+ */
+export function renderAgentsWithDescriptions(agents: ActiveAgent[]): string | null {
+  const running = agents.filter((a) => a.status === 'running');
+
+  if (running.length === 0) {
+    return null;
+  }
+
+  const now = Date.now();
+
+  // Build agent entries with descriptions
+  const entries = running.map((a) => {
+    const code = getAgentCode(a.type, a.model);
+    const color = getModelTierColor(a.model);
+    const desc = truncateDescription(a.description, 25);
+    const durationMs = now - a.startTime.getTime();
+    const duration = formatDuration(durationMs);
+
+    // Format: O:description or O:description(2m)
+    let entry = `${color}${code}${RESET}:${dim(desc)}`;
+    if (duration && duration !== '!') {
+      entry += dim(duration);
+    } else if (duration === '!') {
+      const durationColor = getDurationColor(durationMs);
+      entry += `${durationColor}!${RESET}`;
+    }
+
+    return entry;
+  });
+
+  return entries.join(dim(' | '));
+}
+
+/**
+ * Render agents showing descriptions only (no codes).
+ * Maximum clarity about what's running.
+ *
+ * Format: [analyzing code, searching files]
+ */
+export function renderAgentsDescOnly(agents: ActiveAgent[]): string | null {
+  const running = agents.filter((a) => a.status === 'running');
+
+  if (running.length === 0) {
+    return null;
+  }
+
+  const now = Date.now();
+
+  // Build descriptions
+  const descriptions = running.map((a) => {
+    const color = getModelTierColor(a.model);
+    const shortName = getShortAgentName(a.type);
+    const desc = a.description ? truncateDescription(a.description, 20) : shortName;
+    const durationMs = now - a.startTime.getTime();
+    const duration = formatDuration(durationMs);
+
+    if (duration === '!') {
+      const durationColor = getDurationColor(durationMs);
+      return `${color}${desc}${durationColor}!${RESET}`;
+    } else if (duration) {
+      return `${color}${desc}${dim(duration)}${RESET}`;
+    }
+    return `${color}${desc}${RESET}`;
+  });
+
+  return `[${descriptions.join(dim(', '))}]`;
+}
+
+/**
  * Render agents based on format configuration.
  */
 export function renderAgentsByFormat(
@@ -230,7 +338,11 @@ export function renderAgentsByFormat(
       return renderAgentsCodedWithDuration(agents);
     case 'detailed':
       return renderAgentsDetailed(agents);
+    case 'descriptions':
+      return renderAgentsWithDescriptions(agents);
+    case 'tasks':
+      return renderAgentsDescOnly(agents);
     default:
-      return renderAgents(agents);
+      return renderAgentsCoded(agents);
   }
 }

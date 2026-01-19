@@ -10,6 +10,8 @@ import {
   renderAgentsCoded,
   renderAgentsCodedWithDuration,
   renderAgentsDetailed,
+  renderAgentsWithDescriptions,
+  renderAgentsDescOnly,
   renderAgentsByFormat,
 } from '../hud/elements/agents.js';
 import type { ActiveAgent } from '../hud/types.js';
@@ -222,9 +224,36 @@ describe('Agents Element', () => {
       expect(result).toContain('oracle');
     });
 
-    it('should default to count for unknown format', () => {
+    it('should route to descriptions format', () => {
+      const agentsWithDesc: ActiveAgent[] = [
+        {
+          ...createAgent('oh-my-claude-sisyphus:oracle', 'opus'),
+          description: 'Analyzing code',
+        },
+      ];
+      const result = renderAgentsByFormat(agentsWithDesc, 'descriptions');
+      expect(result).toContain('O');
+      expect(result).toContain('Analyzing code');
+    });
+
+    it('should route to tasks format', () => {
+      const agentsWithDesc: ActiveAgent[] = [
+        {
+          ...createAgent('oh-my-claude-sisyphus:oracle', 'opus'),
+          description: 'Analyzing code',
+        },
+      ];
+      const result = renderAgentsByFormat(agentsWithDesc, 'tasks');
+      expect(result).toContain('[');
+      expect(result).toContain('Analyzing code');
+      expect(result).not.toContain('O:'); // tasks format doesn't show codes
+    });
+
+    it('should default to codes for unknown format', () => {
       const result = renderAgentsByFormat(agents, 'unknown' as any);
-      expect(result).toBe(`agents:${CYAN}2${RESET}`);
+      // Should fall back to codes format
+      expect(result).toContain('agents:');
+      expect(result!.replace(/\x1b\[[0-9;]*m/g, '')).toBe('agents:Oe');
     });
   });
 

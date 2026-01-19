@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import {
   AGENT_DEFINITIONS,
   COMMAND_DEFINITIONS,
@@ -9,6 +9,7 @@ import {
   COMMANDS_DIR,
   SKILLS_DIR,
   HOOKS_DIR,
+  isRunningAsPlugin,
 } from '../installer/index.js';
 import { join } from 'path';
 import { homedir } from 'os';
@@ -381,6 +382,39 @@ describe('Installer Constants', () => {
         const tools = toolsMatch![1];
         expect(tools).toMatch(/\b(Edit|Write)\b/);
       }
+    });
+  });
+
+  describe('Plugin Detection', () => {
+    let originalEnv: string | undefined;
+
+    beforeEach(() => {
+      // Save original env var
+      originalEnv = process.env.CLAUDE_PLUGIN_ROOT;
+    });
+
+    afterEach(() => {
+      // Restore original env var
+      if (originalEnv !== undefined) {
+        process.env.CLAUDE_PLUGIN_ROOT = originalEnv;
+      } else {
+        delete process.env.CLAUDE_PLUGIN_ROOT;
+      }
+    });
+
+    it('should return false when CLAUDE_PLUGIN_ROOT is not set', () => {
+      delete process.env.CLAUDE_PLUGIN_ROOT;
+      expect(isRunningAsPlugin()).toBe(false);
+    });
+
+    it('should return true when CLAUDE_PLUGIN_ROOT is set', () => {
+      process.env.CLAUDE_PLUGIN_ROOT = '/home/user/.claude/plugins/marketplaces/oh-my-claude-sisyphus';
+      expect(isRunningAsPlugin()).toBe(true);
+    });
+
+    it('should detect plugin context from environment variable', () => {
+      process.env.CLAUDE_PLUGIN_ROOT = '/any/path';
+      expect(isRunningAsPlugin()).toBe(true);
     });
   });
 
