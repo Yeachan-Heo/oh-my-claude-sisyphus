@@ -122,7 +122,11 @@ Signal completion: 'PLAN_READY: .sisyphus/plans/[filename].md'
 ")
 ```
 
-Update state: `plan_path: [generated path]`
+**Note**: The `PLAN_READY:` signal is a ralph-plan integration convention. Prometheus will emit this signal
+when instructed via the Task prompt above, allowing the orchestrator to detect plan completion and extract
+the plan file path for subsequent steps.
+
+Update state: `plan_path: [extracted from PLAN_READY signal]`
 
 ### Step 3: Oracle Consultation (Conditional)
 
@@ -237,14 +241,26 @@ Increment iteration to [N+1]
 
 ## Quality Gates
 
-Before each Momus review, the orchestrator verifies:
+**Enforcement**: The orchestrator (you, Claude) MUST verify these gates BEFORE invoking Momus.
 
-- [ ] Plan file exists at `plan_path` in state
-- [ ] All file references in plan point to existing files
-- [ ] Acceptance criteria are concrete and testable
-- [ ] No vague language ("improve", "optimize" without metrics)
+Before each Momus review:
 
-If gates fail, return to Prometheus with specific feedback.
+1. **Plan file exists** at `plan_path` in state
+2. **File references are valid** - Use Glob to verify files mentioned in plan exist
+3. **Acceptance criteria are concrete** - No vague "improve" or "optimize" without metrics
+4. **No ambiguous language** - Each task should specify exactly what to do
+
+**If any gate fails:**
+```
+[RALPH-PLAN] QUALITY GATE FAILURE
+
+Gate: [which gate failed]
+Issue: [specific problem]
+
+Returning to Prometheus with feedback...
+```
+
+Then return to Step 2 (Prometheus) with the specific failure as feedback.
 
 ## Agent Communication Protocol
 
