@@ -77,11 +77,30 @@ export interface SkillInvocation {
   timestamp: Date;
 }
 
+export interface PendingPermission {
+  toolName: string;       // "Edit", "Bash", etc. (proxy_ prefix stripped)
+  targetSummary: string;  // "src/main.ts" or "npm install"
+  timestamp: Date;
+}
+
+export interface ThinkingState {
+  active: boolean;
+  lastSeen?: Date;
+}
+
+export interface SessionHealth {
+  durationMinutes: number;
+  messageCount: number;
+  health: 'healthy' | 'warning' | 'critical';
+}
+
 export interface TranscriptData {
   agents: ActiveAgent[];
   todos: TodoItem[];
   sessionStart?: Date;
   lastActivatedSkill?: SkillInvocation;
+  pendingPermission?: PendingPermission;
+  thinkingState?: ThinkingState;
 }
 
 // ============================================================================
@@ -151,13 +170,22 @@ export interface HudRenderContext {
 
   /** Rate limits (5h and weekly) */
   rateLimits: RateLimits | null;
+
+  /** Pending permission state (heuristic-based) */
+  pendingPermission: PendingPermission | null;
+
+  /** Extended thinking state */
+  thinkingState: ThinkingState | null;
+
+  /** Session health metrics */
+  sessionHealth: SessionHealth | null;
 }
 
 // ============================================================================
 // Configuration
 // ============================================================================
 
-export type HudPreset = 'minimal' | 'focused' | 'full';
+export type HudPreset = 'minimal' | 'focused' | 'full' | 'opencode' | 'dense';
 
 /**
  * Agent display format options:
@@ -184,11 +212,16 @@ export interface HudElementConfig {
   agentsMaxLines: number;  // Max agent detail lines for multiline format (default: 5)
   backgroundTasks: boolean;
   todos: boolean;
+  permissionStatus: boolean;  // Show pending permission indicator
+  thinking: boolean;          // Show extended thinking indicator
+  sessionHealth: boolean;     // Show session health/duration
 }
 
 export interface HudThresholds {
   /** Context percentage that triggers warning color (default: 70) */
   contextWarning: number;
+  /** Context percentage that triggers compact suggestion (default: 80) */
+  contextCompactSuggestion: number;
   /** Context percentage that triggers critical color (default: 85) */
   contextCritical: number;
   /** Ralph iteration that triggers warning color (default: 7) */
@@ -216,9 +249,13 @@ export const DEFAULT_HUD_CONFIG: HudConfig = {
     backgroundTasks: true,
     todos: true,
     lastSkill: true,
+    permissionStatus: false,  // Disabled: heuristic-based, causes false positives
+    thinking: true,
+    sessionHealth: true,
   },
   thresholds: {
     contextWarning: 70,
+    contextCompactSuggestion: 80,
     contextCritical: 85,
     ralphWarning: 7,
   },
@@ -238,6 +275,9 @@ export const PRESET_CONFIGS: Record<HudPreset, Partial<HudElementConfig>> = {
     agentsMaxLines: 0,
     backgroundTasks: false,
     todos: true,
+    permissionStatus: false,
+    thinking: false,
+    sessionHealth: false,
   },
   focused: {
     sisyphusLabel: true,
@@ -252,6 +292,9 @@ export const PRESET_CONFIGS: Record<HudPreset, Partial<HudElementConfig>> = {
     agentsMaxLines: 3, // Show up to 3 agents
     backgroundTasks: true,
     todos: true,
+    permissionStatus: false,  // Disabled: heuristic unreliable
+    thinking: true,
+    sessionHealth: true,
   },
   full: {
     sisyphusLabel: true,
@@ -266,5 +309,42 @@ export const PRESET_CONFIGS: Record<HudPreset, Partial<HudElementConfig>> = {
     agentsMaxLines: 10, // Show many agents in full mode
     backgroundTasks: true,
     todos: true,
+    permissionStatus: false,  // Disabled: heuristic unreliable
+    thinking: true,
+    sessionHealth: true,
+  },
+  opencode: {
+    sisyphusLabel: true,
+    rateLimits: false,
+    ralph: true,
+    prdStory: false,
+    activeSkills: true,
+    lastSkill: true,
+    contextBar: true,
+    agents: true,
+    agentsFormat: 'codes',
+    agentsMaxLines: 0,
+    backgroundTasks: false,
+    todos: true,
+    permissionStatus: false,  // Disabled: heuristic unreliable
+    thinking: true,
+    sessionHealth: true,
+  },
+  dense: {
+    sisyphusLabel: true,
+    rateLimits: true,
+    ralph: true,
+    prdStory: true,
+    activeSkills: true,
+    lastSkill: true,
+    contextBar: true,
+    agents: true,
+    agentsFormat: 'multiline',
+    agentsMaxLines: 5,
+    backgroundTasks: true,
+    todos: true,
+    permissionStatus: false,  // Disabled: heuristic unreliable
+    thinking: true,
+    sessionHealth: true,
   },
 };

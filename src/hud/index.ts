@@ -16,7 +16,29 @@ import {
 } from './sisyphus-state.js';
 import { getUsage } from './usage-api.js';
 import { render } from './render.js';
-import type { HudRenderContext } from './types.js';
+import type { HudRenderContext, SessionHealth } from './types.js';
+
+/**
+ * Calculate session health from session start time and context usage.
+ */
+function calculateSessionHealth(
+  sessionStart: Date | undefined,
+  contextPercent: number
+): SessionHealth | null {
+  if (!sessionStart) return null;
+
+  const durationMs = Date.now() - sessionStart.getTime();
+  const durationMinutes = Math.floor(durationMs / 60_000);
+
+  let health: SessionHealth['health'] = 'healthy';
+  if (durationMinutes > 120 || contextPercent > 85) {
+    health = 'critical';
+  } else if (durationMinutes > 60 || contextPercent > 70) {
+    health = 'warning';
+  }
+
+  return { durationMinutes, messageCount: 0, health };
+}
 
 /**
  * Main HUD entry point
@@ -67,6 +89,9 @@ async function main(): Promise<void> {
       cwd,
       lastSkill: transcriptData.lastActivatedSkill || null,
       rateLimits,
+      pendingPermission: transcriptData.pendingPermission || null,
+      thinkingState: transcriptData.thinkingState || null,
+      sessionHealth: calculateSessionHealth(transcriptData.sessionStart, getContextPercent(stdin))
     };
 
     // Render and output

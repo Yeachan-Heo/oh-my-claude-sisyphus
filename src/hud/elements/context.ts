@@ -22,17 +22,22 @@ export function renderContext(
   thresholds: HudThresholds
 ): string | null {
   const safePercent = Math.min(100, Math.max(0, Math.round(percent)));
-
   let color: string;
+  let suffix = '';
+
   if (safePercent >= thresholds.contextCritical) {
     color = RED;
+    suffix = ' CRITICAL';
+  } else if (safePercent >= thresholds.contextCompactSuggestion) {
+    color = YELLOW;
+    suffix = ' COMPRESS?';
   } else if (safePercent >= thresholds.contextWarning) {
     color = YELLOW;
   } else {
     color = GREEN;
   }
 
-  return `ctx:${color}${safePercent}%${RESET}`;
+  return `ctx:${color}${safePercent}%${suffix}${RESET}`;
 }
 
 /**

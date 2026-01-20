@@ -12,12 +12,44 @@
 
 import { createReadStream, existsSync, statSync, openSync, readSync, closeSync } from 'fs';
 import { createInterface } from 'readline';
-import type { TranscriptData, ActiveAgent, TodoItem, SkillInvocation } from './types.js';
+import type { TranscriptData, ActiveAgent, TodoItem, SkillInvocation, PendingPermission, ThinkingState } from './types.js';
 
 // Performance constants
 const MAX_TAIL_BYTES = 512 * 1024; // 500KB - enough for recent activity
 const MAX_AGENT_MAP_SIZE = 50; // Cap agent tracking
 const MIN_RUNNING_AGENTS_THRESHOLD = 10; // Early termination threshold
+
+/**
+ * Tools known to require permission approval in Claude Code.
+ * Only these tools will trigger the "APPROVE?" indicator.
+ */
+const PERMISSION_TOOLS = [
+  'Edit', 'Write', 'Bash',
+  'proxy_Edit', 'proxy_Write', 'proxy_Bash'
+] as const;
+
+/**
+ * Time threshold for considering a tool "pending approval".
+ * If tool_use exists without tool_result within this window, show indicator.
+ */
+const PERMISSION_THRESHOLD_MS = 3000; // 3 seconds
+
+/**
+ * Module-level map tracking pending permission-requiring tools.
+ * Key: tool_use block id, Value: PendingPermission info
+ * Cleared when tool_result is received for the corresponding tool_use.
+ */
+const pendingPermissionMap = new Map<string, PendingPermission>();
+
+/**
+ * Content block types that indicate extended thinking mode.
+ */
+const THINKING_PART_TYPES = ['thinking', 'reasoning'] as const;
+
+/**
+ * Time threshold for considering thinking "active".
+ */
+const THINKING_RECENCY_MS = 30_000; // 30 seconds
 
 /**
  * Parse a Claude Code transcript JSONL file.
@@ -28,6 +60,10 @@ const MIN_RUNNING_AGENTS_THRESHOLD = 10; // Early termination threshold
 export async function parseTranscript(
   transcriptPath: string | undefined
 ): Promise<TranscriptData> {
+  // IMPORTANT: Clear module-level state at the start of each parse
+  // to prevent stale data from previous HUD invocations
+  pendingPermissionMap.clear();
+
   const result: TranscriptData = {
     agents: [],
     todos: [],
@@ -95,6 +131,21 @@ export async function parseTranscript(
         agent.endTime = new Date(agent.startTime.getTime() + STALE_AGENT_THRESHOLD_MS);
       }
     }
+  }
+
+  // Check for pending permissions within threshold
+  for (const [id, permission] of pendingPermissionMap) {
+    const age = now - permission.timestamp.getTime();
+    if (age <= PERMISSION_THRESHOLD_MS) {
+      result.pendingPermission = permission;
+      break; // Only show most recent
+    }
+  }
+
+  // Determine if thinking is currently active based on recency
+  if (result.thinkingState?.lastSeen) {
+    const age = now - result.thinkingState.lastSeen.getTime();
+    result.thinkingState.active = age <= THINKING_RECENCY_MS;
   }
 
   // Get running agents first, then recent completed (up to 10 total)
@@ -169,6 +220,35 @@ function parseTaskOutputResult(content: string | Array<{ type?: string; text?: s
 }
 
 /**
+ * Extract a human-readable target summary from tool input.
+ */
+function extractTargetSummary(input: unknown, toolName: string): string {
+  if (!input || typeof input !== 'object') return '...';
+  const inp = input as Record<string, unknown>;
+
+  // Edit/Write: show file path
+  if (toolName.includes('Edit') || toolName.includes('Write')) {
+    const filePath = inp.file_path as string | undefined;
+    if (filePath) {
+      // Return just the filename or last path segment
+      const segments = filePath.split('/');
+      return segments[segments.length - 1] || filePath;
+    }
+  }
+
+  // Bash: show first 20 chars of command
+  if (toolName.includes('Bash')) {
+    const cmd = inp.command as string | undefined;
+    if (cmd) {
+      const trimmed = cmd.trim().substring(0, 20);
+      return trimmed.length < cmd.trim().length ? `${trimmed}...` : trimmed;
+    }
+  }
+
+  return '...';
+}
+
+/**
  * Process a single transcript entry
  */
 function processEntry(
@@ -190,6 +270,14 @@ function processEntry(
   if (!content || !Array.isArray(content)) return;
 
   for (const block of content) {
+    // Check if this is a thinking block
+    if (THINKING_PART_TYPES.includes(block.type as typeof THINKING_PART_TYPES[number])) {
+      result.thinkingState = {
+        active: true,
+        lastSeen: timestamp
+      };
+    }
+
     // Track tool_use for Task (agents) and TodoWrite
     if (block.type === 'tool_use' && block.id && block.name) {
       if (block.name === 'Task' || block.name === 'proxy_Task') {
@@ -247,10 +335,22 @@ function processEntry(
           };
         }
       }
+
+      // Track tool_use for permission-requiring tools
+      if (PERMISSION_TOOLS.includes(block.name as typeof PERMISSION_TOOLS[number])) {
+        pendingPermissionMap.set(block.id, {
+          toolName: block.name.replace('proxy_', ''),
+          targetSummary: extractTargetSummary(block.input, block.name),
+          timestamp: timestamp
+        });
+      }
     }
 
     // Track tool_result to mark agents as completed
     if (block.type === 'tool_result' && block.tool_use_id) {
+      // Clear from pending permissions when tool_result arrives
+      pendingPermissionMap.delete(block.tool_use_id);
+
       const agent = agentMap.get(block.tool_use_id);
       if (agent) {
         const blockContent = block.content;

@@ -14,6 +14,9 @@ import { renderContext } from './elements/context.js';
 import { renderBackground } from './elements/background.js';
 import { renderPrd } from './elements/prd.js';
 import { renderRateLimits } from './elements/limits.js';
+import { renderPermission } from './elements/permission.js';
+import { renderThinking } from './elements/thinking.js';
+import { renderSession } from './elements/session.js';
 
 /**
  * Render the complete statusline (single or multi-line)
@@ -32,6 +35,24 @@ export function render(context: HudRenderContext, config: HudConfig): string {
   if (enabledElements.rateLimits && context.rateLimits) {
     const limits = renderRateLimits(context.rateLimits);
     if (limits) elements.push(limits);
+  }
+
+  // Permission status indicator (heuristic-based)
+  if (enabledElements.permissionStatus && context.pendingPermission) {
+    const permission = renderPermission(context.pendingPermission);
+    if (permission) elements.push(permission);
+  }
+
+  // Extended thinking indicator
+  if (enabledElements.thinking && context.thinkingState) {
+    const thinking = renderThinking(context.thinkingState);
+    if (thinking) elements.push(thinking);
+  }
+
+  // Session health indicator
+  if (enabledElements.sessionHealth && context.sessionHealth) {
+    const session = renderSession(context.sessionHealth);
+    if (session) elements.push(session);
   }
 
   // Ralph loop state

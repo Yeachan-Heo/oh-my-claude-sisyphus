@@ -5,13 +5,32 @@
  * These are read-only functions that don't modify the state files.
  */
 
-import { existsSync, readFileSync } from 'fs';
+import { existsSync, readFileSync, statSync } from 'fs';
 import { join } from 'path';
 import type {
   RalphStateForHud,
   UltraworkStateForHud,
   PrdStateForHud,
 } from './types.js';
+
+/**
+ * Maximum age for state files to be considered "active".
+ * Files older than this are treated as stale/abandoned.
+ */
+const MAX_STATE_AGE_MS = 2 * 60 * 60 * 1000; // 2 hours
+
+/**
+ * Check if a state file is stale based on file modification time.
+ */
+function isStateFileStale(filePath: string): boolean {
+  try {
+    const stat = statSync(filePath);
+    const age = Date.now() - stat.mtimeMs;
+    return age > MAX_STATE_AGE_MS;
+  } catch {
+    return true; // Treat errors as stale
+  }
+}
 
 // ============================================================================
 // Ralph State
@@ -33,6 +52,11 @@ export function readRalphStateForHud(directory: string): RalphStateForHud | null
   const stateFile = join(directory, '.sisyphus', 'ralph-state.json');
 
   if (!existsSync(stateFile)) {
+    return null;
+  }
+
+  // Check for stale state file (abandoned session)
+  if (isStateFileStale(stateFile)) {
     return null;
   }
 
@@ -75,25 +99,28 @@ export function readUltraworkStateForHud(
   // Check local state first
   const localFile = join(directory, '.sisyphus', 'ultrawork-state.json');
   let state: UltraworkState | null = null;
+  let stateFile: string | null = null;
 
-  if (existsSync(localFile)) {
+  if (existsSync(localFile) && !isStateFileStale(localFile)) {
     try {
       const content = readFileSync(localFile, 'utf-8');
       state = JSON.parse(content) as UltraworkState;
+      stateFile = localFile;
     } catch {
       // Try global
     }
   }
 
-  // Check global state if local not found
+  // Check global state if local not found or stale
   if (!state) {
     const homeDir = process.env.HOME || process.env.USERPROFILE || '';
     const globalFile = join(homeDir, '.claude', 'ultrawork-state.json');
 
-    if (existsSync(globalFile)) {
+    if (existsSync(globalFile) && !isStateFileStale(globalFile)) {
       try {
         const content = readFileSync(globalFile, 'utf-8');
         state = JSON.parse(content) as UltraworkState;
+        stateFile = globalFile;
       } catch {
         return null;
       }
