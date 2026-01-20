@@ -13,6 +13,7 @@ import { renderSkills, renderLastSkill } from './elements/skills.js';
 import { renderContext } from './elements/context.js';
 import { renderBackground } from './elements/background.js';
 import { renderPrd } from './elements/prd.js';
+import { renderRateLimits } from './elements/limits.js';
 
 /**
  * Render the complete statusline (single or multi-line)
@@ -25,6 +26,12 @@ export function render(context: HudRenderContext, config: HudConfig): string {
   // [SISYPHUS] label
   if (enabledElements.sisyphusLabel) {
     elements.push(bold('[SISYPHUS]'));
+  }
+
+  // Rate limits (5h and weekly)
+  if (enabledElements.rateLimits && context.rateLimits) {
+    const limits = renderRateLimits(context.rateLimits);
+    if (limits) elements.push(limits);
   }
 
   // Ralph loop state

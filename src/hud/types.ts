@@ -111,6 +111,13 @@ export interface PrdStateForHud {
 // Render Context
 // ============================================================================
 
+export interface RateLimits {
+  /** 5-hour rolling window usage percentage (0-100) */
+  fiveHourPercent: number;
+  /** Weekly usage percentage (0-100) */
+  weeklyPercent: number;
+}
+
 export interface HudRenderContext {
   /** Context window percentage (0-100) */
   contextPercent: number;
@@ -141,6 +148,9 @@ export interface HudRenderContext {
 
   /** Last activated skill from transcript */
   lastSkill: SkillInvocation | null;
+
+  /** Rate limits (5h and weekly) */
+  rateLimits: RateLimits | null;
 }
 
 // ============================================================================
@@ -163,6 +173,7 @@ export type AgentsFormat = 'count' | 'codes' | 'codes-duration' | 'detailed' | '
 
 export interface HudElementConfig {
   sisyphusLabel: boolean;
+  rateLimits: boolean;  // Show 5h and weekly rate limits
   ralph: boolean;
   prdStory: boolean;
   activeSkills: boolean;
@@ -194,6 +205,7 @@ export const DEFAULT_HUD_CONFIG: HudConfig = {
   preset: 'focused',
   elements: {
     sisyphusLabel: true,
+    rateLimits: true,  // Show rate limits by default
     ralph: true,
     prdStory: true,
     activeSkills: true,
@@ -215,6 +227,7 @@ export const DEFAULT_HUD_CONFIG: HudConfig = {
 export const PRESET_CONFIGS: Record<HudPreset, Partial<HudElementConfig>> = {
   minimal: {
     sisyphusLabel: true,
+    rateLimits: true,
     ralph: true,
     prdStory: false,
     activeSkills: true,
@@ -228,6 +241,7 @@ export const PRESET_CONFIGS: Record<HudPreset, Partial<HudElementConfig>> = {
   },
   focused: {
     sisyphusLabel: true,
+    rateLimits: true,
     ralph: true,
     prdStory: true,
     activeSkills: true,
@@ -241,6 +255,7 @@ export const PRESET_CONFIGS: Record<HudPreset, Partial<HudElementConfig>> = {
   },
   full: {
     sisyphusLabel: true,
+    rateLimits: true,
     ralph: true,
     prdStory: true,
     activeSkills: true,

@@ -14,6 +14,7 @@ import {
   readUltraworkStateForHud,
   readPrdStateForHud,
 } from './sisyphus-state.js';
+import { getUsage } from './usage-api.js';
 import { render } from './render.js';
 import type { HudRenderContext } from './types.js';
 
@@ -48,6 +49,11 @@ async function main(): Promise<void> {
     // Read configuration
     const config = readHudConfig();
 
+    // Fetch rate limits from OAuth API (if available)
+    const rateLimits = config.elements.rateLimits !== false
+      ? await getUsage()
+      : null;
+
     // Build render context
     const context: HudRenderContext = {
       contextPercent: getContextPercent(stdin),
@@ -60,6 +66,7 @@ async function main(): Promise<void> {
       backgroundTasks: getRunningTasks(hudState),
       cwd,
       lastSkill: transcriptData.lastActivatedSkill || null,
+      rateLimits,
     };
 
     // Render and output
