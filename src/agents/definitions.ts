@@ -313,6 +313,98 @@ done
 };
 
 // ============================================================
+// SPECIALIZED AGENTS (Security, Build, TDD, Code Review)
+// ============================================================
+
+/**
+ * Security-Reviewer Agent - Security Vulnerability Detection (Opus)
+ */
+export const securityReviewerAgent: AgentConfig = {
+  name: 'security-reviewer',
+  description: 'Security vulnerability detection specialist (Opus). Use for security audits and code review.',
+  prompt: loadAgentPrompt('security-reviewer'),
+  tools: ['Read', 'Grep', 'Glob', 'Bash'],
+  model: 'opus'
+};
+
+/**
+ * Security-Reviewer-Low Agent - Quick Security Scan (Haiku)
+ */
+export const securityReviewerLowAgent: AgentConfig = {
+  name: 'security-reviewer-low',
+  description: 'Quick security scan specialist (Haiku). Use for fast security checks on small code changes.',
+  prompt: loadAgentPrompt('security-reviewer-low'),
+  tools: ['Read', 'Grep', 'Glob', 'Bash'],
+  model: 'haiku'
+};
+
+/**
+ * Build-Fixer Agent - Build Error Resolution (Sonnet)
+ */
+export const buildFixerAgent: AgentConfig = {
+  name: 'build-fixer',
+  description: 'Build and TypeScript error resolution specialist (Sonnet). Use for fixing build errors.',
+  prompt: loadAgentPrompt('build-fixer'),
+  tools: ['Read', 'Grep', 'Glob', 'Edit', 'Write', 'Bash'],
+  model: 'sonnet'
+};
+
+/**
+ * Build-Fixer-Low Agent - Simple Build Fix (Haiku)
+ */
+export const buildFixerLowAgent: AgentConfig = {
+  name: 'build-fixer-low',
+  description: 'Simple build error fixer (Haiku). Use for trivial type errors and single-line fixes.',
+  prompt: loadAgentPrompt('build-fixer-low'),
+  tools: ['Read', 'Grep', 'Glob', 'Edit', 'Write', 'Bash'],
+  model: 'haiku'
+};
+
+/**
+ * TDD-Guide Agent - Test-Driven Development (Sonnet)
+ */
+export const tddGuideAgent: AgentConfig = {
+  name: 'tdd-guide',
+  description: 'Test-Driven Development specialist (Sonnet). Use for TDD workflows and test coverage.',
+  prompt: loadAgentPrompt('tdd-guide'),
+  tools: ['Read', 'Grep', 'Glob', 'Edit', 'Write', 'Bash'],
+  model: 'sonnet'
+};
+
+/**
+ * TDD-Guide-Low Agent - Quick Test Suggestions (Haiku)
+ */
+export const tddGuideLowAgent: AgentConfig = {
+  name: 'tdd-guide-low',
+  description: 'Quick test suggestion specialist (Haiku). Use for simple test case ideas.',
+  prompt: loadAgentPrompt('tdd-guide-low'),
+  tools: ['Read', 'Grep', 'Glob', 'Bash'],
+  model: 'haiku'
+};
+
+/**
+ * Code-Reviewer Agent - Expert Code Review (Opus)
+ */
+export const codeReviewerAgent: AgentConfig = {
+  name: 'code-reviewer',
+  description: 'Expert code review specialist (Opus). Use for comprehensive code quality review.',
+  prompt: loadAgentPrompt('code-reviewer'),
+  tools: ['Read', 'Grep', 'Glob', 'Bash'],
+  model: 'opus'
+};
+
+/**
+ * Code-Reviewer-Low Agent - Quick Code Check (Haiku)
+ */
+export const codeReviewerLowAgent: AgentConfig = {
+  name: 'code-reviewer-low',
+  description: 'Quick code quality checker (Haiku). Use for fast review of small changes.',
+  prompt: loadAgentPrompt('code-reviewer-low'),
+  tools: ['Read', 'Grep', 'Glob', 'Bash'],
+  model: 'haiku'
+};
+
+// ============================================================
 // AGENT REGISTRY
 // ============================================================
 
@@ -347,7 +439,16 @@ export function getAgentDefinitions(overrides?: Partial<Record<string, Partial<A
     'explore-medium': exploreMediumAgent,
     'designer-low': designerLowAgent,
     'designer-high': designerHighAgent,
-    'qa-tester-high': qaTesterHighAgent
+    'qa-tester-high': qaTesterHighAgent,
+    // Specialized agents (Security, Build, TDD, Code Review)
+    'security-reviewer': securityReviewerAgent,
+    'security-reviewer-low': securityReviewerLowAgent,
+    'build-fixer': buildFixerAgent,
+    'build-fixer-low': buildFixerLowAgent,
+    'tdd-guide': tddGuideAgent,
+    'tdd-guide-low': tddGuideLowAgent,
+    'code-reviewer': codeReviewerAgent,
+    'code-reviewer-low': codeReviewerLowAgent
   };
 
   const result: Record<string, { description: string; prompt: string; tools: string[]; model?: ModelType }> = {};

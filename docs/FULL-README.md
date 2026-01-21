@@ -10,7 +10,7 @@
 
 # oh-my-claudecode
 
-[![Version](https://img.shields.io/badge/version-3.0.11-ff6b6b)](https://github.com/Yeachan-Heo/oh-my-claudecode)
+[![Version](https://img.shields.io/badge/version-3.2.0-ff6b6b)](https://github.com/Yeachan-Heo/oh-my-claudecode)
 [![npm version](https://img.shields.io/npm/v/oh-my-claudecode?color=cb3837)](https://www.npmjs.com/package/oh-my-claudecode)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js](https://img.shields.io/badge/Node.js-20+-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
@@ -73,6 +73,73 @@
 ```
 
 See [CHANGELOG.md](CHANGELOG.md) for full details.
+
+---
+
+## NEW in 3.1: oh-my-opencode Integration
+
+The following features were integrated from oh-my-opencode to enhance orchestration capabilities:
+
+### Notepad Wisdom System
+
+Plan-scoped wisdom capture for persistent learnings, decisions, issues, and problems. Stores wisdom in `.omc/notepads/{plan-name}/` with timestamped entries.
+
+**Functions:** `initPlanNotepad()`, `addLearning()`, `addDecision()`, `addIssue()`, `addProblem()`, `getWisdomSummary()`
+
+**Benefits:**
+- Separates learnings by plan for better organization
+- Automatic timestamp tracking for temporal context
+- Structured wisdom capture (learning vs decision vs issue vs problem)
+- Persistent storage survives session resets
+
+### Delegation Categories
+
+Semantic task categorization that auto-maps to model tier, temperature, and thinking budget.
+
+**Categories:**
+- `visual-engineering` - UI/visual reasoning, frontend work, design systems (Opus, extended thinking)
+- `ultrabrain` - Deep reasoning tasks (Opus, maximum thinking)
+- `artistry` - Creative writing, novel approaches, innovative solutions (Sonnet, high temperature 0.9)
+- `quick` - Simple lookups (Haiku, no thinking)
+- `writing` - Documentation and content (Haiku, standard temperature)
+
+**Benefits:**
+- Automatic optimal model selection
+- Context-aware temperature tuning
+- Efficient thinking budget allocation
+- Semantic task routing without manual configuration
+
+### Directory Diagnostics
+
+Project-level type checking via `lsp_diagnostics_directory` tool with dual strategy (tsc fast, LSP fallback).
+
+**Capabilities:**
+- Scan entire project directory for type errors
+- Automatic TypeScript compiler optimization
+- Fallback to LSP when tsc unavailable
+- Batch processing with progress reporting
+
+**Benefits:**
+- Comprehensive project health checks
+- Performance-optimized with smart strategy selection
+- Deep language server integration for accuracy
+- Works with or without explicit TypeScript setup
+
+### Session Resume
+
+Background agent resumption with context preservation via `resumeSession()`.
+
+**Capabilities:**
+- Automatic session state recovery
+- Context preservation across interruptions
+- Background agent reconnection
+- Graceful degradation on failure
+
+**Benefits:**
+- Uninterrupted workflow during agent crashes
+- Persistent work state across sessions
+- No manual context re-entry needed
+- Seamless continuation of complex tasks
 
 ---
 
@@ -692,6 +759,7 @@ The original oh-my-opencode used multiple AI providers. This project uses Claude
 | **lsp_code_actions** | ✅ Implemented | Get available refactorings |
 | **lsp_code_action_resolve** | ✅ Implemented | Get details of a code action |
 | **lsp_servers** | ✅ Implemented | List available language servers |
+| **lsp_diagnostics_directory** | ✅ Implemented | Project-level type checking (tsc fast path, LSP fallback) |
 
 > **Note:** LSP tools require language servers to be installed (typescript-language-server, pylsp, rust-analyzer, gopls, etc.). Use `lsp_servers` to check installation status.
 

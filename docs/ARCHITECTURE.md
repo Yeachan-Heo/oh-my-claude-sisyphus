@@ -383,4 +383,83 @@ The skill layer architecture transforms a constraint into a feature, providing a
 
 - [Oh-My-OpenCode](https://github.com/code-yeongyu/oh-my-opencode) - Original multi-agent system
 - [Claude Code Skills](https://docs.anthropic.com/claude-code/skills) - Skill documentation
-- [Intelligent Skill Activation](./README.md#intelligent-skill-activation-beta) - Beta feature docs
+- [Intelligent Skill Activation](../README.md#intelligent-skill-activation-beta) - Beta feature docs
+
+---
+
+## v3.1 Feature Architecture
+
+### Delegation Categories Flow
+
+```
+Task Prompt                Category Detection           Model Selection
+───────────                ──────────────────           ───────────────
+     │                           │                            │
+     ▼                           ▼                            ▼
+┌─────────────┐           ┌──────────────────┐          ┌─────────────────┐
+│ "Design a   │           │ detectCategory   │          │ ComplexityTier  │
+│  beautiful  │──────────▶│ FromPrompt()     │─────────▶│                 │
+│  dashboard" │           │                  │          │ HIGH → opus     │
+└─────────────┘           │ Keywords:        │          │ MEDIUM → sonnet │
+                          │ - design ✓       │          │ LOW → haiku     │
+                          │ - dashboard ✓    │          └─────────────────┘
+                          │                  │                  │
+                          │ Category:        │                  ▼
+                          │ visual-engineering│          ┌─────────────────┐
+                          └──────────────────┘          │ Config Applied  │
+                                                        │ tier: HIGH      │
+                                                        │ temp: 0.7       │
+                                                        │ thinking: high  │
+                                                        └─────────────────┘
+```
+
+### Notepad Wisdom Storage Structure
+
+```
+.omc/
+└── notepads/
+    └── {plan-name}/
+        ├── learnings.md    # Technical discoveries
+        ├── decisions.md    # Architectural choices
+        ├── issues.md       # Known issues + workarounds
+        └── problems.md     # Blockers requiring resolution
+
+Entry Format:
+┌─────────────────────────────────────────┐
+│ ## 2024-01-15 14:30:00                  │
+│                                         │
+│ Content of the wisdom entry...          │
+└─────────────────────────────────────────┘
+```
+
+### Directory Diagnostics Strategy Selection
+
+```
+                    ┌──────────────────┐
+                    │ runDirectory     │
+                    │ Diagnostics()    │
+                    └────────┬─────────┘
+                             │
+              ┌──────────────┴──────────────┐
+              │       strategy = ?          │
+              └──────────────┬──────────────┘
+                             │
+         ┌───────────────────┼───────────────────┐
+         │                   │                   │
+    strategy='tsc'      strategy='auto'    strategy='lsp'
+         │                   │                   │
+         ▼                   ▼                   ▼
+   ┌───────────┐      ┌───────────┐       ┌───────────┐
+   │ tsc       │      │ tsconfig  │       │ LSP       │
+   │ --noEmit  │      │ exists?   │       │ Iteration │
+   │ (fast)    │      │           │       │ (fallback)│
+   └───────────┘      └─────┬─────┘       └───────────┘
+                            │
+                    ┌───────┴───────┐
+                    │ YES       NO  │
+                    └───────┬───────┘
+                            │
+                  ┌─────────┴─────────┐
+                  ▼                   ▼
+            Use tsc              Use LSP
+```

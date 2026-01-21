@@ -19,6 +19,7 @@ import type {
   LaunchInput,
   ResumeInput,
   TaskProgress,
+  ResumeContext,
 } from './types.js';
 
 /** Default task timeout: 30 minutes */
@@ -320,6 +321,27 @@ export class BackgroundManager {
     this.persistTask(existingTask);
 
     return existingTask;
+  }
+
+  /**
+   * Get resume context for a session
+   * Used by the resume_session tool to prepare continuation prompts
+   */
+  getResumeContext(sessionId: string): ResumeContext | null {
+    const task = this.findBySession(sessionId);
+    if (!task) {
+      return null;
+    }
+
+    return {
+      sessionId: task.sessionId,
+      previousPrompt: task.prompt,
+      toolCallCount: task.progress?.toolCalls ?? 0,
+      lastToolUsed: task.progress?.lastTool,
+      lastOutputSummary: task.progress?.lastMessage?.slice(0, 500),
+      startedAt: task.startedAt,
+      lastActivityAt: task.progress?.lastUpdate ?? task.startedAt,
+    };
   }
 
   /**

@@ -42,6 +42,7 @@ When you detect these patterns, you MUST invoke the corresponding skill:
 
 | Pattern Detected | MUST Invoke Skill |
 |------------------|-------------------|
+| "autopilot", "build me", "I want a" | `autopilot` |
 | Broad/vague request | `planner` (after explore for context) |
 | "don't stop", "must complete", "ralph" | `ralph` |
 | "fast", "parallel", "ulw", "ultrawork" | `ultrawork` |
@@ -67,6 +68,19 @@ When you detect these patterns, you MUST invoke the corresponding skill:
 
 ## PART 2: USER EXPERIENCE
 
+### Autopilot: The Default Experience
+
+**Autopilot** is the flagship feature and recommended starting point for new users. It provides fully autonomous execution from high-level idea to working, tested code.
+
+When you detect phrases like "autopilot", "build me", or "I want a", activate autopilot mode. This engages:
+- Automatic planning and requirements gathering
+- Parallel execution with multiple specialized agents
+- Continuous verification and testing
+- Self-correction until completion
+- No manual intervention required
+
+Autopilot combines the best of ralph (persistence), ultrawork (parallelism), and planner (strategic thinking) into a single streamlined experience.
+
 ### Zero Learning Curve
 
 Users don't need to learn commands. You detect intent and activate behaviors automatically.
@@ -75,6 +89,7 @@ Users don't need to learn commands. You detect intent and activate behaviors aut
 
 | When User Says... | You Automatically... |
 |-------------------|---------------------|
+| "autopilot", "build me", "I want a" | Activate autopilot for full autonomous execution |
 | Complex task | Delegate to specialist agents in parallel |
 | "plan this" / broad request | Start planning interview via planner |
 | "don't stop until done" | Activate ralph-loop for persistence |
@@ -86,6 +101,7 @@ Users don't need to learn commands. You detect intent and activate behaviors aut
 
 | Keyword | Effect | Example |
 |---------|--------|---------|
+| `autopilot` | Full autonomous execution | "autopilot: build a todo app" |
 | `ralph` | Persistence mode | "ralph: refactor auth" |
 | `ulw` | Maximum parallelism | "ulw fix all errors" |
 | `plan` | Planning interview | "plan the new API" |
@@ -96,6 +112,7 @@ Users don't need to learn commands. You detect intent and activate behaviors aut
 ### Stopping and Cancelling
 
 User says "stop", "cancel", "abort" → You determine what to stop:
+- In autopilot → invoke `cancel-autopilot`
 - In ralph-loop → invoke `cancel-ralph`
 - In ultrawork → invoke `cancel-ultrawork`
 - In ultraqa → invoke `cancel-ultraqa`
@@ -106,10 +123,11 @@ User says "stop", "cancel", "abort" → You determine what to stop:
 
 ## PART 3: COMPLETE REFERENCE
 
-### All 26 Skills
+### All Skills
 
 | Skill | Purpose | Auto-Trigger | Manual |
 |-------|---------|--------------|--------|
+| `autopilot` | Full autonomous execution from idea to working code | "autopilot", "build me", "I want a" | `/autopilot` |
 | `orchestrate` | Core multi-agent orchestration | Always active | - |
 | `ralph` | Persistence until verified complete | "don't stop", "must complete" | `/ralph` |
 | `ultrawork` | Maximum parallel execution | "fast", "parallel", "ulw" | `/ultrawork` |
@@ -133,11 +151,12 @@ User says "stop", "cancel", "abort" → You determine what to stop:
 | `omc-default-global` | Configure global settings | - | (internal) |
 | `ralph-init` | Initialize PRD for structured ralph | - | `/ralph-init` |
 | `release` | Automated release workflow | - | `/release` |
+| `cancel-autopilot` | Cancel active autopilot session | "stop autopilot", "cancel autopilot" | `/cancel-autopilot` |
 | `cancel-ralph` | Cancel active ralph loop | "stop" in ralph | `/cancel-ralph` |
 | `cancel-ultrawork` | Cancel ultrawork mode | "stop" in ultrawork | `/cancel-ultrawork` |
 | `cancel-ultraqa` | Cancel ultraqa workflow | "stop" in ultraqa | `/cancel-ultraqa` |
 
-### All 27 Agents
+### All 28 Agents
 
 Always use `oh-my-claudecode:` prefix when calling via Task tool.
 
@@ -153,7 +172,7 @@ Always use `oh-my-claudecode:` prefix when calling via Task tool.
 | **Planning** | - | - | `planner` |
 | **Critique** | - | - | `critic` |
 | **Pre-Planning** | - | - | `analyst` |
-| **Testing** | - | `qa-tester` | - |
+| **Testing** | - | `qa-tester` | `qa-tester-high` |
 | **Security** | `security-reviewer-low` | - | `security-reviewer` |
 | **Build** | `build-fixer-low` | `build-fixer` | - |
 | **TDD** | `tdd-guide-low` | `tdd-guide` | - |
@@ -187,6 +206,54 @@ Always use `oh-my-claudecode:` prefix when calling via Task tool.
 | Quick test suggestions | `tdd-guide-low` | haiku |
 | Code review | `code-reviewer` | opus |
 | Quick code check | `code-reviewer-low` | haiku |
+
+---
+
+## PART 3.5: NEW FEATURES (v3.1)
+
+### Notepad Wisdom System
+
+Plan-scoped wisdom capture for learnings, decisions, issues, and problems.
+
+**Location:** `.omc/notepads/{plan-name}/`
+
+| File | Purpose |
+|------|---------|
+| `learnings.md` | Technical discoveries and patterns |
+| `decisions.md` | Architectural and design decisions |
+| `issues.md` | Known issues and workarounds |
+| `problems.md` | Blockers and challenges |
+
+**API:** `initPlanNotepad()`, `addLearning()`, `addDecision()`, `addIssue()`, `addProblem()`, `getWisdomSummary()`, `readPlanWisdom()`
+
+### Delegation Categories
+
+Semantic task categorization that auto-maps to model tier, temperature, and thinking budget.
+
+| Category | Tier | Temperature | Thinking | Use For |
+|----------|------|-------------|----------|---------|
+| `visual-engineering` | HIGH | 0.7 | high | UI/UX, frontend, design systems |
+| `ultrabrain` | HIGH | 0.3 | max | Complex reasoning, architecture, deep debugging |
+| `artistry` | MEDIUM | 0.9 | medium | Creative solutions, brainstorming |
+| `quick` | LOW | 0.1 | low | Simple lookups, basic operations |
+| `writing` | MEDIUM | 0.5 | medium | Documentation, technical writing |
+
+**Auto-detection:** Categories detect from prompt keywords automatically.
+
+### Directory Diagnostics Tool
+
+Project-level type checking via `lsp_diagnostics_directory` tool.
+
+**Strategies:**
+- `auto` (default) - Auto-selects best strategy, prefers tsc when tsconfig.json exists
+- `tsc` - Fast, uses TypeScript compiler
+- `lsp` - Fallback, iterates files via Language Server
+
+**Usage:** Check entire project for errors before commits or after refactoring.
+
+### Session Resume
+
+Background agents can be resumed with full context via `resume-session` tool.
 
 ---
 
@@ -269,6 +336,8 @@ Before concluding ANY session, verify:
 
 When you activate a major behavior, announce it:
 
+> "I'm activating **autopilot** for full autonomous execution from idea to working code."
+
 > "I'm activating **ralph-loop** to ensure this task completes fully."
 
 > "I'm activating **ultrawork** for maximum parallel execution."
@@ -294,6 +363,17 @@ Say "setup omc" or run `/oh-my-claudecode:omc-setup` to configure. After that, e
 
 ---
 
+## Quick Start for New Users
+
+**Just say what you want to build:**
+- "I want a REST API for managing tasks"
+- "Build me a React dashboard with charts"
+- "Create a CLI tool that processes CSV files"
+
+Autopilot activates automatically and handles the rest. No commands needed.
+
+---
+
 ## Migration from 2.x
 
 All old commands still work:
@@ -302,3 +382,5 @@ All old commands still work:
 - `/planner "task"` → Still works (or just say "plan this")
 
 The difference? You don't NEED them anymore. Everything auto-activates.
+
+**New in 3.x:** Autopilot mode provides the ultimate hands-off experience.

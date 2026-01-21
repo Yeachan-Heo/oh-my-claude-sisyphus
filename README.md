@@ -46,6 +46,7 @@ That's it. Everything else is automatic.
 | Say "don't stop until done" | Persist until verified complete |
 | Work on UI/frontend | Activate design sensibility |
 | Need research or exploration | Delegate to specialized agents |
+| Say "build me..." or use autopilot | Execute full autonomous workflow |
 
 **You don't need to learn any commands.** I detect what you need and activate the right behaviors.
 
@@ -61,6 +62,7 @@ Want explicit control? Include these words anywhere in your message:
 | `ralplan` | Iterative planning with consensus |
 | `ulw` | Maximum parallel execution |
 | `plan` | Start a planning interview |
+| `autopilot` / `ap` | Full autonomous execution |
 
 **Combine them:** `ralph ulw: migrate the database`
 
@@ -80,7 +82,7 @@ I'll intelligently determine what to stop based on context.
 ## What's Under the Hood
 
 - **27 Specialized Agents** - architect, researcher, explore, designer, writer, vision, critic, analyst, executor, planner, qa-tester (with tier variants)
-- **26 Skills** - orchestrate, ultrawork, ralph, planner, deepsearch, deepinit, git-master, frontend-ui-ux, learner, and more
+- **28 Skills** - orchestrate, ultrawork, ralph, planner, deepsearch, deepinit, git-master, frontend-ui-ux, learner, and more
 - **HUD Statusline** - Real-time visualization of orchestration state
 - **Learned Skills** - Extract reusable insights from sessions with `/learner`
 - **Memory System** - Persistent context that survives compaction

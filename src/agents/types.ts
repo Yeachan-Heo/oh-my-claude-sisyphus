@@ -54,6 +54,8 @@ export interface AgentPromptMetadata {
   avoidWhen?: string[];
   /** Description for dynamic prompt building */
   promptDescription?: string;
+  /** Tools this agent uses (for tool selection guidance) */
+  tools?: string[];
 }
 
 /**

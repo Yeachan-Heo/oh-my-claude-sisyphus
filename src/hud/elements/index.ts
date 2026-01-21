@@ -15,3 +15,4 @@ export { renderRateLimits, renderRateLimitsCompact } from './limits.js';
 export { renderPermission } from './permission.js';
 export { renderThinking } from './thinking.js';
 export { renderSession } from './session.js';
+export { renderAutopilot, renderAutopilotCompact, type AutopilotStateForHud } from './autopilot.js';

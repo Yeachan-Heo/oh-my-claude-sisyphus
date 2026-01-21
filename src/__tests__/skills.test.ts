@@ -8,13 +8,13 @@ describe('Builtin Skills', () => {
   });
 
   describe('createBuiltinSkills()', () => {
-    it('should return correct number of skills (26)', () => {
+    it('should return correct number of skills (28)', () => {
       const skills = createBuiltinSkills();
-      // 26 skills: analyze, cancel-ralph, cancel-ultraqa, cancel-ultrawork, deepinit,
+      // 28 skills: analyze, autopilot, cancel-autopilot, cancel-ralph, cancel-ultraqa, cancel-ultrawork, deepinit,
       // deepsearch, doctor, frontend-ui-ux, git-master, help, hud, learner, note,
       // omc-default, omc-default-global, omc-setup, plan, planner, ralplan, ralph-init, ralph,
       // release, review, orchestrate, ultraqa, ultrawork
-      expect(skills).toHaveLength(26);
+      expect(skills).toHaveLength(28);
     });
 
     it('should return an array of BuiltinSkill objects', () => {
@@ -79,6 +79,8 @@ describe('Builtin Skills', () => {
         'cancel-ralph',
         'cancel-ultraqa',
         'cancel-ultrawork',
+        'cancel-autopilot',
+        'autopilot',
         'learner',
         'plan',
         'ralplan',
@@ -133,8 +135,10 @@ describe('Builtin Skills', () => {
   describe('listBuiltinSkillNames()', () => {
     it('should return all skill names', () => {
       const names = listBuiltinSkillNames();
-      expect(names).toHaveLength(26);
+      expect(names).toHaveLength(28);
       expect(names).toContain('orchestrate');
+      expect(names).toContain('autopilot');
+      expect(names).toContain('cancel-autopilot');
       expect(names).toContain('ralph');
       expect(names).toContain('ralph-init');
       expect(names).toContain('frontend-ui-ux');

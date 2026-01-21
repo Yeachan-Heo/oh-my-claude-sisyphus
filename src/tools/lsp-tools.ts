@@ -25,6 +25,7 @@ import {
   formatWorkspaceEdit,
   countEdits
 } from './lsp/index.js';
+import { runDirectoryDiagnostics, LSP_DIAGNOSTICS_WAIT_MS } from './diagnostics/index.js';
 
 export interface ToolDefinition<T extends z.ZodRawShape> {
   name: string;
@@ -220,7 +221,7 @@ export const lspDiagnosticsTool: ToolDefinition<{
       // Open the document to trigger diagnostics
       await client!.openDocument(file);
       // Wait a bit for diagnostics to be published
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, LSP_DIAGNOSTICS_WAIT_MS));
 
       let diagnostics = client!.getDiagnostics(file);
 
@@ -436,6 +437,51 @@ export const lspCodeActionResolveTool: ToolDefinition<{
 };
 
 /**
+ * LSP Diagnostics Directory Tool - Get project-level diagnostics
+ */
+export const lspDiagnosticsDirectoryTool: ToolDefinition<{
+  directory: z.ZodString;
+  strategy: z.ZodOptional<z.ZodEnum<['tsc', 'lsp', 'auto']>>;
+}> = {
+  name: 'lsp_diagnostics_directory',
+  description: 'Run project-level diagnostics on a directory using tsc --noEmit (preferred) or LSP iteration (fallback). Useful for checking the entire codebase for errors.',
+  schema: {
+    directory: z.string().describe('Project directory to check'),
+    strategy: z.enum(['tsc', 'lsp', 'auto']).optional().describe('Strategy to use: "tsc" (TypeScript compiler), "lsp" (Language Server iteration), or "auto" (default: auto-detect)')
+  },
+  handler: async (args) => {
+    const { directory, strategy = 'auto' } = args;
+    try {
+      const result = await runDirectoryDiagnostics(directory, strategy);
+
+      let output = `## Directory Diagnostics\n\n`;
+      output += `Strategy: ${result.strategy}\n`;
+      output += `Summary: ${result.summary}\n\n`;
+
+      if (result.errorCount > 0 || result.warningCount > 0) {
+        output += `### Diagnostics\n\n${result.diagnostics}`;
+      } else {
+        output += result.diagnostics;
+      }
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: output
+        }]
+      };
+    } catch (error) {
+      return {
+        content: [{
+          type: 'text' as const,
+          text: `Error running directory diagnostics: ${error instanceof Error ? error.message : String(error)}`
+        }]
+      };
+    }
+  }
+};
+
+/**
  * Get all LSP tool definitions
  */
 export const lspTools = [
@@ -445,6 +491,7 @@ export const lspTools = [
   lspDocumentSymbolsTool,
   lspWorkspaceSymbolsTool,
   lspDiagnosticsTool,
+  lspDiagnosticsDirectoryTool,
   lspServersTool,
   lspPrepareRenameTool,
   lspRenameTool,

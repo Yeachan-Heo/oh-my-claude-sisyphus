@@ -182,3 +182,44 @@ export {
   type RoutingRule,
   type PromptAdaptationStrategy,
 } from './model-routing/index.js';
+
+// Notepad Wisdom - plan-scoped wisdom accumulation
+export {
+  // Functions
+  initPlanNotepad,
+  readPlanWisdom,
+  addLearning,
+  addDecision,
+  addIssue,
+  addProblem,
+  getWisdomSummary,
+  // Types
+  type WisdomEntry,
+  type WisdomCategory,
+  type PlanWisdom
+} from './notepad-wisdom/index.js';
+
+// Delegation Categories - semantic task routing
+export {
+  // Functions
+  resolveCategory,
+  isValidCategory,
+  getAllCategories,
+  getCategoryDescription,
+  getCategoryTier,
+  getCategoryTemperature,
+  getCategoryThinkingBudget,
+  getCategoryThinkingBudgetTokens,
+  getCategoryForTask,
+  detectCategoryFromPrompt,
+  enhancePromptWithCategory,
+  // Constants
+  CATEGORY_CONFIGS,
+  THINKING_BUDGET_TOKENS,
+  // Types
+  type DelegationCategory,
+  type CategoryConfig,
+  type ResolvedCategory,
+  type CategoryContext,
+  type ThinkingBudget
+} from './delegation-categories/index.js';

@@ -78,6 +78,8 @@ export function createDelegationPrompt(
     context?: string;
     mustDo?: string[];
     mustNotDo?: string[];
+    requiredSkills?: string[];
+    requiredTools?: string[];
   }
 ): string {
   const prefix = getPromptPrefix(tier);
@@ -103,6 +105,14 @@ export function createDelegationPrompt(
 
   if (context.mustNotDo?.length) {
     body += `\n### MUST NOT DO\n${context.mustNotDo.map(m => `- ${m}`).join('\n')}\n`;
+  }
+
+  if (context.requiredSkills?.length) {
+    body += `\n### REQUIRED SKILLS\n${context.requiredSkills.map(s => `- ${s}`).join('\n')}\n`;
+  }
+
+  if (context.requiredTools?.length) {
+    body += `\n### REQUIRED TOOLS\n${context.requiredTools.map(t => `- ${t}`).join('\n')}\n`;
   }
 
   return prefix + body + suffix;

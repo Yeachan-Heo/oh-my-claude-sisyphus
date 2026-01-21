@@ -7,7 +7,7 @@
  * Ported from oh-my-opencode's keyword-detector hook.
  */
 
-export type KeywordType = 'ralph' | 'ultrawork' | 'ultrathink' | 'search' | 'analyze';
+export type KeywordType = 'ralph' | 'autopilot' | 'ultrawork' | 'ultrathink' | 'search' | 'analyze';
 
 export interface DetectedKeyword {
   type: KeywordType;
@@ -16,10 +16,34 @@ export interface DetectedKeyword {
 }
 
 /**
+ * Autopilot keywords
+ */
+const AUTOPILOT_KEYWORDS = [
+  'autopilot',
+  'auto pilot',
+  'auto-pilot',
+  'autonomous',
+  'full auto',
+  'fullsend',
+];
+
+const AUTOPILOT_PHRASE_PATTERNS = [
+  /\bbuild\s+me\s+/i,
+  /\bcreate\s+me\s+/i,
+  /\bmake\s+me\s+/i,
+  /\bi\s+want\s+a\s+/i,
+  /\bi\s+want\s+an\s+/i,
+  /\bhandle\s+it\s+all\b/i,
+  /\bend\s+to\s+end\b/i,
+  /\be2e\s+this\b/i,
+];
+
+/**
  * Keyword patterns for each mode
  */
 const KEYWORD_PATTERNS: Record<KeywordType, RegExp> = {
   ralph: /\b(ralph|don't stop|must complete|until done)\b/i,
+  autopilot: /\b(autopilot|auto pilot|auto-pilot|autonomous|full auto|fullsend)\b/i,
   ultrawork: /\b(ultrawork|ulw)\b/i,
   ultrathink: /\b(ultrathink|think)\b/i,
   search: /\b(search|find|locate|lookup|explore|discover|scan|grep|query|browse|detect|trace|seek|track|pinpoint|hunt)\b|where\s+is|show\s+me|list\s+all/i,
@@ -30,7 +54,7 @@ const KEYWORD_PATTERNS: Record<KeywordType, RegExp> = {
  * Priority order for keyword detection
  * Higher priority keywords take precedence
  */
-const KEYWORD_PRIORITY: KeywordType[] = ['ralph', 'ultrawork', 'ultrathink', 'search', 'analyze'];
+const KEYWORD_PRIORITY: KeywordType[] = ['ralph', 'autopilot', 'ultrawork', 'ultrathink', 'search', 'analyze'];
 
 /**
  * Remove code blocks from text to prevent false positives
@@ -67,11 +91,32 @@ export function detectKeywordsWithType(
   _agentName?: string
 ): DetectedKeyword[] {
   const detected: DetectedKeyword[] = [];
+  const cleanedText = removeCodeBlocks(text);
+
+  // Check for autopilot keywords
+  const hasAutopilot = AUTOPILOT_KEYWORDS.some(kw =>
+    cleanedText.toLowerCase().includes(kw.toLowerCase())
+  );
+
+  // Check for autopilot phrase patterns
+  const hasAutopilotPhrase = AUTOPILOT_PHRASE_PATTERNS.some(pattern =>
+    pattern.test(cleanedText)
+  );
+
+  if (hasAutopilot || hasAutopilotPhrase) {
+    const keyword = hasAutopilot ? 'autopilot' : 'build-phrase';
+    const position = cleanedText.toLowerCase().indexOf(keyword.toLowerCase());
+    detected.push({
+      type: 'autopilot',
+      keyword,
+      position: position >= 0 ? position : 0
+    });
+  }
 
   // Check each keyword type
   for (const type of KEYWORD_PRIORITY) {
     const pattern = KEYWORD_PATTERNS[type];
-    const match = text.match(pattern);
+    const match = cleanedText.match(pattern);
 
     if (match && match.index !== undefined) {
       detected.push({
