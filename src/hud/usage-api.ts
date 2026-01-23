@@ -121,10 +121,14 @@ function readKeychainCredentials(): OAuthCredentials | null {
     if (!result) return null;
 
     const parsed = JSON.parse(result);
-    if (parsed.accessToken) {
+
+    // Handle nested structure (claudeAiOauth wrapper)
+    const creds = parsed.claudeAiOauth || parsed;
+
+    if (creds.accessToken) {
       return {
-        accessToken: parsed.accessToken,
-        expiresAt: parsed.expiresAt,
+        accessToken: creds.accessToken,
+        expiresAt: creds.expiresAt,
       };
     }
   } catch {
