@@ -86,7 +86,7 @@ Sessions are stored at `.omc/research/{session-id}/` with:
 ## Cancellation
 
 ```
-/oh-my-claudecode:cancel-research
+/oh-my-claudecode:cancel
 ```
 
 Or say: "stop research", "cancel research", "abort"
