@@ -149,14 +149,19 @@ export interface PrdStateForHud {
 // ============================================================================
 
 export interface RateLimits {
-  /** 5-hour rolling window usage percentage (0-100) */
+  /** 5-hour rolling window usage percentage (0-100) - all models combined */
   fiveHourPercent: number;
-  /** Weekly usage percentage (0-100) */
+  /** Weekly usage percentage (0-100) - all models combined */
   weeklyPercent: number;
   /** When the 5-hour limit resets (null if unavailable) */
   fiveHourResetsAt?: Date | null;
   /** When the weekly limit resets (null if unavailable) */
   weeklyResetsAt?: Date | null;
+
+  /** Sonnet-specific weekly usage percentage (0-100), if available from API */
+  sonnetWeeklyPercent?: number;
+  /** Sonnet weekly reset time */
+  sonnetWeeklyResetsAt?: Date | null;
 }
 
 export interface HudRenderContext {

@@ -38,6 +38,9 @@ interface OAuthCredentials {
 interface UsageApiResponse {
   five_hour?: { utilization?: number; resets_at?: string };
   seven_day?: { utilization?: number; resets_at?: string };
+  // Per-model quotas (flat structure at top level)
+  seven_day_sonnet?: { utilization?: number; resets_at?: string };
+  seven_day_opus?: { utilization?: number; resets_at?: string };
 }
 
 /**
@@ -266,12 +269,27 @@ function parseUsageResponse(response: UsageApiResponse): RateLimits | null {
     }
   };
 
-  return {
+  // Per-model quotas are at the top level (flat structure)
+  // e.g., response.seven_day_sonnet, response.seven_day_opus
+  const sonnetSevenDay = response.seven_day_sonnet?.utilization;
+  const sonnetResetsAt = response.seven_day_sonnet?.resets_at;
+
+  const result: RateLimits = {
     fiveHourPercent: clamp(fiveHour),
     weeklyPercent: clamp(sevenDay),
     fiveHourResetsAt: parseDate(response.five_hour?.resets_at),
     weeklyResetsAt: parseDate(response.seven_day?.resets_at),
   };
+
+  // Add Sonnet-specific quota if available from API
+  if (sonnetSevenDay != null) {
+    result.sonnetWeeklyPercent = clamp(sonnetSevenDay);
+    result.sonnetWeeklyResetsAt = parseDate(sonnetResetsAt);
+  }
+  // If API doesn't return per-model data, sonnetWeeklyPercent remains undefined
+  // This is more accurate than estimating with arbitrary percentages
+
+  return result;
 }
 
 /**
