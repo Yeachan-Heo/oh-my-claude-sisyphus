@@ -105,6 +105,10 @@ export interface SessionHealth {
   totalTokens?: number;
   cacheHitRate?: number;
   topAgents?: Array<{ agent: string; cost: number }>;
+
+  // NEW: Additional analytics fields
+  costPerHour?: number;
+  isEstimated?: boolean;  // True when costs are estimated (always for now)
 }
 
 export interface TranscriptData {

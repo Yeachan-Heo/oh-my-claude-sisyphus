@@ -2,7 +2,10 @@
  * OMC HUD - Analytics Display
  *
  * Display components for token tracking and cost analytics in the HUD.
+ * Now uses SessionHealth as the source of truth instead of TokenTracker.
  */
+
+import type { SessionHealth } from './types.js';
 
 export interface AnalyticsDisplay {
   sessionCost: string;
@@ -17,6 +20,7 @@ export interface AnalyticsDisplay {
  * Safe to call even if analytics modules are not initialized.
  *
  * @returns Analytics display data with safe defaults
+ * @deprecated Use SessionHealth directly for HUD rendering
  */
 export async function getAnalyticsDisplay(): Promise<AnalyticsDisplay> {
   try {
@@ -90,6 +94,7 @@ function formatTokenCount(tokens: number): string {
 
 /**
  * Render analytics as a single-line string for HUD display.
+ * @deprecated Use renderSessionHealthAnalytics instead
  */
 export function renderAnalyticsLine(analytics: AnalyticsDisplay): string {
   const costIndicator = analytics.costColor === 'green' ? '●' :
@@ -119,4 +124,52 @@ export async function getSessionInfo(): Promise<string> {
   } catch (error) {
     return 'Session info unavailable';
   }
+}
+
+/**
+ * Render analytics from SessionHealth (no longer calls TokenTracker directly)
+ */
+export function renderSessionHealthAnalytics(sessionHealth: SessionHealth): string {
+  // No guard needed - sessionCost is always numeric (initialized to 0)
+  // Display will show $0.0000 for new sessions, which is correct behavior
+
+  const costIndicator = sessionHealth.health === 'critical' ? '🔴' :
+                        sessionHealth.health === 'warning' ? '🟡' : '🟢';
+
+  const costPrefix = sessionHealth.isEstimated ? '~' : '';
+  const cost = `${costPrefix}$${(sessionHealth.sessionCost ?? 0).toFixed(4)}`;
+
+  const tokens = formatTokenCount(sessionHealth.totalTokens ?? 0);
+  const cacheRate = sessionHealth.cacheHitRate?.toFixed(1) ?? '0.0';
+  const costHour = sessionHealth.costPerHour ? ` | $${sessionHealth.costPerHour.toFixed(2)}/h` : '';
+
+  return `${costIndicator} ${cost} | ${tokens} | Cache: ${cacheRate}%${costHour}`;
+}
+
+/**
+ * Render budget warning if cost exceeds thresholds
+ */
+export function renderBudgetWarning(sessionHealth: SessionHealth): string {
+  const cost = sessionHealth.sessionCost ?? 0;
+
+  if (cost > 5.0) {
+    return `⚠️  BUDGET ALERT: Session cost ${cost.toFixed(2)} exceeds $5.00`;
+  } else if (cost > 2.0) {
+    return `⚡ Budget notice: Session cost ${cost.toFixed(2)} approaching limit`;
+  }
+
+  return '';
+}
+
+/**
+ * Render cache efficiency meter
+ */
+export function renderCacheEfficiency(sessionHealth: SessionHealth): string {
+  const rate = sessionHealth.cacheHitRate ?? 0;
+
+  const barLength = 20;
+  const filled = Math.round((rate / 100) * barLength);
+  const bar = '█'.repeat(filled) + '░'.repeat(barLength - filled);
+
+  return `Cache: ${bar} ${rate.toFixed(1)}%`;
 }

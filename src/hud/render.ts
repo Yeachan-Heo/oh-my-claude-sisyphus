@@ -18,7 +18,14 @@ import { renderPermission } from './elements/permission.js';
 import { renderThinking } from './elements/thinking.js';
 import { renderSession } from './elements/session.js';
 import { renderAutopilot } from './elements/autopilot.js';
-import { getAnalyticsDisplay, renderAnalyticsLine, getSessionInfo } from './analytics-display.js';
+import {
+  getAnalyticsDisplay,
+  renderAnalyticsLine,
+  getSessionInfo,
+  renderSessionHealthAnalytics,
+  renderBudgetWarning,
+  renderCacheEfficiency
+} from './analytics-display.js';
 
 /**
  * Render the complete statusline (single or multi-line)
@@ -35,6 +42,18 @@ export async function render(context: HudRenderContext, config: HudConfig): Prom
 
     // Render analytics-focused layout
     const lines = [sessionInfo, renderAnalyticsLine(analytics)];
+
+    // Add SessionHealth analytics if available
+    if (context.sessionHealth) {
+      const healthAnalytics = renderSessionHealthAnalytics(context.sessionHealth);
+      if (healthAnalytics) lines.push(healthAnalytics);
+
+      const cacheEfficiency = renderCacheEfficiency(context.sessionHealth);
+      if (cacheEfficiency) lines.push(cacheEfficiency);
+
+      const budgetWarning = renderBudgetWarning(context.sessionHealth);
+      if (budgetWarning) lines.push(budgetWarning);
+    }
 
     // Add agents if available
     if (context.activeAgents.length > 0) {
@@ -80,6 +99,14 @@ export async function render(context: HudRenderContext, config: HudConfig): Prom
   if (enabledElements.sessionHealth && context.sessionHealth) {
     const session = renderSession(context.sessionHealth);
     if (session) elements.push(session);
+
+    // Add analytics inline if available
+    const analytics = renderSessionHealthAnalytics(context.sessionHealth);
+    if (analytics) elements.push(analytics);
+
+    // Add budget warning to detail lines if needed
+    const warning = renderBudgetWarning(context.sessionHealth);
+    if (warning) detailLines.push(warning);
   }
 
   // Ralph loop state
@@ -161,6 +188,12 @@ export async function render(context: HudRenderContext, config: HudConfig): Prom
     try {
       const analytics = await getAnalyticsDisplay();
       detailLines.push(renderAnalyticsLine(analytics));
+
+      // Also add cache efficiency if SessionHealth available
+      if (context.sessionHealth?.cacheHitRate !== undefined) {
+        const cacheEfficiency = renderCacheEfficiency(context.sessionHealth);
+        if (cacheEfficiency) detailLines.push(cacheEfficiency);
+      }
     } catch {
       // Analytics not available, skip
     }

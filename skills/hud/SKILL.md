@@ -46,11 +46,21 @@ if [ -n "$PLUGIN_VERSION" ]; then
 fi
 ```
 
-**If NOT_BUILT**, the plugin needs to be compiled. Run:
+**⚠️ CRITICAL: If NOT_BUILT, the plugin MUST be compiled before the HUD can work!**
+
+**WHY THIS HAPPENS:** The `dist/` directory contains compiled TypeScript code and is NOT stored on GitHub (it's in .gitignore). When you install the plugin from the marketplace, the build step happens automatically via the `prepare` script during `npm install`. However, if the plugin wasn't properly installed or the build failed, you'll get this error.
+
+**THE FIX:** Run npm install in the plugin directory to build it:
 ```bash
 cd ~/.claude/plugins/cache/omc/oh-my-claudecode/$PLUGIN_VERSION && npm install
 ```
-This will install dependencies and build the TypeScript code automatically (via the `prepare` script).
+
+This will:
+1. Install all dependencies
+2. Run the `prepare` script which executes `npm run build`
+3. Generate the `dist/hud/index.js` file that the HUD wrapper needs
+
+**DO NOT** try to download `dist/hud/index.js` from GitHub raw URLs - it doesn't exist there!
 
 **Step 3:** If omc-hud.mjs is MISSING or argument is `setup`, create the HUD directory and script:
 
@@ -74,6 +84,7 @@ import { join } from "node:path";
 
 async function main() {
   const home = homedir();
+  let pluginCacheDir = null;
 
   // 1. Try plugin cache first (marketplace: omc, plugin: oh-my-claudecode)
   const pluginCacheBase = join(home, ".claude/plugins/cache/omc/oh-my-claudecode");
@@ -82,7 +93,8 @@ async function main() {
       const versions = readdirSync(pluginCacheBase);
       if (versions.length > 0) {
         const latestVersion = versions.sort().reverse()[0];
-        const pluginPath = join(pluginCacheBase, latestVersion, "dist/hud/index.js");
+        pluginCacheDir = join(pluginCacheBase, latestVersion);
+        const pluginPath = join(pluginCacheDir, "dist/hud/index.js");
         if (existsSync(pluginPath)) {
           await import(pluginPath);
           return;
@@ -108,8 +120,12 @@ async function main() {
     }
   }
 
-  // 3. Fallback
-  console.log("[OMC] run /omc-setup to install properly");
+  // 3. Fallback - HUD not found (provide actionable error message)
+  if (pluginCacheDir) {
+    console.log(`[OMC] HUD not built. Run: cd "${pluginCacheDir}" && npm install`);
+  } else {
+    console.log("[OMC] Plugin not found. Run: /oh-my-claudecode:omc-setup");
+  }
 }
 
 main();
