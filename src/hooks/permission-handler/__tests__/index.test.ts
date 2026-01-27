@@ -30,6 +30,10 @@ describe('permission-handler', () => {
         'python -m pytest',
         'ls',
         'ls -la',
+        // Quoted paths are allowed (needed for paths with spaces)
+        'ls "my folder"',
+        'ls \'my folder\'',
+        'git diff "src/file with spaces.ts"',
       ];
 
       safeCases.forEach((cmd) => {
@@ -98,10 +102,10 @@ describe('permission-handler', () => {
         { cmd: 'git status\rmalicious', desc: 'carriage return injection' },
         { cmd: 'npm test\r\nrm -rf /', desc: 'CRLF injection' },
         { cmd: 'git status\0malicious', desc: 'null byte injection' },
-        // Quote characters
-        { cmd: 'git status "$(whoami)"', desc: 'double quote with command substitution' },
-        { cmd: "git status '$(whoami)'", desc: 'single quote (potential escape)' },
-        { cmd: 'ls "file with spaces"', desc: 'double quotes' },
+        // Command substitution (caught by $ not quotes)
+        { cmd: 'git status "$(whoami)"', desc: 'command substitution in double quotes' },
+        { cmd: "git status '$(whoami)'", desc: 'command substitution in single quotes' },
+        // Note: Plain quotes like 'ls "file"' are now ALLOWED for paths with spaces
         // Wildcard characters
         { cmd: 'ls *.txt', desc: 'asterisk wildcard' },
         { cmd: 'ls file?.txt', desc: 'question mark wildcard' },

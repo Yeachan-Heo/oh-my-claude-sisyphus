@@ -45,7 +45,9 @@ const SAFE_PATTERNS = [
 
 // Shell metacharacters that enable command chaining and injection
 // See GitHub Issue #146 for full list of dangerous characters
-const DANGEROUS_SHELL_CHARS = /[;&|`$()<>\n\r\0\\{}\[\]"'*?~!#]/;
+// Note: Quotes ("') intentionally excluded - they're needed for paths with spaces
+// and command substitution is already caught by $ detection
+const DANGEROUS_SHELL_CHARS = /[;&|`$()<>\n\r\0\\{}\[\]*?~!#]/;
 
 /**
  * Check if a command matches safe patterns
