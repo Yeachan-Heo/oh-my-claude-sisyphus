@@ -128,5 +128,29 @@ describe('OutputEstimator', () => {
 
       expect(sessionId).toBe('a1b2c3d412345678');
     });
+
+    it('should handle null input gracefully', () => {
+      const sessionId = extractSessionId(null as any);
+
+      // Should return a valid 16-char hex hash (not throw)
+      expect(sessionId).toMatch(/^[a-f0-9]{16}$/i);
+      expect(sessionId).toBe('ad921d6048636625'); // MD5 of 'unknown'
+    });
+
+    it('should handle undefined input gracefully', () => {
+      const sessionId = extractSessionId(undefined as any);
+
+      // Should return a valid 16-char hex hash (not throw)
+      expect(sessionId).toMatch(/^[a-f0-9]{16}$/i);
+      expect(sessionId).toBe('ad921d6048636625'); // MD5 of 'unknown'
+    });
+
+    it('should handle empty string', () => {
+      const sessionId = extractSessionId('');
+
+      // Should return a valid 16-char hex hash (not throw)
+      expect(sessionId).toMatch(/^[a-f0-9]{16}$/i);
+      expect(sessionId).toBe('ad921d6048636625'); // MD5 of 'unknown'
+    });
   });
 });

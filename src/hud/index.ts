@@ -222,7 +222,10 @@ async function calculateSessionHealth(
     } else if (sessionCost > 2.0 && health !== 'critical') {
       health = 'warning';
     }
-  } catch {
+  } catch (error) {
+    if (process.env.OMC_DEBUG) {
+      console.error('[HUD] Cost calculation failed:', error);
+    }
     // Cost calculation failed - continue with zeros
   }
 
@@ -235,7 +238,10 @@ async function calculateSessionHealth(
       const agents = await tracker.getTopAgents(3);
       topAgents = agents.map(a => ({ agent: a.agent, cost: a.cost }));
     }
-  } catch {
+  } catch (error) {
+    if (process.env.OMC_DEBUG) {
+      console.error('[HUD] Top agents fetch failed:', error);
+    }
     // Top agents fetch failed - continue with empty
   }
 

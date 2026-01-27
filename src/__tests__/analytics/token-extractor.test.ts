@@ -111,6 +111,39 @@ describe('TokenExtractor', () => {
       expect(result.cacheReadTokens).toBe(0);
     });
 
+    it('should handle undefined context_window gracefully', () => {
+      // Create stdin with undefined context_window
+      const stdinWithoutContext = {
+        ...mockStdin,
+        context_window: undefined as any
+      };
+
+      const result = extractTokens(stdinWithoutContext, null, 'claude-sonnet-4-5-20250929');
+
+      expect(result.inputTokens).toBe(0);
+      expect(result.outputTokens).toBe(0);
+      expect(result.cacheCreationTokens).toBe(0);
+      expect(result.cacheReadTokens).toBe(0);
+    });
+
+    it('should handle undefined context_window.current_usage gracefully', () => {
+      // Create stdin with context_window but no current_usage
+      const stdinWithoutUsage = {
+        ...mockStdin,
+        context_window: {
+          ...mockStdin.context_window,
+          current_usage: undefined
+        }
+      };
+
+      const result = extractTokens(stdinWithoutUsage, null, 'claude-sonnet-4-5-20250929');
+
+      expect(result.inputTokens).toBe(0);
+      expect(result.outputTokens).toBe(0);
+      expect(result.cacheCreationTokens).toBe(0);
+      expect(result.cacheReadTokens).toBe(0);
+    });
+
     it('should ensure non-negative deltas', () => {
       const previousSnapshot: TokenSnapshot = {
         inputTokens: 2000, // Greater than current
@@ -153,6 +186,26 @@ describe('TokenExtractor', () => {
       // Timestamps should be different (or very close if fast)
       expect(snapshot1.timestamp).toBeDefined();
       expect(snapshot2.timestamp).toBeDefined();
+    });
+
+    it('should handle undefined context_window in snapshot', () => {
+      // TEST FIRST: This test should FAIL before the fix
+      const stdinWithoutContextWindow = {
+        transcript_path: '/path/to/transcript.jsonl',
+        cwd: '/home/user',
+        model: {
+          id: 'claude-sonnet-4-5-20250929',
+          display_name: 'Claude Sonnet 4.5'
+        },
+        context_window: undefined as any
+      };
+
+      const snapshot = createSnapshot(stdinWithoutContextWindow);
+
+      expect(snapshot.inputTokens).toBe(0);
+      expect(snapshot.cacheCreationTokens).toBe(0);
+      expect(snapshot.cacheReadTokens).toBe(0);
+      expect(snapshot.timestamp).toBeDefined();
     });
   });
 });

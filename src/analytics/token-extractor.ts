@@ -34,7 +34,7 @@ export function extractTokens(
   modelName: string,
   agentName?: string
 ): ExtractedTokens {
-  const currentUsage = stdin.context_window.current_usage;
+  const currentUsage = stdin.context_window?.current_usage;
 
   if (!currentUsage) {
     return createEmptyExtraction(modelName, agentName);
@@ -72,7 +72,7 @@ export function extractTokens(
  * Create current snapshot for next delta calculation.
  */
 export function createSnapshot(stdin: StatuslineStdin): TokenSnapshot {
-  const usage = stdin.context_window.current_usage;
+  const usage = stdin.context_window?.current_usage;
 
   return {
     inputTokens: usage?.input_tokens ?? 0,

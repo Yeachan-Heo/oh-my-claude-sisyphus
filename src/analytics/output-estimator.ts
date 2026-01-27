@@ -40,6 +40,11 @@ export function estimateOutputTokens(inputTokens: number, modelName: string): nu
  * @returns Session ID (extracted or hashed)
  */
 export function extractSessionId(transcriptPath: string): string {
+  // Guard against null/undefined/empty
+  if (!transcriptPath) {
+    return crypto.createHash('md5').update('unknown').digest('hex').slice(0, 16);
+  }
+
   // Try to extract from path pattern
   const match = transcriptPath.match(/projects\/([a-f0-9]{8,})/i);
 
