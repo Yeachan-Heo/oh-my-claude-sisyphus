@@ -257,7 +257,9 @@ You can manually edit the config file:
     "contextBar": true,
     "agents": true,
     "backgroundTasks": true,
-    "todos": true
+    "todos": true,
+    "showCache": true,
+    "showCost": true
   },
   "thresholds": {
     "contextWarning": 70,
