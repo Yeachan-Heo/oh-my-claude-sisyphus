@@ -74,6 +74,9 @@ describe('permission-handler', () => {
         'git status\nrm -rf /',
         'git status\n\nrm -rf /',
 
+        // Tab character injection
+        'git status\tmalicious_command',
+
         // Backslash escapes
         'git status\\nrm -rf /',
       ];
@@ -184,6 +187,12 @@ describe('permission-handler', () => {
         'invalid json {'
       );
       expect(isActiveModeRunning(testDir)).toBe(false);
+    });
+
+    it('should return true when swarm marker exists', () => {
+      fs.mkdirSync(stateDir, { recursive: true });
+      fs.writeFileSync(path.join(stateDir, 'swarm-active.marker'), '');
+      expect(isActiveModeRunning(testDir)).toBe(true);
     });
   });
 
