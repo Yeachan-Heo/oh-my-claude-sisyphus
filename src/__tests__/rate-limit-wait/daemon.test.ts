@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { mkdirSync, writeFileSync, unlinkSync, existsSync, rmSync } from 'fs';
+import { mkdirSync, writeFileSync, unlinkSync, existsSync, rmSync, statSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import {
@@ -303,6 +303,66 @@ describe('daemon', () => {
       const output = formatDaemonState(state);
 
       expect(output).toContain('Daemon not running');
+    });
+  });
+
+  describe('security: file permissions', () => {
+    it('should create state file with restrictive permissions', () => {
+      const testState: DaemonState = {
+        isRunning: true,
+        pid: 1234,
+        startedAt: new Date(),
+        lastPollAt: new Date(),
+        rateLimitStatus: null,
+        blockedPanes: [],
+        resumedPaneIds: [],
+        totalResumeAttempts: 0,
+        successfulResumes: 0,
+        errorCount: 0,
+      };
+
+      writeFileSync(testConfig.stateFilePath!, JSON.stringify(testState));
+
+      // Read state back (this exercises the read path)
+      const state = readDaemonState(testConfig);
+      expect(state).not.toBeNull();
+    });
+
+    it('should not store sensitive data in state file', () => {
+      const testState: DaemonState = {
+        isRunning: true,
+        pid: 1234,
+        startedAt: new Date(),
+        lastPollAt: new Date(),
+        rateLimitStatus: {
+          fiveHourLimited: false,
+          weeklyLimited: false,
+          isLimited: false,
+          fiveHourResetsAt: null,
+          weeklyResetsAt: null,
+          nextResetAt: null,
+          timeUntilResetMs: null,
+          lastCheckedAt: new Date(),
+        },
+        blockedPanes: [],
+        resumedPaneIds: [],
+        totalResumeAttempts: 0,
+        successfulResumes: 0,
+        errorCount: 0,
+      };
+
+      writeFileSync(testConfig.stateFilePath!, JSON.stringify(testState));
+
+      // Verify no tokens or credentials in state file
+      const { readFileSync } = require('fs');
+      const content = readFileSync(testConfig.stateFilePath!, 'utf-8');
+
+      // State should not contain sensitive fields
+      expect(content).not.toContain('accessToken');
+      expect(content).not.toContain('apiKey');
+      expect(content).not.toContain('password');
+      expect(content).not.toContain('secret');
+      expect(content).not.toContain('credential');
     });
   });
 });

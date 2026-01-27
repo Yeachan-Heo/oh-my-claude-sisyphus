@@ -4,10 +4,15 @@
  * Background daemon that monitors rate limits and auto-resumes
  * Claude Code sessions when rate limits reset.
  *
+ * Security considerations:
+ * - State/PID/log files use restrictive permissions (0600)
+ * - No sensitive data (tokens, credentials) is logged or stored
+ * - Input validation for tmux pane IDs
+ *
  * Reference: https://github.com/EvanOman/cc-wait
  */
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync, unlinkSync } from 'fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync, unlinkSync, chmodSync, statSync } from 'fs';
 import { join, dirname } from 'path';
 import { homedir } from 'os';
 import { spawn, spawnSync } from 'child_process';
@@ -35,6 +40,12 @@ const DEFAULT_CONFIG: Required<DaemonConfig> = {
   logFilePath: join(homedir(), '.omc', 'state', 'rate-limit-daemon.log'),
 };
 
+/** Maximum log file size before rotation (1MB) */
+const MAX_LOG_SIZE_BYTES = 1 * 1024 * 1024;
+
+/** Restrictive file permissions (owner read/write only) */
+const SECURE_FILE_MODE = 0o600;
+
 /**
  * Get effective configuration by merging with defaults
  */
@@ -43,12 +54,48 @@ function getConfig(config?: DaemonConfig): Required<DaemonConfig> {
 }
 
 /**
- * Ensure state directory exists
+ * Ensure state directory exists with secure permissions
  */
 function ensureStateDir(config: Required<DaemonConfig>): void {
   const stateDir = dirname(config.stateFilePath);
   if (!existsSync(stateDir)) {
-    mkdirSync(stateDir, { recursive: true });
+    mkdirSync(stateDir, { recursive: true, mode: 0o700 });
+  }
+}
+
+/**
+ * Write file with secure permissions (0600 - owner read/write only)
+ */
+function writeSecureFile(filePath: string, content: string): void {
+  writeFileSync(filePath, content, { mode: SECURE_FILE_MODE });
+  // Ensure permissions are set even if file existed
+  try {
+    chmodSync(filePath, SECURE_FILE_MODE);
+  } catch {
+    // Ignore permission errors (e.g., on Windows)
+  }
+}
+
+/**
+ * Rotate log file if it exceeds maximum size
+ */
+function rotateLogIfNeeded(logPath: string): void {
+  try {
+    if (!existsSync(logPath)) return;
+
+    const stats = statSync(logPath);
+    if (stats.size > MAX_LOG_SIZE_BYTES) {
+      const backupPath = `${logPath}.old`;
+      // Remove old backup if exists
+      if (existsSync(backupPath)) {
+        unlinkSync(backupPath);
+      }
+      // Rename current to backup
+      const { renameSync } = require('fs');
+      renameSync(logPath, backupPath);
+    }
+  } catch {
+    // Ignore rotation errors
   }
 }
 
@@ -93,11 +140,12 @@ export function readDaemonState(config?: DaemonConfig): DaemonState | null {
 }
 
 /**
- * Write daemon state to disk
+ * Write daemon state to disk with secure permissions
+ * Note: State file contains only non-sensitive operational data
  */
 function writeDaemonState(state: DaemonState, config: Required<DaemonConfig>): void {
   ensureStateDir(config);
-  writeFileSync(config.stateFilePath, JSON.stringify(state, null, 2));
+  writeSecureFile(config.stateFilePath, JSON.stringify(state, null, 2));
 }
 
 /**
@@ -116,11 +164,11 @@ function readPidFile(config: Required<DaemonConfig>): number | null {
 }
 
 /**
- * Write PID file
+ * Write PID file with secure permissions
  */
 function writePidFile(pid: number, config: Required<DaemonConfig>): void {
   ensureStateDir(config);
-  writeFileSync(config.pidFilePath, String(pid));
+  writeSecureFile(config.pidFilePath, String(pid));
 }
 
 /**
@@ -166,7 +214,8 @@ export function isDaemonRunning(config?: DaemonConfig): boolean {
 }
 
 /**
- * Log message to daemon log file
+ * Log message to daemon log file with rotation
+ * Note: Only operational messages are logged, never credentials or tokens
  */
 function log(message: string, config: Required<DaemonConfig>): void {
   if (config.verbose) {
@@ -175,12 +224,16 @@ function log(message: string, config: Required<DaemonConfig>): void {
 
   try {
     ensureStateDir(config);
+
+    // Rotate log if needed (prevents unbounded growth)
+    rotateLogIfNeeded(config.logFilePath);
+
     const timestamp = new Date().toISOString();
     const logLine = `[${timestamp}] ${message}\n`;
 
-    // Append to log file
+    // Append to log file with secure permissions
     const { appendFileSync } = require('fs');
-    appendFileSync(config.logFilePath, logLine);
+    appendFileSync(config.logFilePath, logLine, { mode: SECURE_FILE_MODE });
   } catch {
     // Ignore log write errors
   }

@@ -3,10 +3,31 @@
  *
  * Detects Claude Code sessions running in tmux panes and identifies
  * those that are blocked due to rate limiting.
+ *
+ * Security considerations:
+ * - Pane IDs are validated before use in shell commands
+ * - Text inputs are sanitized to prevent command injection
  */
 
 import { execSync, spawnSync } from 'child_process';
 import type { TmuxPane, PaneAnalysisResult, BlockedPane } from './types.js';
+
+/**
+ * Validate tmux pane ID format to prevent command injection
+ * Valid formats: %0, %1, %123, etc.
+ */
+function isValidPaneId(paneId: string): boolean {
+  return /^%\d+$/.test(paneId);
+}
+
+/**
+ * Sanitize text for use in tmux send-keys command
+ * Escapes single quotes to prevent command injection
+ */
+function sanitizeForTmux(text: string): string {
+  // Escape single quotes by ending the quote, adding escaped quote, and reopening
+  return text.replace(/'/g, "'\\''");
+}
 
 /** Rate limit message patterns to detect in pane content */
 const RATE_LIMIT_PATTERNS = [
@@ -120,9 +141,18 @@ export function capturePaneContent(paneId: string, lines = 15): string {
     return '';
   }
 
+  // Validate pane ID to prevent command injection
+  if (!isValidPaneId(paneId)) {
+    console.error(`[TmuxDetector] Invalid pane ID format: ${paneId}`);
+    return '';
+  }
+
+  // Validate lines is a reasonable positive integer
+  const safeLines = Math.max(1, Math.min(100, Math.floor(lines)));
+
   try {
     // Capture the last N lines from the pane
-    const result = execSync(`tmux capture-pane -t '${paneId}' -p -S -${lines}`, {
+    const result = execSync(`tmux capture-pane -t '${paneId}' -p -S -${safeLines}`, {
       encoding: 'utf-8',
       timeout: 5000,
     });
@@ -231,6 +261,12 @@ export function sendResumeSequence(paneId: string): boolean {
     return false;
   }
 
+  // Validate pane ID to prevent command injection
+  if (!isValidPaneId(paneId)) {
+    console.error(`[TmuxDetector] Invalid pane ID format: ${paneId}`);
+    return false;
+  }
+
   try {
     // Send "1" to select the first option (typically "Continue" or similar)
     execSync(`tmux send-keys -t '${paneId}' '1' Enter`, {
@@ -249,14 +285,21 @@ export function sendResumeSequence(paneId: string): boolean {
 /**
  * Send custom text to a tmux pane
  */
-export function sendToPan(paneId: string, text: string, pressEnter = true): boolean {
+export function sendToPane(paneId: string, text: string, pressEnter = true): boolean {
   if (!isTmuxAvailable()) {
     return false;
   }
 
+  // Validate pane ID to prevent command injection
+  if (!isValidPaneId(paneId)) {
+    console.error(`[TmuxDetector] Invalid pane ID format: ${paneId}`);
+    return false;
+  }
+
   try {
+    const sanitizedText = sanitizeForTmux(text);
     const enterSuffix = pressEnter ? ' Enter' : '';
-    execSync(`tmux send-keys -t '${paneId}' '${text}'${enterSuffix}`, {
+    execSync(`tmux send-keys -t '${paneId}' '${sanitizedText}'${enterSuffix}`, {
       timeout: 2000,
     });
     return true;

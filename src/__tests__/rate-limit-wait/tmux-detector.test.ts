@@ -245,6 +245,69 @@ describe('tmux-detector', () => {
     });
   });
 
+  describe('security: input validation', () => {
+    it('should reject invalid pane IDs in capturePaneContent', () => {
+      vi.mocked(spawnSync).mockReturnValue({
+        status: 0,
+        stdout: '/usr/bin/tmux',
+        stderr: '',
+        signal: null,
+        pid: 1234,
+        output: [],
+      });
+
+      // Valid pane ID should work
+      vi.mocked(execSync).mockReturnValue('content');
+      const validResult = capturePaneContent('%0');
+      expect(validResult).toBe('content');
+
+      // Invalid pane IDs should return empty string (not execute command)
+      const invalidIds = [
+        '; rm -rf /',
+        '%0; echo hacked',
+        '$(whoami)',
+        '%0`id`',
+        '../etc/passwd',
+        '',
+        'abc',
+      ];
+
+      for (const invalidId of invalidIds) {
+        vi.mocked(execSync).mockClear();
+        const result = capturePaneContent(invalidId);
+        expect(result).toBe('');
+      }
+    });
+
+    it('should validate lines parameter bounds', () => {
+      vi.mocked(spawnSync).mockReturnValue({
+        status: 0,
+        stdout: '/usr/bin/tmux',
+        stderr: '',
+        signal: null,
+        pid: 1234,
+        output: [],
+      });
+
+      vi.mocked(execSync).mockReturnValue('content');
+
+      // Should clamp negative to 1
+      capturePaneContent('%0', -5);
+      expect(execSync).toHaveBeenCalledWith(
+        expect.stringContaining('-S -1'),
+        expect.any(Object)
+      );
+
+      // Should clamp excessive values to 100
+      vi.mocked(execSync).mockClear();
+      capturePaneContent('%0', 1000);
+      expect(execSync).toHaveBeenCalledWith(
+        expect.stringContaining('-S -100'),
+        expect.any(Object)
+      );
+    });
+  });
+
   describe('formatBlockedPanesSummary', () => {
     it('should format empty list', () => {
       const result = formatBlockedPanesSummary([]);

@@ -39,7 +39,7 @@ export {
   analyzePaneContent,
   scanForBlockedPanes,
   sendResumeSequence,
-  sendToPan,
+  sendToPane,
   formatBlockedPanesSummary,
 } from './tmux-detector.js';
 
