@@ -34,6 +34,11 @@ async function recordTokenUsage(
   transcriptData: any
 ): Promise<void> {
   try {
+    // Debug: Log stdin.context_window data
+    if (process.env.OMC_DEBUG) {
+      console.error('[TokenRecording] stdin.context_window:', JSON.stringify(stdin.context_window));
+    }
+
     // Get model name from stdin
     const modelName = getModelName(stdin);
 
@@ -41,11 +46,30 @@ async function recordTokenUsage(
     const runningAgents = transcriptData.agents?.filter((a: any) => a.status === 'running') ?? [];
     const agentName = runningAgents.length > 0 ? runningAgents[0].name : undefined;
 
+    if (process.env.OMC_DEBUG) {
+      console.error('[TokenRecording] agentName determined:', agentName);
+    }
+
     // Extract tokens (delta from previous)
     const extracted = extractTokens(stdin, previousSnapshot, modelName, agentName);
 
+    if (process.env.OMC_DEBUG) {
+      console.error('[TokenRecording] extracted tokens:', {
+        inputTokens: extracted.inputTokens,
+        outputTokens: extracted.outputTokens,
+        cacheCreationTokens: extracted.cacheCreationTokens,
+        cacheReadTokens: extracted.cacheReadTokens,
+        agentName: extracted.agentName,
+        modelName: extracted.modelName
+      });
+    }
+
     // Only record if there's actual token usage
     if (extracted.inputTokens > 0 || extracted.cacheCreationTokens > 0) {
+      if (process.env.OMC_DEBUG) {
+        console.error('[TokenRecording] Recording condition PASSED - recording usage');
+      }
+
       // Get session ID
       const sessionId = extractSessionId(stdin.transcript_path);
 
@@ -59,13 +83,23 @@ async function recordTokenUsage(
         cacheCreationTokens: extracted.cacheCreationTokens,
         cacheReadTokens: extracted.cacheReadTokens
       });
+
+      if (process.env.OMC_DEBUG) {
+        console.error('[TokenRecording] Successfully recorded usage for agent:', extracted.agentName);
+      }
+    } else {
+      if (process.env.OMC_DEBUG) {
+        console.error('[TokenRecording] Recording condition FAILED - no token delta detected');
+      }
     }
 
     // Update snapshot for next render
     previousSnapshot = createSnapshot(stdin);
   } catch (error) {
     // Silent failure - don't break HUD rendering
-    // console.error('[Analytics] Token recording failed:', error);
+    if (process.env.OMC_DEBUG) {
+      console.error('[Analytics] Token recording failed:', error);
+    }
   }
 }
 

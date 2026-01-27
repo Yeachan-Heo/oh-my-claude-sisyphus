@@ -7,6 +7,8 @@
  * - Opus: 50% (detailed reasoning)
  */
 
+import * as crypto from 'crypto';
+
 const MODEL_OUTPUT_RATIOS: Record<string, number> = {
   'haiku': 0.30,
   'sonnet': 0.40,
@@ -46,7 +48,6 @@ export function extractSessionId(transcriptPath: string): string {
   }
 
   // Fallback: hash the path
-  const crypto = require('crypto');
   return crypto.createHash('md5')
     .update(transcriptPath)
     .digest('hex')
