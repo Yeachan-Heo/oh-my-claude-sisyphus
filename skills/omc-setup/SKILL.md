@@ -22,9 +22,16 @@ Before starting any step, check for existing state:
 # Check for existing setup state
 STATE_FILE=".omc/state/setup-state.json"
 if [ -f "$STATE_FILE" ]; then
-  LAST_STEP=$(cat "$STATE_FILE" | grep -oE '"lastCompletedStep":\s*[0-9]+' | grep -oE '[0-9]+' || echo "0")
-  TIMESTAMP=$(cat "$STATE_FILE" | grep -oE '"timestamp":\s*"[^"]+"' | cut -d'"' -f4 || echo "unknown")
-  echo "Found previous setup session (Step $LAST_STEP completed at $TIMESTAMP)"
+  # Check if state is stale (older than 24 hours)
+  STATE_AGE=$(($(date +%s) - $(date -d "$(jq -r .timestamp "$STATE_FILE" 2>/dev/null || echo "1970-01-01")" +%s 2>/dev/null || echo 0)))
+  if [ "$STATE_AGE" -gt 86400 ]; then
+    echo "Previous setup state is more than 24 hours old. Starting fresh."
+    rm -f "$STATE_FILE"
+  else
+    LAST_STEP=$(jq -r ".lastCompletedStep // 0" "$STATE_FILE" 2>/dev/null || echo "0")
+    TIMESTAMP=$(jq -r .timestamp "$STATE_FILE" 2>/dev/null || echo "unknown")
+    echo "Found previous setup session (Step $LAST_STEP completed at $TIMESTAMP)"
+  fi
 fi
 ```
 
