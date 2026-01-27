@@ -23,14 +23,6 @@ export interface SessionMetrics {
 
 export interface HookOutput {
   continue: boolean;
-  hookSpecificOutput?: {
-    hookEventName: string;
-    metrics?: SessionMetrics;
-    cleanup_summary?: {
-      files_removed: number;
-      state_cleared: boolean;
-    };
-  };
 }
 
 /**
@@ -243,22 +235,15 @@ export function exportSessionSummary(directory: string, metrics: SessionMetrics)
  * Process session end
  */
 export function processSessionEnd(input: SessionEndInput): HookOutput {
+  // Record and export session metrics to disk
   const metrics = recordSessionMetrics(input.cwd, input);
-  const filesRemoved = cleanupTransientState(input.cwd);
-
   exportSessionSummary(input.cwd, metrics);
 
-  return {
-    continue: true,
-    hookSpecificOutput: {
-      hookEventName: 'SessionEnd',
-      metrics,
-      cleanup_summary: {
-        files_removed: filesRemoved,
-        state_cleared: true,
-      },
-    },
-  };
+  // Clean up transient state files
+  cleanupTransientState(input.cwd);
+
+  // Return simple response - metrics are persisted to .omc/sessions/
+  return { continue: true };
 }
 
 /**
