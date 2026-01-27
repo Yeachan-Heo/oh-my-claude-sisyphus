@@ -97,6 +97,22 @@ Optional shortcuts for power users. Natural language works fine without them.
 
 ---
 
+## Utilities
+
+### Rate Limit Wait
+
+Auto-resume Claude Code sessions when rate limits reset.
+
+```bash
+omc wait          # Check status, get guidance
+omc wait --start  # Enable auto-resume daemon
+omc wait --stop   # Disable daemon
+```
+
+**Requires:** tmux (for session detection)
+
+---
+
 ## Documentation
 
 - **[Full Reference](docs/REFERENCE.md)** - Complete feature documentation
