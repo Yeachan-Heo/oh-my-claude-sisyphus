@@ -10,7 +10,7 @@
  */
 
 import chalk from 'chalk';
-import { spawn } from 'child_process';
+import { spawn, execSync } from 'child_process';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { existsSync } from 'fs';
@@ -97,14 +97,37 @@ async function executeOrchestratorScript(
   let command: string;
   let scriptPath: string;
 
-  if (existsSync(tsScriptPath)) {
-    // Development mode - use tsx
-    command = 'tsx';
-    scriptPath = tsScriptPath;
-  } else if (existsSync(jsScriptPath)) {
-    // Production mode - use node
+  // Check which TypeScript runners are available
+  const checkCommand = (cmd: string): boolean => {
+    try {
+      execSync(`which ${cmd}`, { stdio: 'ignore' });
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const bunAvailable = checkCommand('bun');
+  const tsxAvailable = checkCommand('tsx');
+
+  if (existsSync(jsScriptPath)) {
+    // Prefer compiled JS for reliability
     command = 'node';
     scriptPath = jsScriptPath;
+  } else if (existsSync(tsScriptPath) && bunAvailable) {
+    // Use bun if available (fast, no compilation needed)
+    command = 'bun';
+    scriptPath = tsScriptPath;
+  } else if (existsSync(tsScriptPath) && tsxAvailable) {
+    // Fall back to tsx
+    command = 'tsx';
+    scriptPath = tsScriptPath;
+  } else if (existsSync(tsScriptPath)) {
+    console.error(chalk.red('✗ Ralph-Fresh orchestrator script found but no TypeScript runner available'));
+    console.error(chalk.gray(`  Install bun: curl -fsSL https://bun.sh/install | bash`));
+    console.error(chalk.gray(`  Or tsx: npm install -g tsx`));
+    process.exit(1);
+    return;
   } else {
     console.error(chalk.red('✗ Ralph-Fresh orchestrator script not found'));
     console.error(chalk.gray(`  Expected at: ${tsScriptPath} or ${jsScriptPath}`));
