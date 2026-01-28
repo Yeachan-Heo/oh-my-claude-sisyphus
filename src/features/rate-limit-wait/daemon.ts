@@ -14,6 +14,7 @@
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync, unlinkSync, chmodSync, statSync } from 'fs';
 import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
 import { homedir } from 'os';
 import { spawn, spawnSync } from 'child_process';
 import { checkRateLimitStatus, formatRateLimitStatus, formatTimeUntilReset } from './rate-limit-monitor.js';
@@ -29,6 +30,9 @@ import type {
   BlockedPane,
   DaemonResponse,
 } from './types.js';
+
+// ESM compatibility: __filename is not available in ES modules
+const __filename = fileURLToPath(import.meta.url);
 
 /** Default configuration */
 const DEFAULT_CONFIG: Required<DaemonConfig> = {
