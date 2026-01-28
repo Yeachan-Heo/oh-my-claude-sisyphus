@@ -4,7 +4,9 @@
 [![Sponsor](https://img.shields.io/badge/Sponsor-❤️-red?style=flat&logo=github)](https://github.com/sponsors/Yeachan-Heo)
 
 
-![oh-my-claudecode](https://raw.githubusercontent.com/Yeachan-Heo/oh-my-claudecode-website/main/social-preview.png)
+<p align="center">
+  <img src="assets/omc-character.jpg" alt="oh-my-claudecode" width="400" />
+</p>
 
 # oh-my-claudecode
 
