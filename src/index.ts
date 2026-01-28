@@ -40,28 +40,6 @@ export {
   type BackgroundTaskManager,
   type TaskExecutionDecision
 } from './features/background-tasks.js';
-export {
-  // Auto-update types
-  type VersionMetadata,
-  type ReleaseInfo,
-  type UpdateCheckResult,
-  type UpdateResult,
-  // Auto-update constants
-  REPO_OWNER,
-  REPO_NAME,
-  GITHUB_API_URL,
-  CLAUDE_CONFIG_DIR,
-  VERSION_FILE,
-  // Auto-update functions
-  getInstalledVersion,
-  saveVersionMetadata,
-  checkForUpdates,
-  performUpdate,
-  formatUpdateNotification,
-  shouldCheckForUpdates,
-  backgroundUpdateCheck,
-  compareVersions
-} from './features/auto-update.js';
 export * from './shared/types.js';
 
 // Hooks module exports

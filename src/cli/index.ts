@@ -25,12 +25,6 @@ import {
 } from '../config/loader.js';
 import { createSisyphusSession } from '../index.js';
 import {
-  checkForUpdates,
-  performUpdate,
-  formatUpdateNotification,
-  getInstalledVersion
-} from '../features/auto-update.js';
-import {
   install as installSisyphus,
   isInstalled,
   getInstallInfo
@@ -576,111 +570,18 @@ program
   });
 
 /**
- * Update command - Check for and install updates
- */
-program
-  .command('update')
-  .description('Check for and install updates')
-  .option('-c, --check', 'Only check for updates, do not install')
-  .option('-f, --force', 'Force reinstall even if up to date')
-  .option('-q, --quiet', 'Suppress output except for errors')
-  .action(async (options) => {
-    if (!options.quiet) {
-      console.log(chalk.blue('Oh-My-ClaudeCode Update\n'));
-    }
-
-    try {
-      // Show current version
-      const installed = getInstalledVersion();
-      if (!options.quiet) {
-        console.log(chalk.gray(`Current version: ${installed?.version ?? 'unknown'}`));
-        console.log(chalk.gray(`Install method: ${installed?.installMethod ?? 'unknown'}`));
-        console.log('');
-      }
-
-      // Check for updates
-      if (!options.quiet) {
-        console.log('Checking for updates...');
-      }
-
-      const checkResult = await checkForUpdates();
-
-      if (!checkResult.updateAvailable && !options.force) {
-        if (!options.quiet) {
-          console.log(chalk.green(`\n✓ You are running the latest version (${checkResult.currentVersion})`));
-        }
-        return;
-      }
-
-      if (!options.quiet) {
-        console.log(formatUpdateNotification(checkResult));
-      }
-
-      // If check-only mode, stop here
-      if (options.check) {
-        if (checkResult.updateAvailable) {
-          console.log(chalk.yellow('\nRun without --check to install the update.'));
-        }
-        return;
-      }
-
-      // Perform the update
-      if (!options.quiet) {
-        console.log(chalk.blue('\nStarting update...\n'));
-      }
-
-      const result = await performUpdate({ verbose: !options.quiet });
-
-      if (result.success) {
-        if (!options.quiet) {
-          console.log(chalk.green(`\n✓ ${result.message}`));
-          console.log(chalk.gray('\nPlease restart your Claude Code session to use the new version.'));
-        }
-      } else {
-        console.error(chalk.red(`\n✗ ${result.message}`));
-        if (result.errors) {
-          result.errors.forEach(err => console.error(chalk.red(`  - ${err}`)));
-        }
-        process.exit(1);
-      }
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      console.error(chalk.red(`Update failed: ${message}`));
-      process.exit(1);
-    }
-  });
-
-/**
  * Version command - Show version information
  */
 program
   .command('version')
-  .description('Show detailed version information')
+  .description('Show version information')
   .action(async () => {
-    const installed = getInstalledVersion();
-
     console.log(chalk.blue.bold('\nOh-My-ClaudeCode Version Information\n'));
     console.log(chalk.gray('━'.repeat(50)));
 
     console.log(`\n  Package version:   ${chalk.green(version)}`);
 
-    if (installed) {
-      console.log(`  Installed version: ${chalk.green(installed.version)}`);
-      console.log(`  Install method:    ${chalk.cyan(installed.installMethod)}`);
-      console.log(`  Installed at:      ${chalk.gray(installed.installedAt)}`);
-      if (installed.lastCheckAt) {
-        console.log(`  Last update check: ${chalk.gray(installed.lastCheckAt)}`);
-      }
-      if (installed.commitHash) {
-        console.log(`  Commit hash:       ${chalk.gray(installed.commitHash)}`);
-      }
-    } else {
-      console.log(chalk.yellow('  No installation metadata found'));
-      console.log(chalk.gray('  (Run the install script to create version metadata)'));
-    }
-
     console.log(chalk.gray('\n━'.repeat(50)));
-    console.log(chalk.gray('\nTo check for updates, run: oh-my-claudecode update --check'));
   });
 
 /**
