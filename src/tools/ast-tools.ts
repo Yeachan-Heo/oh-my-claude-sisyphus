@@ -140,7 +140,7 @@ const EXT_TO_LANG: Record<string, string> = {
   ".yml": "yaml",
   ".sh": "bash",
   ".bash": "bash",
-  ".zsh": "bash",
+  ".zsh": "bash",  // NOTE: ast-grep uses bash parser; some zsh-specific syntax may not parse correctly
   ".ex": "elixir",
   ".exs": "elixir",
   ".hs": "haskell",

@@ -25,17 +25,22 @@ export interface LspAggregationResult {
   filesChecked: number;
 }
 
+let _cachedExtensions: string[] | null = null;
+
 /**
  * Get all file extensions supported by configured LSP servers
  */
 function getAllSupportedExtensions(): string[] {
+  if (_cachedExtensions) return _cachedExtensions;
+
   const extensions = new Set<string>();
   for (const config of Object.values(LSP_SERVERS)) {
     for (const ext of config.extensions) {
       extensions.add(ext);
     }
   }
-  return Array.from(extensions);
+  _cachedExtensions = Array.from(extensions);
+  return _cachedExtensions;
 }
 
 /**

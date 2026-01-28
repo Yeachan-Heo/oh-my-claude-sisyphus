@@ -8,6 +8,8 @@
 import { execSync } from 'child_process';
 import { existsSync } from 'fs';
 import { join } from 'path';
+import { commandExists } from '../lsp/servers.js';
+import { EXTERNAL_PROCESS_TIMEOUT_MS } from './index.js';
 
 export interface PythonDiagnostic {
   file: string;
@@ -26,18 +28,6 @@ export interface PythonResult {
   tool: 'mypy' | 'pylint' | 'none';
 }
 
-/**
- * Check if a command exists
- */
-function commandExists(command: string): boolean {
-  try {
-    const checkCommand = process.platform === 'win32' ? 'where' : 'which';
-    execSync(`${checkCommand} ${command}`, { stdio: 'ignore' });
-    return true;
-  } catch {
-    return false;
-  }
-}
 
 /**
  * Run Python diagnostics on a directory
@@ -81,7 +71,8 @@ function runMypy(directory: string): PythonResult {
     execSync('mypy . --ignore-missing-imports', {
       cwd: directory,
       encoding: 'utf-8',
-      stdio: 'pipe'
+      stdio: 'pipe',
+      timeout: EXTERNAL_PROCESS_TIMEOUT_MS
     });
     return {
       success: true,
@@ -134,7 +125,8 @@ function runPylint(directory: string): PythonResult {
     execSync('pylint --output-format=text --score=no .', {
       cwd: directory,
       encoding: 'utf-8',
-      stdio: 'pipe'
+      stdio: 'pipe',
+      timeout: EXTERNAL_PROCESS_TIMEOUT_MS
     });
     return {
       success: true,

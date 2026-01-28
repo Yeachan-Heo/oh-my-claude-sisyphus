@@ -19,6 +19,7 @@ import { runPythonDiagnostics, PythonDiagnostic, PythonResult } from './python-r
 import { formatDiagnostics } from '../lsp/utils.js';
 
 export const LSP_DIAGNOSTICS_WAIT_MS = 300;
+export const EXTERNAL_PROCESS_TIMEOUT_MS = 300000; // 5 minutes
 
 export type DiagnosticsStrategy = 'tsc' | 'go' | 'rust' | 'python' | 'lsp' | 'auto';
 
@@ -33,6 +34,17 @@ export interface DirectoryDiagnosticResult {
 
 /**
  * Detect project type from directory contents
+ *
+ * Priority order (first match wins):
+ * 1. tsconfig.json → 'typescript'
+ * 2. go.mod → 'go'
+ * 3. Cargo.toml → 'rust'
+ * 4. pyproject.toml / requirements.txt / setup.py → 'python'
+ * 5. (none) → 'unknown'
+ *
+ * Note: In monorepo scenarios with multiple project types,
+ * only the first match is returned. Use explicit strategy
+ * parameter to target a specific language.
  */
 function detectProjectType(directory: string): 'typescript' | 'go' | 'rust' | 'python' | 'unknown' {
   if (existsSync(join(directory, 'tsconfig.json'))) return 'typescript';
@@ -306,3 +318,4 @@ export { runLspAggregatedDiagnostics } from './lsp-aggregator.js';
 export { runGoDiagnostics } from './go-runner.js';
 export { runRustDiagnostics } from './rust-runner.js';
 export { runPythonDiagnostics } from './python-runner.js';
+export { detectProjectType };

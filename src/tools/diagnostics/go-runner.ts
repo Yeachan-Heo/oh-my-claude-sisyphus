@@ -7,6 +7,7 @@
 import { execSync } from 'child_process';
 import { existsSync } from 'fs';
 import { join } from 'path';
+import { EXTERNAL_PROCESS_TIMEOUT_MS } from './index.js';
 
 export interface GoDiagnostic {
   file: string;
@@ -44,7 +45,8 @@ export function runGoDiagnostics(directory: string): GoResult {
     execSync('go vet ./...', {
       cwd: directory,
       encoding: 'utf-8',
-      stdio: 'pipe'
+      stdio: 'pipe',
+      timeout: EXTERNAL_PROCESS_TIMEOUT_MS
     });
     return {
       success: true,

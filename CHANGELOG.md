@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - **Language-Agnostic Agent Prompts** (#174)
+
+### Breaking Changes
+
+- **Diagnostics Strategy Selection** - `lsp_diagnostics_directory` with explicit `strategy` parameter no longer falls back to 'lsp' when requested strategy's config file is missing. Runners now handle missing configs gracefully with error messages. Use `strategy: 'auto'` (default) for auto-detection with fallback.
   - build-fixer: Multi-language build/type check commands (TypeScript, Python, Go, Rust, Java)
   - tdd-guide: Framework-agnostic test examples and coverage commands
   - security-reviewer: Multi-language vulnerability patterns and dependency audit commands

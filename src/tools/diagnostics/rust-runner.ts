@@ -4,9 +4,10 @@
  * Uses `cargo check` for fast type checking of Rust projects.
  */
 
-import { execSync } from 'child_process';
+import { execFileSync } from 'child_process';
 import { existsSync } from 'fs';
 import { join } from 'path';
+import { EXTERNAL_PROCESS_TIMEOUT_MS } from './index.js';
 
 export interface RustDiagnostic {
   file: string;
@@ -42,10 +43,11 @@ export function runRustDiagnostics(directory: string): RustResult {
   }
 
   try {
-    execSync('cargo check --message-format=short 2>&1', {
+    execFileSync('cargo', ['check'], {
       cwd: directory,
       encoding: 'utf-8',
-      stdio: 'pipe'
+      stdio: ['pipe', 'pipe', 'pipe'],
+      timeout: EXTERNAL_PROCESS_TIMEOUT_MS
     });
     return {
       success: true,
@@ -54,7 +56,7 @@ export function runRustDiagnostics(directory: string): RustResult {
       warningCount: 0
     };
   } catch (error: any) {
-    const output = error.stdout || error.stderr || '';
+    const output = error.stderr || error.stdout || '';
     return parseRustOutput(output);
   }
 }
