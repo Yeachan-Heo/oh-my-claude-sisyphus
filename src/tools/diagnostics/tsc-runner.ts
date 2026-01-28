@@ -7,7 +7,7 @@
 import { execFileSync } from 'child_process';
 import { existsSync } from 'fs';
 import { join } from 'path';
-import { EXTERNAL_PROCESS_TIMEOUT_MS } from './index.js';
+import { EXTERNAL_PROCESS_TIMEOUT_MS } from './constants.js';
 
 export interface TscDiagnostic {
   file: string;
@@ -23,6 +23,7 @@ export interface TscResult {
   diagnostics: TscDiagnostic[];
   errorCount: number;
   warningCount: number;
+  skipped?: string;
 }
 
 /**
@@ -38,7 +39,8 @@ export function runTscDiagnostics(directory: string): TscResult {
       success: true,
       diagnostics: [],
       errorCount: 0,
-      warningCount: 0
+      warningCount: 0,
+      skipped: 'no tsconfig.json found in directory'
     };
   }
 
@@ -56,7 +58,31 @@ export function runTscDiagnostics(directory: string): TscResult {
       warningCount: 0
     };
   } catch (error: any) {
+    if (error.code === 'ENOENT') {
+      return {
+        success: true,
+        diagnostics: [],
+        errorCount: 0,
+        warningCount: 0,
+        skipped: '`tsc` binary not found in PATH'
+      };
+    }
     const output = error.stdout || error.stderr || '';
+    if (!output.trim()) {
+      return {
+        success: false,
+        diagnostics: [{
+          file: '.',
+          line: 0,
+          column: 0,
+          code: 'tsc-crash',
+          message: 'tsc exited with errors but produced no diagnostic output (possible configuration issue)',
+          severity: 'error' as const
+        }],
+        errorCount: 1,
+        warningCount: 0
+      };
+    }
     return parseTscOutput(output);
   }
 }

@@ -204,7 +204,7 @@ export function commandExists(command: string): boolean {
 export function getServerForFile(filePath: string): LspServerConfig | null {
   const ext = extname(filePath).toLowerCase();
 
-  for (const [_, config] of Object.entries(LSP_SERVERS)) {
+  for (const config of Object.values(LSP_SERVERS)) {
     if (config.extensions.includes(ext)) {
       return config;
     }

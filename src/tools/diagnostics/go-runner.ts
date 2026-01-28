@@ -7,7 +7,7 @@
 import { execFileSync } from 'child_process';
 import { existsSync } from 'fs';
 import { join } from 'path';
-import { EXTERNAL_PROCESS_TIMEOUT_MS } from './index.js';
+import { EXTERNAL_PROCESS_TIMEOUT_MS } from './constants.js';
 
 export interface GoDiagnostic {
   file: string;
@@ -38,7 +38,8 @@ export function runGoDiagnostics(directory: string): GoResult {
       success: true,
       diagnostics: [],
       errorCount: 0,
-      warningCount: 0
+      warningCount: 0,
+      skipped: 'no go.mod found in directory'
     };
   }
 

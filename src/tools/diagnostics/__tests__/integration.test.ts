@@ -31,12 +31,13 @@ describe('runDirectoryDiagnostics path validation', () => {
 
     try {
       // Mock realpathSync to throw for this specific path
+      const actualFs = await vi.importActual<typeof import('fs')>('fs');
       vi.mocked(fs.realpathSync).mockImplementation((p: fs.PathLike) => {
         if (p === tmpDir || p.toString() === tmpDir) {
           throw new Error('Mock realpathSync failure');
         }
         // Call the real implementation for other paths
-        return vi.importActual<typeof import('fs')>('fs').then(actual => actual.realpathSync(p));
+        return actualFs.realpathSync(p);
       });
 
       const result = await runDirectoryDiagnostics(tmpDir);

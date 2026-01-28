@@ -103,7 +103,7 @@ export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];
 /**
  * Map file extensions to ast-grep language identifiers
  */
-const EXT_TO_LANG: Record<string, string> = {
+const EXT_TO_LANG: Record<string, LanguageKey> = {
   ".js": "javascript",
   ".mjs": "javascript",
   ".cjs": "javascript",
@@ -113,6 +113,7 @@ const EXT_TO_LANG: Record<string, string> = {
   ".cts": "typescript",
   ".tsx": "tsx",
   ".py": "python",
+  ".pyw": "python",
   ".rb": "ruby",
   ".go": "go",
   ".rs": "rust",

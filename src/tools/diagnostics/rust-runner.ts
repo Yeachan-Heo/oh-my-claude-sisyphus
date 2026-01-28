@@ -7,7 +7,7 @@
 import { execFileSync } from 'child_process';
 import { existsSync } from 'fs';
 import { join } from 'path';
-import { EXTERNAL_PROCESS_TIMEOUT_MS } from './index.js';
+import { EXTERNAL_PROCESS_TIMEOUT_MS } from './constants.js';
 
 export interface RustDiagnostic {
   file: string;
@@ -39,12 +39,13 @@ export function runRustDiagnostics(directory: string): RustResult {
       success: true,
       diagnostics: [],
       errorCount: 0,
-      warningCount: 0
+      warningCount: 0,
+      skipped: 'no Cargo.toml found in directory'
     };
   }
 
   try {
-    execFileSync('cargo', ['check'], {
+    execFileSync('cargo', ['check', '--message-format=json'], {
       cwd: directory,
       encoding: 'utf-8',
       stdio: ['pipe', 'pipe', 'pipe'],
@@ -66,30 +67,53 @@ export function runRustDiagnostics(directory: string): RustResult {
         skipped: '`cargo` binary not found in PATH'
       };
     }
-    const output = error.stderr || error.stdout || '';
+    const output = error.stdout || error.stderr || '';
     return parseRustOutput(output);
   }
 }
 
 /**
- * Parse cargo check output
- * Format: error[E0123]: message
- *   --> file.rs:line:col
+ * Parse cargo check JSON output
+ *
+ * Cargo with --message-format=json emits one JSON object per line.
+ * We look for objects with reason='compiler-message' that contain diagnostics.
  */
 export function parseRustOutput(output: string): RustResult {
   const diagnostics: RustDiagnostic[] = [];
 
-  const regex = /(error|warning)(?:\[([A-Z]\d+)\])?: ([^\n]+)\n(?:[^\n]*\n)*?\s+-->\s+([^\n:]+):(\d+):(\d+)/g;
-  let match;
+  for (const line of output.split('\n')) {
+    // Trim to handle CRLF line endings (Windows) and trailing whitespace
+    const trimmedLine = line.trim();
+    if (!trimmedLine) continue;
 
-  while ((match = regex.exec(output)) !== null) {
+    let msg: any;
+    try {
+      msg = JSON.parse(trimmedLine);
+    } catch {
+      // Skip non-JSON lines (shouldn't happen with --message-format=json on stdout)
+      continue;
+    }
+
+    // Only process compiler messages
+    if (msg.reason !== 'compiler-message') continue;
+
+    const innerMessage = msg.message;
+    if (!innerMessage) continue;
+
+    // Only capture errors and warnings (skip note, help, failure-note)
+    if (innerMessage.level !== 'error' && innerMessage.level !== 'warning') continue;
+
+    // Find the primary span (main error location)
+    const primarySpan = innerMessage.spans?.find((s: any) => s.is_primary);
+    if (!primarySpan) continue;
+
     diagnostics.push({
-      severity: match[1] as 'error' | 'warning',
-      code: match[2] || '',
-      message: match[3],
-      file: match[4],
-      line: parseInt(match[5], 10),
-      column: parseInt(match[6], 10)
+      severity: innerMessage.level as 'error' | 'warning',
+      code: innerMessage.code?.code || '',
+      message: innerMessage.message,  // Note: msg.message.message
+      file: primarySpan.file_name,
+      line: primarySpan.line_start,
+      column: primarySpan.column_start
     });
   }
 

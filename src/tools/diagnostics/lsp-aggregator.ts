@@ -9,7 +9,7 @@ import { readdirSync, statSync } from 'fs';
 import { join, extname } from 'path';
 import { lspClientManager } from '../lsp/index.js';
 import type { Diagnostic } from '../lsp/index.js';
-import { LSP_DIAGNOSTICS_WAIT_MS } from './index.js';
+import { LSP_DIAGNOSTICS_WAIT_MS } from './constants.js';
 import { LSP_SERVERS } from '../lsp/servers.js';
 
 export interface LspDiagnosticWithFile {

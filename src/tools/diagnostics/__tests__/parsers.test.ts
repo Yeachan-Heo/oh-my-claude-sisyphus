@@ -102,11 +102,12 @@ src/utils.ts(25,12): error TS2304: Cannot find name 'foo'.`;
 });
 
 describe('parseRustOutput', () => {
-  it('parses cargo check errors', () => {
-    const output = `error[E0382]: borrow of moved value: \`x\`
- --> src/main.rs:5:20
-warning: unused variable: \`y\`
- --> src/lib.rs:10:9`;
+  it('parses cargo check JSON errors', () => {
+    // Cargo JSON format: one JSON object per line
+    const output = [
+      '{"reason":"compiler-message","package_id":"test","manifest_path":"/test/Cargo.toml","target":{"name":"test"},"message":{"message":"borrow of moved value: `x`","code":{"code":"E0382","explanation":null},"level":"error","spans":[{"file_name":"src/main.rs","line_start":5,"line_end":5,"column_start":20,"column_end":21,"is_primary":true,"text":[],"label":null}],"children":[],"rendered":null}}',
+      '{"reason":"compiler-message","package_id":"test","manifest_path":"/test/Cargo.toml","target":{"name":"test"},"message":{"message":"unused variable: `y`","code":null,"level":"warning","spans":[{"file_name":"src/lib.rs","line_start":10,"line_end":10,"column_start":9,"column_end":10,"is_primary":true,"text":[],"label":null}],"children":[],"rendered":null}}'
+    ].join('\n');
 
     const result = parseRustOutput(output);
 
@@ -118,45 +119,57 @@ warning: unused variable: \`y\`
       line: 5,
       column: 20,
       code: 'E0382',
-      severity: 'error'
+      severity: 'error',
+      message: 'borrow of moved value: `x`'
     });
   });
 
   it('returns empty for clean output', () => {
+    // Empty output or only build-finished message
     const result = parseRustOutput('');
     expect(result.diagnostics).toHaveLength(0);
     expect(result.success).toBe(true);
   });
 
-  it('parses cargo output with intermediate lines', () => {
-    const output = `error[E0382]: borrow of moved value: \`x\`
-  |
-5 |     let y = x;
-  |             - value moved here
- --> src/main.rs:5:20`;
+  it('ignores non-compiler-message JSON lines', () => {
+    const output = [
+      '{"reason":"compiler-artifact","package_id":"test","target":{"name":"test"}}',
+      '{"reason":"build-finished","success":false}',
+      '{"reason":"compiler-message","package_id":"test","manifest_path":"/test/Cargo.toml","target":{"name":"test"},"message":{"message":"type mismatch","code":{"code":"E0308","explanation":null},"level":"error","spans":[{"file_name":"src/main.rs","line_start":3,"line_end":3,"column_start":18,"column_end":25,"is_primary":true,"text":[],"label":null}],"children":[],"rendered":null}}'
+    ].join('\n');
+
     const result = parseRustOutput(output);
     expect(result.diagnostics).toHaveLength(1);
     expect(result.diagnostics[0].file).toBe('src/main.rs');
-    expect(result.diagnostics[0].line).toBe(5);
-    expect(result.diagnostics[0].column).toBe(20);
-    expect(result.diagnostics[0].code).toBe('E0382');
+    expect(result.diagnostics[0].code).toBe('E0308');
   });
 
-  it('parses warnings without error codes', () => {
-    const output = `warning: unused variable: \`x\`
- --> src/lib.rs:3:9`;
+  it('handles warnings without error codes', () => {
+    const output = '{"reason":"compiler-message","package_id":"test","manifest_path":"/test/Cargo.toml","target":{"name":"test"},"message":{"message":"unused variable: `x`","code":null,"level":"warning","spans":[{"file_name":"src/lib.rs","line_start":3,"line_end":3,"column_start":9,"column_end":10,"is_primary":true,"text":[],"label":null}],"children":[],"rendered":null}}';
+
     const result = parseRustOutput(output);
     expect(result.diagnostics).toHaveLength(1);
     expect(result.diagnostics[0].code).toBe('');
     expect(result.diagnostics[0].severity).toBe('warning');
   });
 
-  it('handles CRLF line endings', () => {
-    const output = "error[E0308]: mismatched types\r\n  |\r\n3 |     let x: i32 = \"hello\";\r\n  |                  ^^^^^^^ expected `i32`, found `&str`\r\n --> src/main.rs:3:18";
+  it('skips messages without primary span', () => {
+    // Message with no spans or no primary span should be skipped
+    const output = '{"reason":"compiler-message","package_id":"test","manifest_path":"/test/Cargo.toml","target":{"name":"test"},"message":{"message":"some note","code":null,"level":"note","spans":[],"children":[],"rendered":null}}';
+
+    const result = parseRustOutput(output);
+    expect(result.diagnostics).toHaveLength(0);
+  });
+
+  it('uses primary span when multiple spans exist', () => {
+    // Multiple spans, only primary should be used for location
+    const output = '{"reason":"compiler-message","package_id":"test","manifest_path":"/test/Cargo.toml","target":{"name":"test"},"message":{"message":"mismatched types","code":{"code":"E0308","explanation":null},"level":"error","spans":[{"file_name":"src/other.rs","line_start":1,"line_end":1,"column_start":1,"column_end":2,"is_primary":false,"text":[],"label":"expected"},{"file_name":"src/main.rs","line_start":10,"line_end":10,"column_start":5,"column_end":15,"is_primary":true,"text":[],"label":"found"}],"children":[],"rendered":null}}';
+
     const result = parseRustOutput(output);
     expect(result.diagnostics).toHaveLength(1);
     expect(result.diagnostics[0].file).toBe('src/main.rs');
-    expect(result.diagnostics[0].code).toBe('E0308');
+    expect(result.diagnostics[0].line).toBe(10);
+    expect(result.diagnostics[0].column).toBe(5);
   });
 });
 

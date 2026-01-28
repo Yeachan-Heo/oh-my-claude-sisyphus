@@ -18,8 +18,7 @@ import { runRustDiagnostics, RustDiagnostic, RustResult } from './rust-runner.js
 import { runPythonDiagnostics, PythonDiagnostic, PythonResult } from './python-runner.js';
 import { formatDiagnostics } from '../lsp/utils.js';
 
-export const LSP_DIAGNOSTICS_WAIT_MS = 300;
-export const EXTERNAL_PROCESS_TIMEOUT_MS = 300000; // 5 minutes
+export { EXTERNAL_PROCESS_TIMEOUT_MS, LSP_DIAGNOSTICS_WAIT_MS } from './constants.js';
 
 export type DiagnosticsStrategy = 'tsc' | 'go' | 'rust' | 'python' | 'lsp' | 'auto';
 
@@ -106,6 +105,21 @@ function formatDiagnosticResult<D extends BaseDiagnostic>(
 }
 
 /**
+ * Create a standardized skipped result
+ * @param summary - Reason for skipping (will be prefixed appropriately)
+ */
+function makeSkippedResult(summary: string): DirectoryDiagnosticResult {
+  return {
+    strategy: 'skipped',
+    success: true,
+    errorCount: 0,
+    warningCount: 0,
+    diagnostics: '',
+    summary
+  };
+}
+
+/**
  * Detect project type from directory contents
  *
  * Priority order (first match wins):
@@ -141,26 +155,12 @@ export async function runDirectoryDiagnostics(
 ): Promise<DirectoryDiagnosticResult> {
   // Validate directory exists
   if (!existsSync(directory)) {
-    return {
-      strategy: 'skipped',
-      success: true,
-      errorCount: 0,
-      warningCount: 0,
-      diagnostics: '',
-      summary: `Diagnostics skipped: directory does not exist: ${directory}`
-    };
+    return makeSkippedResult(`Diagnostics skipped: directory does not exist: ${directory}`);
   }
 
   // Check if it's actually a directory (not a file)
   if (!statSync(directory).isDirectory()) {
-    return {
-      strategy: 'skipped',
-      success: true,
-      errorCount: 0,
-      warningCount: 0,
-      diagnostics: '',
-      summary: `Diagnostics skipped: path is not a directory: ${directory}`
-    };
+    return makeSkippedResult(`Diagnostics skipped: path is not a directory: ${directory}`);
   }
 
   // Resolve symlinks to normalize the path
@@ -168,14 +168,7 @@ export async function runDirectoryDiagnostics(
   try {
     resolvedDirectory = realpathSync(directory);
   } catch {
-    return {
-      strategy: 'skipped',
-      success: true,
-      errorCount: 0,
-      warningCount: 0,
-      diagnostics: '',
-      summary: `Diagnostics skipped: cannot resolve directory path: ${directory}`
-    };
+    return makeSkippedResult(`Diagnostics skipped: cannot resolve directory path: ${directory}`);
   }
 
   let useStrategy: 'tsc' | 'go' | 'rust' | 'python' | 'lsp';
@@ -215,6 +208,9 @@ export async function runDirectoryDiagnostics(
  * Format tsc results into standard format
  */
 function formatTscResult(result: TscResult): DirectoryDiagnosticResult {
+  if (result.skipped) {
+    return makeSkippedResult(`TypeScript diagnostics skipped: ${result.skipped}`);
+  }
   return formatDiagnosticResult(result, 'tsc', 'TypeScript check');
 }
 
@@ -264,14 +260,7 @@ function formatLspResult(result: LspAggregationResult): DirectoryDiagnosticResul
  */
 function formatGoResult(result: GoResult): DirectoryDiagnosticResult {
   if (result.skipped) {
-    return {
-      strategy: 'skipped',
-      success: true,
-      errorCount: 0,
-      warningCount: 0,
-      diagnostics: '',
-      summary: `Go diagnostics skipped: ${result.skipped}`
-    };
+    return makeSkippedResult(`Go diagnostics skipped: ${result.skipped}`);
   }
   return formatDiagnosticResult(result, 'go', 'Go vet');
 }
@@ -281,14 +270,7 @@ function formatGoResult(result: GoResult): DirectoryDiagnosticResult {
  */
 function formatRustResult(result: RustResult): DirectoryDiagnosticResult {
   if (result.skipped) {
-    return {
-      strategy: 'skipped',
-      success: true,
-      errorCount: 0,
-      warningCount: 0,
-      diagnostics: '',
-      summary: `Rust diagnostics skipped: ${result.skipped}`
-    };
+    return makeSkippedResult(`Rust diagnostics skipped: ${result.skipped}`);
   }
   return formatDiagnosticResult(result, 'rust', 'Cargo check');
 }
@@ -298,14 +280,7 @@ function formatRustResult(result: RustResult): DirectoryDiagnosticResult {
  */
 function formatPythonResult(result: PythonResult): DirectoryDiagnosticResult {
   if (result.skipped) {
-    return {
-      strategy: 'skipped',
-      success: true,
-      errorCount: 0,
-      warningCount: 0,
-      diagnostics: '',
-      summary: `Python diagnostics skipped: ${result.skipped}`
-    };
+    return makeSkippedResult(`Python diagnostics skipped: ${result.skipped}`);
   }
   const toolName = result.tool === 'mypy' ? 'Mypy' : result.tool === 'pylint' ? 'Pylint' : 'Python';
   return formatDiagnosticResult(result, 'python', toolName);

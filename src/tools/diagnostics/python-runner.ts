@@ -9,7 +9,7 @@ import { execFileSync } from 'child_process';
 import { existsSync } from 'fs';
 import { join } from 'path';
 import { commandExists } from '../lsp/servers.js';
-import { EXTERNAL_PROCESS_TIMEOUT_MS } from './index.js';
+import { EXTERNAL_PROCESS_TIMEOUT_MS } from './constants.js';
 
 export interface PythonDiagnostic {
   file: string;
@@ -46,7 +46,8 @@ export function runPythonDiagnostics(directory: string): PythonResult {
       diagnostics: [],
       errorCount: 0,
       warningCount: 0,
-      tool: 'none'
+      tool: 'none',
+      skipped: 'no Python project files found (pyproject.toml, requirements.txt, or setup.py)'
     };
   }
 
@@ -63,7 +64,8 @@ export function runPythonDiagnostics(directory: string): PythonResult {
     diagnostics: [],
     errorCount: 0,
     warningCount: 0,
-    tool: 'none'
+    tool: 'none',
+    skipped: 'neither mypy nor pylint found in PATH'
   };
 }
 
