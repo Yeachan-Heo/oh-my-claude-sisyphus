@@ -2,7 +2,7 @@
 
 A Whitepaper on Fresh-Context Iteration for Long-Running Agent Tasks
 
-**Version**: 1.0
+**Version**: 1.1
 **Date**: January 2026
 **Status**: Published
 
@@ -13,6 +13,46 @@ A Whitepaper on Fresh-Context Iteration for Long-Running Agent Tasks
 Ralph-Fresh solves a fundamental problem in AI-driven development: **context accumulation**. When AI agents work on complex tasks across many iterations, their conversation history grows, degrading attention and eventually hitting token limits. Ralph-Fresh bypasses this by spawning **fresh AI agents each iteration** with complete context passed through files, not conversation memory. This enables **unlimited-length task execution** without degradation—transforming a tool limited to 10-15 iterations into one capable of indefinite execution.
 
 **The innovation**: External orchestrator pattern + handoff-based state passing = fresh context every iteration, zero accumulated conversation history.
+
+---
+
+## TL;DR
+
+- **Problem**: AI agents accumulate conversation history, causing attention degradation after ~10 iterations
+- **Solution**: Spawn fresh AI agents each iteration, pass context through files (not conversation memory)
+- **Result**: Unlimited iterations without context rot—tasks that would fail at iteration 15 can now run indefinitely
+- **How**: External orchestrator reads state from files (PRD, git, progress), spawns fresh Claude instance, repeats until complete
+- **Best For**: Complex tasks requiring 15+ iterations (full applications, large refactors, extended debugging)
+
+---
+
+## One-Minute Overview
+
+**The Core Concept**: Instead of one long conversation that accumulates bloat, Ralph-Fresh uses **many short conversations** where each fresh AI agent receives only the essential context from files.
+
+```mermaid
+graph LR
+    A[User Task] --> B[Orchestrator]
+    B --> C[Fresh Agent 1]
+    C --> D[Update Files]
+    D --> B
+    B --> E[Fresh Agent 2]
+    E --> F[Update Files]
+    F --> B
+    B --> G[Fresh Agent N]
+    G --> H[Complete]
+
+    style C fill:#e1f5e1
+    style E fill:#e1f5e1
+    style G fill:#e1f5e1
+    style B fill:#fff3cd
+```
+
+**The Simple Analogy**:
+- **Standard Ralph** = Taking notes on the same paper (eventually runs out of room, gets messy)
+- **Ralph-Fresh** = Fresh paper each time, but you copy forward only the important notes (clean slate, essential context preserved)
+
+Each iteration gets a clean mental workspace while maintaining perfect continuity through external state files.
 
 ---
 
@@ -29,19 +69,24 @@ When a human and AI agent have an extended conversation:
 
 **In standard Ralph** (the current implementation):
 
+```mermaid
+graph TD
+    A[User: Build a todo app] --> B[Iteration 1: Claude works]
+    B --> C[Iteration 2<br/>History = original + iter1]
+    C --> D[Iteration 3<br/>History = original + iter1 + iter2]
+    D --> E[...]
+    E --> F[Iteration 10<br/>History = MASSIVE]
+    F --> G[Context Rot<br/>Original task attention ~5%]
+
+    style A fill:#e3f2fd
+    style B fill:#c8e6c9
+    style C fill:#fff9c4
+    style D fill:#ffecb3
+    style F fill:#ffcdd2
+    style G fill:#ef9a9a
 ```
-User: "Build a todo app"
-                    ↓
-[Iteration 1] Claude works, outputs thinking + code
-                    ↓
-[Iteration 2] Conversation history = (original prompt + iteration 1 output + new work)
-                    ↓
-[Iteration 3] Conversation history = (original + iter1 + iter2 + new work) ← Getting long
-                    ↓
-[Iteration 10] Conversation history = MASSIVE, original task diluted in noise
-                    ↓
-Context Rot: Claude's attention on the original task is now ~5%
-```
+
+**Context accumulation visualization**: Each iteration adds to the conversation history, creating exponential growth that eventually drowns the original task in noise.
 
 ### 1.2 The Three Symptoms of Context Rot
 
@@ -74,29 +119,69 @@ Claude operates within a token limit (e.g., 200K tokens):
 
 What if each iteration **wasn't a continuation of a conversation**, but a **fresh conversation with complete context injected as data**?
 
-```
-User: "Build a todo app with auth and tests"
-                    ↓
-[Iteration 1] Fresh Claude instance (context = zero history)
-             Input: Original task + PRD
-             Output: Code, commits, updates state file
-             Memory: DISCARDED
-                    ↓
-[Iteration 2] COMPLETELY NEW Claude instance (fresh context window)
-             Input: Original task + state file (what was done) + PRD
-             Output: Continues from where iter 1 left off
-             Memory: DISCARDED
-                    ↓
-[Iteration 3] COMPLETELY NEW Claude instance (fresh context window again)
-             Input: Original task + state file (iter1+2 combined) + PRD
-             Output: Continues cleanly
-             Memory: DISCARDED
-                    ↓
-[Iteration 50] FRESH context still available - zero accumulated history
-               No degradation. Can run forever.
+```mermaid
+graph TD
+    A[User: Build a todo app] --> B1[Fresh Agent 1<br/>Context: Original task + PRD]
+    B1 --> C1[Work: Code + Commits]
+    C1 --> D1[Update State Files]
+    D1 --> E1[Memory DISCARDED ✓]
+
+    E1 --> B2[Fresh Agent 2<br/>Context: Task + State Files]
+    B2 --> C2[Work: Continue from iter 1]
+    C2 --> D2[Update State Files]
+    D2 --> E2[Memory DISCARDED ✓]
+
+    E2 --> B3[Fresh Agent 3<br/>Context: Task + State Files]
+    B3 --> C3[Work: Continue cleanly]
+    C3 --> D3[Update State Files]
+
+    D3 --> F[...]
+    F --> G[Iteration 50+<br/>Still FRESH context<br/>No degradation]
+
+    style B1 fill:#e1f5e1
+    style B2 fill:#e1f5e1
+    style B3 fill:#e1f5e1
+    style G fill:#c8e6c9
+    style E1 fill:#ffecb3
+    style E2 fill:#ffecb3
 ```
 
 **Key difference**: Context comes from **files and git history**, not conversation memory.
+
+**Side-by-Side Comparison**:
+
+```mermaid
+graph TD
+    subgraph Standard["Standard Ralph: Context Snowball"]
+        A1[Iteration 1] --> A2[Iteration 2<br/>+accumulated history]
+        A2 --> A3[Iteration 3<br/>++more history]
+        A3 --> A4[Iteration 10<br/>BLOATED CONTEXT]
+        A4 --> A5[Context Rot ❌]
+
+        style A4 fill:#ffcdd2
+        style A5 fill:#ef9a9a
+    end
+
+    subgraph Fresh["Ralph-Fresh: Fresh Slate Each Time"]
+        B1[Fresh Agent 1] --> B2[Fresh Agent 2]
+        B2 --> B3[Fresh Agent 3]
+        B3 --> B4[Fresh Agent 50+]
+        B4 --> B5[Always Fresh ✓]
+
+        style B1 fill:#e1f5e1
+        style B2 fill:#e1f5e1
+        style B3 fill:#e1f5e1
+        style B4 fill:#e1f5e1
+        style B5 fill:#c8e6c9
+    end
+
+    F1[State Files] -.Context.-> B1
+    F1 -.Context.-> B2
+    F1 -.Context.-> B3
+    F1 -.Context.-> B4
+
+    style F1 fill:#fff3cd
+```
 
 ### 2.2 How Ralph-Fresh Actually Works
 
@@ -191,49 +276,29 @@ Instead of storing memory in conversation history, Ralph-Fresh uses a **handoff 
 
 Ralph-Fresh uses a **simple but elegant architecture**:
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│  User runs: omc ralph-fresh "task" --prd                    │
-└────────────────────┬────────────────────────────────────────┘
-                     │
-                     ▼
-        ┌────────────────────────────┐
-        │  CLI Handler               │
-        │ (src/cli/commands)         │
-        │ • Parse arguments          │
-        │ • Validate task            │
-        └────────────┬───────────────┘
-                     │
-                     ▼
-        ┌────────────────────────────┐
-        │  External Orchestrator     │
-        │ (scripts/ralph-fresh.ts)   │
-        │ • Loop control             │
-        │ • State management         │
-        │ • CLI spawning             │
-        └────────┬─────────┬──────────┘
-                 │         │
-         ┌───────▼──┐  ┌──▼──────────────┐
-         │ Check    │  │ Spawn Fresh     │
-         │ Completion
-         │  Detect  │  │ Claude Instance │
-         └───────┬──┘  └────┬─────────────┘
-                 │          │
-                 │     ┌────▼──────────────┐
-                 │     │ Claude Code CLI   │
-                 │     │ (print mode)      │
-                 │     │ • Full tool access│
-                 │     │ • Works autonomously
-                 │     │ • Fresh context   │
-                 │     └────┬──────────────┘
-                 │          │
-         ┌───────▼──────────▼──────────────┐
-         │  State Files                   │
-         │  ├─ .omc/prd.json (stories)   │
-         │  ├─ .omc/progress.txt (learnings)
-         │  ├─ git log (commits)          │
-         │  └─ .omc/state/handoff.json   │
-         └───────────────────────────────┘
+```mermaid
+graph TB
+    User[User runs: omc ralph-fresh task --prd] --> CLI[CLI Handler<br/>Parse arguments<br/>Validate task]
+    CLI --> Orch[External Orchestrator<br/>Loop control<br/>State management<br/>CLI spawning]
+
+    Orch --> Check{Check<br/>Completion?}
+    Check -->|Not Done| Spawn[Spawn Fresh<br/>Claude Instance]
+    Check -->|Complete| Done[Exit]
+
+    Spawn --> Agent[Claude Code CLI<br/>Print mode<br/>Full tool access<br/>Fresh context]
+
+    Agent --> Work[Do Work:<br/>Read code<br/>Implement<br/>Test<br/>Commit]
+
+    Work --> Update[Update State Files]
+    Update --> Files[(State Files<br/>.omc/prd.json<br/>.omc/progress.txt<br/>git log<br/>.omc/state/handoff.json)]
+
+    Files --> Orch
+
+    style User fill:#e3f2fd
+    style Orch fill:#fff3cd
+    style Agent fill:#e1f5e1
+    style Files fill:#f3e5f5
+    style Done fill:#c8e6c9
 ```
 
 ### 3.2 Components and Responsibilities
@@ -573,17 +638,23 @@ Use **Standard Ralph** when:
 
 ### Decision Flowchart
 
-```
-Is this task complex with many parts?
-├─ NO → Use Standard Ralph
-└─ YES ↓
-     Expected to take 15+ iterations?
-     ├─ NO → Use Standard Ralph
-     └─ YES ↓
-          Can break down into user stories?
-          ├─ NO → Use Standard Ralph (free-form mode, future)
-          └─ YES ↓
-               Use Ralph-Fresh with --prd
+```mermaid
+graph TD
+    Start[New Task] --> Q1{Complex with<br/>many parts?}
+    Q1 -->|No| SR1[Use Standard Ralph]
+    Q1 -->|Yes| Q2{Expected 15+<br/>iterations?}
+
+    Q2 -->|No| SR2[Use Standard Ralph]
+    Q2 -->|Yes| Q3{Can break into<br/>user stories?}
+
+    Q3 -->|No| SR3[Use Standard Ralph<br/>free-form mode, future]
+    Q3 -->|Yes| RF[Use Ralph-Fresh<br/>with --prd ✓]
+
+    style Start fill:#e3f2fd
+    style SR1 fill:#b3e5fc
+    style SR2 fill:#b3e5fc
+    style SR3 fill:#b3e5fc
+    style RF fill:#c8e6c9
 ```
 
 ---
