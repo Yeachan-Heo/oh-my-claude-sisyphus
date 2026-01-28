@@ -4,6 +4,8 @@
 [![Sponsor](https://img.shields.io/badge/Sponsor-❤️-red?style=flat&logo=github)](https://github.com/sponsors/Yeachan-Heo)
 
 
+<h1 align="center">Claude-On-Steroids</h1>
+
 <p align="center">
   <img src="assets/omc-character.jpg" alt="oh-my-claudecode" width="400" />
 </p>
