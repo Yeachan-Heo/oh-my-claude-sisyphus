@@ -59,6 +59,11 @@ const MODE_CONFIGS: Record<ExecutionMode, ModeConfig> = {
     activeProperty: 'active',
     hasGlobalState: true
   },
+  'ralph-fresh': {
+    name: 'Ralph-Fresh',
+    stateFile: 'ralph-fresh-state.json',
+    activeProperty: 'active'
+  },
   ultrawork: {
     name: 'Ultrawork',
     stateFile: 'ultrawork-state.json',
@@ -84,7 +89,7 @@ export { MODE_CONFIGS };
 /**
  * Modes that are mutually exclusive (cannot run concurrently)
  */
-const EXCLUSIVE_MODES: ExecutionMode[] = ['autopilot', 'ultrapilot', 'swarm', 'pipeline'];
+const EXCLUSIVE_MODES: ExecutionMode[] = ['autopilot', 'ultrapilot', 'swarm', 'pipeline', 'ralph', 'ralph-fresh'];
 
 /**
  * Get the state directory path

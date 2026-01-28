@@ -30,6 +30,57 @@ describe('Mode Registry Integration', () => {
       expect(result.message).toBeUndefined();
     });
 
+    it('should block ralph-fresh when standard ralph is active', () => {
+      // Create standard ralph state
+      const stateDir = join(testDir, '.omc', 'state');
+      mkdirSync(stateDir, { recursive: true });
+      writeFileSync(join(stateDir, 'ralph-state.json'), JSON.stringify({
+        active: true,
+        iteration: 1,
+        maxIterations: 20
+      }));
+
+      const result = canStartMode('ralph-fresh', testDir);
+
+      expect(result.allowed).toBe(false);
+      expect(result.blockedBy).toBe('ralph');
+      expect(result.message).toContain('Cannot start Ralph-Fresh');
+      expect(result.message).toContain('Ralph is active');
+    });
+
+    it('should block standard ralph when ralph-fresh is active', () => {
+      // Create ralph-fresh state
+      const stateDir = join(testDir, '.omc', 'state');
+      mkdirSync(stateDir, { recursive: true });
+      writeFileSync(join(stateDir, 'ralph-fresh-state.json'), JSON.stringify({
+        active: true,
+        iteration: 1,
+        maxIterations: 20
+      }));
+
+      const result = canStartMode('ralph', testDir);
+
+      expect(result.allowed).toBe(false);
+      expect(result.blockedBy).toBe('ralph-fresh');
+      expect(result.message).toContain('Cannot start Ralph');
+      expect(result.message).toContain('Ralph-Fresh is active');
+    });
+
+    it('should block ralph-fresh when autopilot is active', () => {
+      // Create autopilot state
+      const stateDir = join(testDir, '.omc', 'state');
+      mkdirSync(stateDir, { recursive: true });
+      writeFileSync(join(stateDir, 'autopilot-state.json'), JSON.stringify({
+        active: true,
+        phase: 'execution'
+      }));
+
+      const result = canStartMode('ralph-fresh', testDir);
+
+      expect(result.allowed).toBe(false);
+      expect(result.blockedBy).toBe('autopilot');
+    });
+
     it('should block when exclusive mode is active', () => {
       // Create autopilot state to simulate active mode
       const stateDir = join(testDir, '.omc', 'state');
@@ -72,8 +123,8 @@ describe('Mode Registry Integration', () => {
       mkdirSync(stateDir, { recursive: true });
       createModeMarker('swarm', testDir, { agentCount: 3 });
 
-      // Ralph is not exclusive, so it should be allowed
-      const result = canStartMode('ralph', testDir);
+      // Ultrawork is not exclusive, so it should be allowed
+      const result = canStartMode('ultrawork', testDir);
 
       expect(result.allowed).toBe(true);
     });
@@ -163,6 +214,18 @@ describe('Mode Registry Integration', () => {
       }));
 
       expect(isModeActive('autopilot', testDir)).toBe(true);
+    });
+
+    it('should detect active ralph-fresh mode', () => {
+      const stateDir = join(testDir, '.omc', 'state');
+      mkdirSync(stateDir, { recursive: true });
+      writeFileSync(join(stateDir, 'ralph-fresh-state.json'), JSON.stringify({
+        active: true,
+        iteration: 1,
+        maxIterations: 20
+      }));
+
+      expect(isModeActive('ralph-fresh', testDir)).toBe(true);
     });
 
     it('should return false when mode is not active', () => {
