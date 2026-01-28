@@ -2,7 +2,7 @@
 
 A Whitepaper on Fresh-Context Iteration for Long-Running Agent Tasks
 
-**Version**: 1.3
+**Version**: 1.4
 **Date**: January 2026
 **Status**: Published
 
@@ -354,29 +354,34 @@ graph TB
 ### 3.2 Components and Responsibilities
 
 **External Orchestrator** (`scripts/ralph-fresh.ts`)
-- Maintains the iteration loop
-- Reads current state from files
-- Spawns fresh Claude instances via CLI
-- Detects completion
-- Handles signals (Ctrl+C) gracefully
+- Maintains the iteration loop with retry logic
+- Reads current state from files via `refreshHandoffFromFiles()`
+- Spawns fresh Claude instances via CLI (`runClaude()`)
+- Detects completion (PRD complete or promise signal)
+- Handles signals (SIGINT/SIGTERM) gracefully
+- Manages two state files: `ralph-fresh-state.json` (mode) and `ralph-fresh-handoff.json` (context)
 
 **Handoff State Manager** (`src/hooks/ralph/fresh-handoff.ts`)
-- Read/write `.omc/state/ralph-fresh-state.json`
-- Refresh state from `.omc/prd.json` and git
-- Track stuck detection
-- Error logging
+- Defines **canonical `RalphFreshHandoff` interface** (single source of truth)
+- Read/write `.omc/state/ralph-fresh-handoff.json`
+- `refreshHandoffFromFiles()` - sync from `.omc/prd.json`, `.omc/progress.txt`, git
+- Stuck detection logic (increments counter when same story)
+
+**State Detection** (`src/hooks/ralph/fresh.ts`)
+- Sub-interfaces for PRD, progress, git, stuck detection, errors
+- `isRalphFreshActive()` / `isStandardRalphActive()` for mutual exclusion
+- `DEFAULT_FRESH_CONFIG` with sensible defaults
 
 **Prompt Generator** (`src/hooks/ralph/fresh-prompt.ts`)
-- Create iteration-specific prompts
-- Inject current state into prompt
-- Warn about stuck stories
-- Provide next task guidance
+- Imports `RalphFreshHandoff` type from `fresh-handoff.ts`
+- `generateIterationPrompt()` - creates iteration-specific prompt
+- Includes stuck warnings (>2 iterations on same story)
+- Includes last error context if present
 
 **CLI Handler** (`src/cli/commands/ralph-fresh.ts`)
-- Parse user arguments
-- Spawn orchestrator as external process
-- Handle `--prd`, `--max-iterations`, `--verbose`
-- Report completion status
+- Check mode conflicts via `isModeActive()` (autopilot, ultrapilot, swarm, pipeline, ralph)
+- TypeScript runner detection: JS (compiled) → bun → tsx → error
+- Spawn orchestrator as child process with stdio inherit
 
 ### 3.3 Execution Flow in Detail
 
@@ -713,7 +718,10 @@ graph TD
 
 ### 7.1 Handoff Schema
 
-**File**: `.omc/state/ralph-fresh-state.json`
+**File**: `.omc/state/ralph-fresh-handoff.json`
+**Canonical Type**: `src/hooks/ralph/fresh-handoff.ts` → `RalphFreshHandoff`
+
+> **Implementation Note**: The `RalphFreshHandoff` interface is defined once in `fresh-handoff.ts` and imported via `import type` by other modules (e.g., `fresh-prompt.ts`). This "canonical type" pattern prevents type drift between modules.
 
 ```typescript
 interface RalphFreshHandoff {
@@ -967,40 +975,44 @@ Ralph-Fresh handles several failure modes:
 
 ## PART 8: IMPLEMENTATION DETAILS
 
-### 8.1 Files to Create
+### 8.1 Files and Their Responsibilities
 
 The Ralph-Fresh implementation consists of 6 files:
 
-**Core Types** (`src/hooks/ralph/fresh.ts`):
-- `RalphFreshHandoff` interface
-- `RalphFreshConfig` interface
-- Helper functions for state detection
+**State Detection & Helper Types** (`src/hooks/ralph/fresh.ts`):
+- Sub-interfaces: `RalphFreshPrd`, `RalphFreshProgress`, `RalphFreshGit`, `RalphFreshStuckDetection`, `RalphFreshError`
+- `RalphFreshConfig` interface for orchestration configuration
+- `DEFAULT_FRESH_CONFIG` - default configuration values
+- `isRalphFreshActive()` - check if ralph-fresh is running
+- `isStandardRalphActive()` - mutual exclusion detection
 
-**State Management** (`src/hooks/ralph/fresh-handoff.ts`):
-- `initHandoff()` - Create new handoff
-- `readHandoff()` - Load from disk
-- `writeHandoff()` - Save to disk
-- `refreshHandoffFromFiles()` - Update from PRD/progress/git
+**State Management & Canonical Types** (`src/hooks/ralph/fresh-handoff.ts`):
+- **`RalphFreshHandoff`** - canonical handoff interface (single source of truth)
+- `RalphFreshConfig` - simplified config for handoff init
+- `getHandoffPath()` - get path to handoff JSON file
+- `initHandoff()` - create new handoff state
+- `readHandoff()` / `writeHandoff()` / `clearHandoff()` - CRUD operations
+- `refreshHandoffFromFiles()` - update from PRD/progress/git
 
 **Prompt Generation** (`src/hooks/ralph/fresh-prompt.ts`):
-- `generateIterationPrompt()` - Create iteration-specific prompt
-- Template rendering with current state
+- Imports `RalphFreshHandoff` from `fresh-handoff.ts` (canonical type)
+- `generateIterationPrompt()` - create iteration-specific prompt
+- Template rendering with stuck detection and error context
 
 **Orchestrator** (`scripts/ralph-fresh.ts`):
-- Main loop control
-- Claude CLI spawning
-- Completion detection
-- Signal handlers (Ctrl+C)
-- Error handling + retries
+- `RalphFreshState` interface for active mode tracking
+- `writeStateFile()` / `clearStateFile()` - mode state management
+- `setupSignalHandlers()` - graceful shutdown (SIGINT/SIGTERM)
+- `parseArgs()` - CLI argument parsing
+- `initOrLoadHandoff()` - resume or create handoff
+- `runClaude()` - spawn Claude CLI with retries
+- Main orchestration loop
 
 **CLI Handler** (`src/cli/commands/ralph-fresh.ts`):
-- Parse user arguments
-- Spawn orchestrator as external process
-- Route `--prd`, `--max-iterations` options
-
-**CLI Registration** (`src/cli/index.ts`):
-- Register `ralph-fresh` command with commander.js
-- Dispatch to CLI handler
+- `RalphFreshOptions` interface
+- `ralphFreshCommand()` - entry point with mode conflict detection
+- TypeScript runner detection (JS → bun → tsx fallback)
+- Spawns orchestrator as child process
 
 ### 8.2 Sequence of Execution
 
@@ -1116,12 +1128,12 @@ omc ralph-fresh "task" \
 
 | Component | File | Lines | Purpose |
 |-----------|------|-------|---------|
-| Core Types | `src/hooks/ralph/fresh.ts` | ~247 | Handoff and config interfaces, detection helpers |
-| State Ops | `src/hooks/ralph/fresh-handoff.ts` | ~296 | Read/write/refresh handoff, PRD/git integration |
-| Prompts | `src/hooks/ralph/fresh-prompt.ts` | ~176 | Iteration prompt generation |
-| Orchestrator | `scripts/ralph-fresh.ts` | ~442 | Main loop, CLI spawning, error handling |
-| CLI Wrapper | `src/cli/commands/ralph-fresh.ts` | ~182 | User-facing command, runner detection |
-| Mode Registry | `src/hooks/mode-registry/index.ts` | ~492 | Centralized mode state, mutual exclusion |
+| State Detection | `src/hooks/ralph/fresh.ts` | ~246 | Sub-interfaces, config, detection helpers |
+| State Ops | `src/hooks/ralph/fresh-handoff.ts` | ~295 | **Canonical `RalphFreshHandoff`**, CRUD, refresh from files |
+| Prompts | `src/hooks/ralph/fresh-prompt.ts` | ~136 | Iteration prompt generation |
+| Orchestrator | `scripts/ralph-fresh.ts` | ~441 | Main loop, CLI spawning, error handling, signal handlers |
+| CLI Wrapper | `src/cli/commands/ralph-fresh.ts` | ~181 | Mode conflict checks, TypeScript runner detection |
+| Mode Registry | `src/hooks/mode-registry/index.ts` | ~491 | Centralized mode state, mutual exclusion |
 
 ### C. Configuration Files
 
@@ -1253,8 +1265,9 @@ For tasks of moderate-to-high complexity (8+ hours of work), Ralph-Fresh provide
 
 ---
 
-**Document Version**: 1.3
+**Document Version**: 1.4
 **Last Updated**: January 2026
 **Status**: Published (Implementation Sync)
-**Changes in 1.3**: Updated to reflect actual implementation - TypeScript runner detection, mode registry integration, state file separation (state vs. handoff), accurate file paths
+**Changes in 1.4**: Clarified canonical type pattern (`RalphFreshHandoff` defined in `fresh-handoff.ts`), fixed file path in Section 7.1, updated Section 3.2 and 8.1 with accurate component responsibilities, corrected line counts in Section B
+**Changes in 1.3**: TypeScript runner detection, mode registry integration, state file separation (state vs. handoff), accurate file paths
 **Next Review**: v0.2 release (post-implementation feedback)
