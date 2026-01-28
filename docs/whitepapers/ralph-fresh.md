@@ -2,7 +2,7 @@
 
 A Whitepaper on Fresh-Context Iteration for Long-Running Agent Tasks
 
-**Version**: 1.1
+**Version**: 1.2
 **Date**: January 2026
 **Status**: Published
 
@@ -23,6 +23,54 @@ Ralph-Fresh solves a fundamental problem in AI-driven development: **context acc
 - **Result**: Unlimited iterations without context rot—tasks that would fail at iteration 15 can now run indefinitely
 - **How**: External orchestrator reads state from files (PRD, git, progress), spawns fresh Claude instance, repeats until complete
 - **Best For**: Complex tasks requiring 15+ iterations (full applications, large refactors, extended debugging)
+
+---
+
+## Quick Reference Card
+
+**For developers who need the essentials at a glance:**
+
+### When to Use
+- Task likely to take **15+ iterations**
+- Complex tasks with many files/components
+- Tasks where fresh context matters for sustained attention
+
+### Command
+```bash
+# Basic usage
+omc ralph-fresh "your task here"
+
+# Recommended (structured)
+omc ralph-fresh --prd "your task with clear breakdown"
+
+# With custom iterations
+omc ralph-fresh --prd "task" --max-iterations 50
+```
+
+### Key Files
+| File | Purpose |
+|------|---------|
+| `.omc/prd.json` | User stories and completion status |
+| `.omc/progress.txt` | Learnings and patterns discovered |
+| `.omc/state/ralph-fresh-state.json` | Handoff object (iteration state) |
+
+### Key Concepts
+- **Fresh Context**: Each iteration starts with no conversation history—only essential state from files
+- **Handoff Object**: JSON snapshot of PRD status, patterns, git history, and learnings
+- **Stuck Detection**: Warns if task stalls on same story for 3+ iterations
+- **PRD Mode**: Structured breakdown into user stories with clear completion criteria
+
+### Quick Status Check
+```bash
+# What stories are done?
+cat .omc/prd.json | jq '.userStories[] | {id, title, passes}'
+
+# What patterns were learned?
+cat .omc/progress.txt | head -20
+
+# What work was done?
+git log --oneline -10
+```
 
 ---
 
@@ -1134,7 +1182,7 @@ For tasks of moderate-to-high complexity (8+ hours of work), Ralph-Fresh provide
 
 ---
 
-**Document Version**: 1.0
+**Document Version**: 1.2
 **Last Updated**: January 2026
-**Status**: Published
+**Status**: Published (Final Polish)
 **Next Review**: v0.2 release (post-implementation feedback)
