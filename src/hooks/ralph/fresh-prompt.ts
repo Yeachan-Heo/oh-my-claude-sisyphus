@@ -10,47 +10,8 @@
 // Types
 // ============================================================================
 
-export interface RalphFreshHandoff {
-  /** Current iteration number */
-  iteration: number;
-  /** Maximum iterations allowed */
-  maxIterations: number;
-  /** The original user prompt/task */
-  originalPrompt: string;
-  /** The promise phrase to output when complete */
-  completionPromise: string;
-  /** PRD status (null if no PRD) */
-  prd: {
-    project: string;
-    storiesCompleted: number;
-    storiesTotal: number;
-    nextStoryId: string;
-    incompleteIds: string[];
-  } | null;
-  /** Git state */
-  git: {
-    recentCommits: Array<{
-      hash: string;
-      message: string;
-    }>;
-    hasUncommittedChanges: boolean;
-  };
-  /** Progress tracking */
-  progress: {
-    patterns: string[];
-    recentLearnings: string[];
-  };
-  /** Stuck detection */
-  stuckDetection: {
-    iterationsOnSameStory: number;
-  };
-  /** Last error from previous iteration */
-  lastError: {
-    iteration: number;
-    message: string;
-    recoveryAttempt?: string;
-  } | null;
-}
+// Import the canonical type from fresh-handoff
+import type { RalphFreshHandoff } from './fresh-handoff.js';
 
 // ============================================================================
 // Prompt Generation
@@ -63,14 +24,14 @@ export function generateIterationPrompt(handoff: RalphFreshHandoff): string {
   const sections: string[] = [];
 
   // Header
-  sections.push(`# Ralph Fresh Context - Iteration ${handoff.iteration}/${handoff.maxIterations}\n`);
+  sections.push(`# Ralph Fresh Context - Iteration ${handoff.iteration}/${handoff.max_iterations}\n`);
   sections.push('You are continuing work that was started by a previous agent iteration.');
   sections.push('**Your context is completely fresh** - you have no memory of previous attempts.');
   sections.push('Your ONLY memory is what\'s in the files and git history.\n');
 
   // Your Task
   sections.push('## Your Task');
-  sections.push(`${handoff.originalPrompt}\n`);
+  sections.push(`${handoff.original_prompt}\n`);
 
   // Current State
   sections.push('## Current State (from files)\n');
@@ -132,7 +93,7 @@ export function generateIterationPrompt(handoff: RalphFreshHandoff): string {
   sections.push('3. **Make frequent atomic commits** as you complete work');
   sections.push('4. **Update prd.json** when you complete a story (set `passes: true`)');
   sections.push('5. **Update progress.txt** with learnings for future iterations');
-  sections.push(`6. When ALL stories are complete, output: \`<promise>${handoff.completionPromise}</promise>\`\n`);
+  sections.push(`6. When ALL stories are complete, output: \`<promise>${handoff.completion_promise}</promise>\`\n`);
 
   // Critical Rules
   sections.push('## Critical Rules\n');
