@@ -12,7 +12,7 @@
  * Response: { five_hour: { utilization }, seven_day: { utilization } }
  */
 
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs';
+import { existsSync, readFileSync, writeFileSync, renameSync, unlinkSync, mkdirSync } from 'fs';
 import { homedir } from 'os';
 import { join, dirname } from 'path';
 import { execSync } from 'child_process';
@@ -25,6 +25,12 @@ const CACHE_TTL_FAILURE_MS = 15 * 1000; // 15 seconds for failures
 const API_TIMEOUT_MS = 10000;
 const TOKEN_REFRESH_URL_HOSTNAME = 'platform.claude.com';
 const TOKEN_REFRESH_URL_PATH = '/v1/oauth/token';
+
+/**
+ * OAuth client_id for Claude Code (public client).
+ * This is the production value; can be overridden via CLAUDE_CODE_OAUTH_CLIENT_ID env var.
+ */
+const DEFAULT_OAUTH_CLIENT_ID = '9d1c250a-e61b-44d9-88ed-5944d1962f5e';
 
 interface UsageCache {
   timestamp: number;
@@ -209,9 +215,11 @@ function validateCredentials(creds: OAuthCredentials): boolean {
  */
 function refreshAccessToken(refreshToken: string): Promise<OAuthCredentials | null> {
   return new Promise((resolve) => {
+    const clientId = process.env.CLAUDE_CODE_OAUTH_CLIENT_ID || DEFAULT_OAUTH_CLIENT_ID;
     const body = new URLSearchParams({
       grant_type: 'refresh_token',
       refresh_token: refreshToken,
+      client_id: clientId,
     }).toString();
 
     const req = https.request(
@@ -341,7 +349,22 @@ function writeBackCredentials(creds: OAuthCredentials): void {
       }
     }
 
-    writeFileSync(credPath, JSON.stringify(parsed, null, 2));
+    // Atomic write: write to tmp file, then rename (atomic on POSIX, best-effort on Windows)
+    const tmpPath = `${credPath}.tmp.${process.pid}`;
+    try {
+      writeFileSync(tmpPath, JSON.stringify(parsed, null, 2), { mode: 0o600 });
+      renameSync(tmpPath, credPath);
+    } catch (writeErr) {
+      // Clean up orphaned tmp file on failure
+      try {
+        if (existsSync(tmpPath)) {
+          unlinkSync(tmpPath);
+        }
+      } catch {
+        // Ignore cleanup errors
+      }
+      throw writeErr;
+    }
   } catch {
     // Silent failure - credential write-back is best-effort
     if (process.env.OMC_DEBUG) {
