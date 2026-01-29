@@ -1,5 +1,6 @@
 ---
 name: ecomode
+aliases: [eco, efficient, save-tokens, budget]
 description: Token-efficient parallel execution mode using Haiku and Sonnet agents
 ---
 

@@ -1,5 +1,6 @@
 ---
 name: swarm
+aliases: [swarm-agents]
 description: N coordinated agents on shared task list with SQLite-based atomic claiming
 ---
 

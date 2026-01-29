@@ -1,5 +1,6 @@
 ---
 name: ultrapilot
+aliases: [up, ultraauto, parallelauto]
 description: Parallel autopilot with file ownership partitioning
 ---
 

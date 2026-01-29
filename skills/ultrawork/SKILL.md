@@ -1,5 +1,6 @@
 ---
 name: ultrawork
+aliases: [ulw, uw, turbo]
 description: Activate maximum performance mode with parallel agent orchestration for high-throughput task completion
 ---
 

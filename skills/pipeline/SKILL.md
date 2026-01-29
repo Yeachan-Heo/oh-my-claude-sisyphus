@@ -1,5 +1,6 @@
 ---
 name: pipeline
+aliases: [pipe, chain]
 description: Chain agents together in sequential or branching workflows with data passing
 ---
 

@@ -1,5 +1,6 @@
 ---
 name: autopilot
+aliases: [ap, autonomous, fullsend]
 description: Full autonomous execution from idea to working code
 ---
 

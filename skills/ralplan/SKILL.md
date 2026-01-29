@@ -1,5 +1,6 @@
 ---
 name: ralplan
+aliases: [rp, planloop]
 description: Iterative planning with Planner, Architect, and Critic until consensus
 ---
 
