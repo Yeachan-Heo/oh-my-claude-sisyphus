@@ -384,11 +384,15 @@ async function checkTodoContinuation(
   // Track continuation attempts to prevent infinite loops
   const attemptCount = sessionId ? trackTodoContinuationAttempt(sessionId) : 1;
 
+  // Use dynamic label based on source (Tasks vs todos)
+  const sourceLabel = result.source === 'task' ? 'Tasks' : 'todos';
+  const sourceLabelLower = result.source === 'task' ? 'tasks' : 'todos';
+
   if (attemptCount > MAX_TODO_CONTINUATION_ATTEMPTS) {
     // Too many attempts - agent appears stuck, allow stop but warn
     return {
       shouldBlock: false,
-      message: `[TODO CONTINUATION LIMIT] Attempted ${MAX_TODO_CONTINUATION_ATTEMPTS} continuations without progress. ${result.count} tasks remain incomplete. Consider reviewing the stuck tasks or asking the user for guidance.`,
+      message: `[TODO CONTINUATION LIMIT] Attempted ${MAX_TODO_CONTINUATION_ATTEMPTS} continuations without progress. ${result.count} ${sourceLabelLower} remain incomplete. Consider reviewing the stuck ${sourceLabelLower} or asking the user for guidance.`,
       mode: 'none',
       metadata: {
         todoCount: result.count,
@@ -399,7 +403,7 @@ async function checkTodoContinuation(
 
   const nextTodo = getNextPendingTodo(result);
   const nextTaskInfo = nextTodo
-    ? `\n\nNext task: "${nextTodo.content}" (${nextTodo.status})`
+    ? `\n\nNext ${result.source === 'task' ? 'Task' : 'todo'}: "${nextTodo.content}" (${nextTodo.status})`
     : '';
 
   const attemptInfo = attemptCount > 1
@@ -410,7 +414,7 @@ async function checkTodoContinuation(
 
 ${TODO_CONTINUATION_PROMPT}
 
-[Status: ${result.count} of ${result.total} tasks remaining]${nextTaskInfo}${attemptInfo}
+[Status: ${result.count} of ${result.total} ${sourceLabelLower} remaining]${nextTaskInfo}${attemptInfo}
 
 </todo-continuation>
 

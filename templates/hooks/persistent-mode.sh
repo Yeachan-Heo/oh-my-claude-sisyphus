@@ -19,6 +19,22 @@ if [ -z "$DIRECTORY" ]; then
   DIRECTORY=$(pwd)
 fi
 
+# Check for incomplete tasks in new Task system (priority over todos)
+TASKS_DIR="$HOME/.claude/tasks"
+TASK_COUNT=0
+if [ -n "$SESSION_ID" ] && [ -d "$TASKS_DIR/$SESSION_ID" ]; then
+  for task_file in "$TASKS_DIR/$SESSION_ID"/*.json; do
+    if [ -f "$task_file" ] && [ "$(basename "$task_file")" != ".lock" ]; then
+      if command -v jq &> /dev/null; then
+        STATUS=$(jq -r '.status // "pending"' "$task_file" 2>/dev/null)
+        if [ "$STATUS" != "completed" ]; then
+          TASK_COUNT=$((TASK_COUNT + 1))
+        fi
+      fi
+    fi
+  done
+fi
+
 # Extract stop reason for abort detection
 STOP_REASON=""
 USER_REQUESTED=""
@@ -86,6 +102,9 @@ for todo_path in "$DIRECTORY/.omc/todos.json" "$DIRECTORY/.claude/todos.json"; d
   fi
 done
 
+# Combine Task and todo counts
+TOTAL_INCOMPLETE=$((TASK_COUNT + INCOMPLETE_COUNT))
+
 # Priority 1: Ralph Loop with Oracle Verification
 if [ -n "$RALPH_STATE" ]; then
   IS_ACTIVE=$(echo "$RALPH_STATE" | jq -r '.active // false' 2>/dev/null)
@@ -132,7 +151,7 @@ EOF
 fi
 
 # Priority 2: Ultrawork Mode with incomplete todos
-if [ -n "$ULTRAWORK_STATE" ] && [ "$INCOMPLETE_COUNT" -gt 0 ]; then
+if [ -n "$ULTRAWORK_STATE" ] && [ "$TOTAL_INCOMPLETE" -gt 0 ]; then
   # Check if active (with jq fallback)
   IS_ACTIVE=""
   if command -v jq &> /dev/null; then
@@ -168,16 +187,21 @@ if [ -n "$ULTRAWORK_STATE" ] && [ "$INCOMPLETE_COUNT" -gt 0 ]; then
     fi
 
     cat << EOF
-{"continue": false, "reason": "<ultrawork-persistence>\\n\\n[ULTRAWORK MODE STILL ACTIVE - Reinforcement #$NEW_COUNT]\\n\\nYour ultrawork session is NOT complete. $INCOMPLETE_COUNT incomplete todos remain.\\n\\nREMEMBER THE ULTRAWORK RULES:\\n- **PARALLEL**: Fire independent calls simultaneously - NEVER wait sequentially\\n- **BACKGROUND FIRST**: Use Task(run_in_background=true) for exploration (10+ concurrent)\\n- **TODO**: Track EVERY step. Mark complete IMMEDIATELY after each\\n- **VERIFY**: Check ALL requirements met before done\\n- **NO Premature Stopping**: ALL TODOs must be complete\\n\\nContinue working on the next pending task. DO NOT STOP until all tasks are marked complete.\\n\\nOriginal task: $ORIGINAL_PROMPT\\n\\n</ultrawork-persistence>\\n\\n---\\n"}
+{"continue": false, "reason": "<ultrawork-persistence>\\n\\n[ULTRAWORK MODE STILL ACTIVE - Reinforcement #$NEW_COUNT]\\n\\nYour ultrawork session is NOT complete. $TOTAL_INCOMPLETE incomplete items remain.\\n\\nREMEMBER THE ULTRAWORK RULES:\\n- **PARALLEL**: Fire independent calls simultaneously - NEVER wait sequentially\\n- **BACKGROUND FIRST**: Use Task(run_in_background=true) for exploration (10+ concurrent)\\n- **TODO**: Track EVERY step. Mark complete IMMEDIATELY after each\\n- **VERIFY**: Check ALL requirements met before done\\n- **NO Premature Stopping**: ALL TODOs must be complete\\n\\nContinue working on the next pending item. DO NOT STOP until all items are marked complete.\\n\\nOriginal task: $ORIGINAL_PROMPT\\n\\n</ultrawork-persistence>\\n\\n---\\n"}
 EOF
     exit 0
   fi
 fi
 
-# Priority 3: Todo Continuation (baseline)
-if [ "$INCOMPLETE_COUNT" -gt 0 ]; then
+# Priority 3: Todo/Task Continuation (baseline)
+if [ "$TOTAL_INCOMPLETE" -gt 0 ]; then
+  if [ "$TASK_COUNT" -gt 0 ]; then
+    ITEM_TYPE="Tasks"
+  else
+    ITEM_TYPE="todos"
+  fi
   cat << EOF
-{"continue": false, "reason": "<todo-continuation>\\n\\n[SYSTEM REMINDER - TODO CONTINUATION]\\n\\nIncomplete tasks remain in your todo list ($INCOMPLETE_COUNT remaining). Continue working on the next pending task.\\n\\n- Proceed without asking for permission\\n- Mark each task complete when finished\\n- Do not stop until all tasks are done\\n\\n</todo-continuation>\\n\\n---\\n"}
+{"continue": false, "reason": "<todo-continuation>\\n\\n[SYSTEM REMINDER - CONTINUATION]\\n\\nIncomplete $ITEM_TYPE remain ($TOTAL_INCOMPLETE remaining). Continue working on the next pending item.\\n\\n- Proceed without asking for permission\\n- Mark each item complete when finished\\n- Do not stop until all items are done\\n\\n</todo-continuation>\\n\\n---\\n"}
 EOF
   exit 0
 fi

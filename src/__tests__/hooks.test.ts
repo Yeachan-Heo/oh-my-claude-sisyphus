@@ -323,7 +323,8 @@ describe('Todo Continuation', () => {
       const result: IncompleteTodosResult = {
         count: 0,
         todos: [],
-        total: 5
+        total: 5,
+        source: 'todo'
       };
       expect(formatTodoStatus(result)).toBe('All tasks complete (5 total)');
     });
@@ -332,7 +333,8 @@ describe('Todo Continuation', () => {
       const result: IncompleteTodosResult = {
         count: 3,
         todos: [],
-        total: 10
+        total: 10,
+        source: 'todo'
       };
       expect(formatTodoStatus(result)).toBe('7/10 completed, 3 remaining');
     });
@@ -341,7 +343,8 @@ describe('Todo Continuation', () => {
       const result: IncompleteTodosResult = {
         count: 0,
         todos: [],
-        total: 0
+        total: 0,
+        source: 'none'
       };
       expect(formatTodoStatus(result)).toBe('All tasks complete (0 total)');
     });
@@ -350,7 +353,8 @@ describe('Todo Continuation', () => {
       const result: IncompleteTodosResult = {
         count: 5,
         todos: [],
-        total: 5
+        total: 5,
+        source: 'todo'
       };
       expect(formatTodoStatus(result)).toBe('0/5 completed, 5 remaining');
     });
@@ -359,7 +363,8 @@ describe('Todo Continuation', () => {
       const result: IncompleteTodosResult = {
         count: 1,
         todos: [],
-        total: 10
+        total: 10,
+        source: 'todo'
       };
       expect(formatTodoStatus(result)).toBe('9/10 completed, 1 remaining');
     });
@@ -375,7 +380,8 @@ describe('Todo Continuation', () => {
       const result: IncompleteTodosResult = {
         count: 3,
         todos,
-        total: 3
+        total: 3,
+        source: 'todo'
       };
       const next = getNextPendingTodo(result);
       expect(next).not.toBeNull();
@@ -392,7 +398,8 @@ describe('Todo Continuation', () => {
       const result: IncompleteTodosResult = {
         count: 2,
         todos: todos.filter(t => t.status !== 'completed'),
-        total: 3
+        total: 3,
+        source: 'todo'
       };
       const next = getNextPendingTodo(result);
       expect(next).not.toBeNull();
@@ -404,7 +411,8 @@ describe('Todo Continuation', () => {
       const result: IncompleteTodosResult = {
         count: 0,
         todos: [],
-        total: 0
+        total: 0,
+        source: 'none'
       };
       const next = getNextPendingTodo(result);
       expect(next).toBeNull();
@@ -414,7 +422,8 @@ describe('Todo Continuation', () => {
       const result: IncompleteTodosResult = {
         count: 0,
         todos: [],
-        total: 3
+        total: 3,
+        source: 'todo'
       };
       const next = getNextPendingTodo(result);
       expect(next).toBeNull();
@@ -428,7 +437,8 @@ describe('Todo Continuation', () => {
       const result: IncompleteTodosResult = {
         count: 2,
         todos,
-        total: 2
+        total: 2,
+        source: 'todo'
       };
       const next = getNextPendingTodo(result);
       expect(next).not.toBeNull();
@@ -443,7 +453,8 @@ describe('Todo Continuation', () => {
       const result: IncompleteTodosResult = {
         count: 2,
         todos,
-        total: 2
+        total: 2,
+        source: 'todo'
       };
       const next = getNextPendingTodo(result);
       expect(next).not.toBeNull();
@@ -458,7 +469,8 @@ describe('Todo Continuation', () => {
       const result: IncompleteTodosResult = {
         count: 1,
         todos: [todos[1]],
-        total: 2
+        total: 2,
+        source: 'todo'
       };
       const next = getNextPendingTodo(result);
       expect(next).not.toBeNull();
@@ -475,7 +487,8 @@ describe('Todo Continuation', () => {
       const result: IncompleteTodosResult = {
         count: 4,
         todos,
-        total: 4
+        total: 4,
+        source: 'todo'
       };
       const next = getNextPendingTodo(result);
       expect(next).not.toBeNull();
@@ -535,7 +548,8 @@ describe('Todo Continuation', () => {
       const result: IncompleteTodosResult = {
         count: todos.length,
         todos,
-        total: 5
+        total: 5,
+        source: 'todo'
       };
 
       expect(result.count).toBe(result.todos.length);
@@ -547,7 +561,8 @@ describe('Todo Continuation', () => {
       const result: IncompleteTodosResult = {
         count: 0,
         todos: [],
-        total: 3
+        total: 3,
+        source: 'todo'
       };
 
       expect(result.count).toBeLessThanOrEqual(result.total);
@@ -649,7 +664,8 @@ describe('Hook Output Structure', () => {
       const result: IncompleteTodosResult = {
         count: 2,
         todos: [],
-        total: 5
+        total: 5,
+        source: 'todo'
       };
       const status = formatTodoStatus(result);
       const message = `Todo Status: ${status}`;

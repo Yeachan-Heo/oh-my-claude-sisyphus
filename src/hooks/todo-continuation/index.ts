@@ -18,10 +18,29 @@ export interface Todo {
   id?: string;
 }
 
+/** New Claude Code Task system task */
+export interface Task {
+  id: string;
+  subject: string;
+  description?: string;
+  activeForm?: string;
+  status: 'pending' | 'in_progress' | 'completed';
+  blocks?: string[];
+  blockedBy?: string[];
+}
+
+/** Internal result for Task checking */
+export interface TaskCheckResult {
+  count: number;          // Incomplete tasks
+  tasks: Task[];          // The incomplete tasks
+  total: number;          // Total tasks found
+}
+
 export interface IncompleteTodosResult {
   count: number;
   todos: Todo[];
   total: number;
+  source: 'task' | 'todo' | 'both' | 'none';
 }
 
 /**
@@ -162,44 +181,86 @@ function isIncomplete(todo: Todo): boolean {
 }
 
 /**
- * Check for incomplete todos across all possible locations
+ * Get the Task directory for a session
  */
-export async function checkIncompleteTodos(
-  sessionId?: string,
-  directory?: string,
-  stopContext?: StopContext  // NEW parameter
-): Promise<IncompleteTodosResult> {
-  // If user aborted, don't force continuation (return count: 0)
-  if (isUserAbort(stopContext)) {
-    return {
-      count: 0,
-      todos: [],
-      total: 0
-    };
-  }
+export function getTaskDirectory(sessionId: string): string {
+  return join(homedir(), '.claude', 'tasks', sessionId);
+}
 
+/**
+ * Validates that a parsed JSON object is a valid Task.
+ * Required fields: id (string), subject (string), status (string).
+ */
+export function isValidTask(data: unknown): data is Task {
+  if (data === null || typeof data !== 'object') return false;
+  const obj = data as Record<string, unknown>;
+  return (
+    typeof obj.id === 'string' && obj.id.length > 0 &&
+    typeof obj.subject === 'string' && obj.subject.length > 0 &&
+    typeof obj.status === 'string' &&
+    ['pending', 'in_progress', 'completed'].includes(obj.status)
+  );
+}
+
+/**
+ * Read all Task files from a session's task directory
+ */
+export function readTaskFiles(sessionId: string): Task[] {
+  const taskDir = getTaskDirectory(sessionId);
+  if (!existsSync(taskDir)) return [];
+
+  const tasks: Task[] = [];
+  try {
+    for (const file of readdirSync(taskDir)) {
+      if (!file.endsWith('.json') || file === '.lock') continue;
+      try {
+        const content = readFileSync(join(taskDir, file), 'utf-8');
+        const parsed = JSON.parse(content);
+        if (isValidTask(parsed)) tasks.push(parsed);
+      } catch { /* skip invalid files */ }
+    }
+  } catch { /* skip directory read errors */ }
+  return tasks;
+}
+
+/**
+ * Check if a Task is incomplete
+ */
+export function isTaskIncomplete(task: Task): boolean {
+  return task.status !== 'completed';
+}
+
+/**
+ * Check for incomplete tasks in the new Task system
+ */
+export function checkIncompleteTasks(sessionId: string): TaskCheckResult {
+  const tasks = readTaskFiles(sessionId);
+  const incomplete = tasks.filter(isTaskIncomplete);
+  return {
+    count: incomplete.length,
+    tasks: incomplete,
+    total: tasks.length
+  };
+}
+
+/**
+ * Check for incomplete todos in the legacy system
+ */
+export function checkLegacyTodos(sessionId?: string, directory?: string): IncompleteTodosResult {
   const paths = getTodoFilePaths(sessionId, directory);
   const seenContents = new Set<string>();
   const allTodos: Todo[] = [];
   const incompleteTodos: Todo[] = [];
 
-  for (const path of paths) {
-    if (!existsSync(path)) {
-      continue;
-    }
+  for (const p of paths) {
+    if (!existsSync(p)) continue;
 
-    const todos = parseTodoFile(path);
-
+    const todos = parseTodoFile(p);
     for (const todo of todos) {
-      // Deduplicate by content
       const key = `${todo.content}:${todo.status}`;
-      if (seenContents.has(key)) {
-        continue;
-      }
+      if (seenContents.has(key)) continue;
       seenContents.add(key);
-
       allTodos.push(todo);
-
       if (isIncomplete(todo)) {
         incompleteTodos.push(todo);
       }
@@ -209,8 +270,50 @@ export async function checkIncompleteTodos(
   return {
     count: incompleteTodos.length,
     todos: incompleteTodos,
-    total: allTodos.length
+    total: allTodos.length,
+    source: incompleteTodos.length > 0 ? 'todo' : 'none'
   };
+}
+
+/**
+ * Check for incomplete todos/tasks across all possible locations.
+ * Checks new Task system first, then falls back to legacy todos.
+ */
+export async function checkIncompleteTodos(
+  sessionId?: string,
+  directory?: string,
+  stopContext?: StopContext
+): Promise<IncompleteTodosResult> {
+  // If user aborted, don't force continuation
+  if (isUserAbort(stopContext)) {
+    return { count: 0, todos: [], total: 0, source: 'none' };
+  }
+
+  let taskResult: TaskCheckResult | null = null;
+
+  // Priority 1: Check new Task system (if sessionId provided)
+  if (sessionId) {
+    taskResult = checkIncompleteTasks(sessionId);
+  }
+
+  // Priority 2: Check legacy todo system
+  const todoResult = checkLegacyTodos(sessionId, directory);
+
+  // Combine results (prefer Tasks if available)
+  if (taskResult && taskResult.count > 0) {
+    return {
+      count: taskResult.count,
+      todos: taskResult.tasks.map(t => ({
+        content: t.subject,
+        status: t.status,
+        id: t.id
+      })),
+      total: taskResult.total,
+      source: todoResult.count > 0 ? 'both' : 'task'
+    };
+  }
+
+  return todoResult;
 }
 
 /**

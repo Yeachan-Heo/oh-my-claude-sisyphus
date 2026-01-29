@@ -7,6 +7,26 @@ import { readdirSync, readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
 
+// Count incomplete Task system tasks
+function countIncompleteTasks(sessionId) {
+  if (!sessionId) return 0;
+  const taskDir = join(homedir(), '.claude', 'tasks', sessionId);
+  if (!existsSync(taskDir)) return 0;
+
+  let count = 0;
+  try {
+    const files = readdirSync(taskDir).filter(f => f.endsWith('.json') && f !== '.lock');
+    for (const file of files) {
+      try {
+        const content = readFileSync(join(taskDir, file), 'utf-8');
+        const task = JSON.parse(content);
+        if (task.status !== 'completed') count++;
+      } catch { /* skip invalid files */ }
+    }
+  } catch { /* dir read error */ }
+  return count;
+}
+
 // Read all stdin
 async function readStdin() {
   const chunks = [];
@@ -19,8 +39,19 @@ async function readStdin() {
 // Main
 async function main() {
   try {
-    // Read stdin (we don't use it much, but need to consume it)
-    await readStdin();
+    // Read stdin to get sessionId and consume it
+    const input = await readStdin();
+
+    // Parse sessionId from input
+    let data = {};
+    try {
+      data = JSON.parse(input);
+    } catch { /* invalid JSON - continue with empty data */ }
+
+    const sessionId = data.sessionId || data.session_id || '';
+
+    // Count incomplete Task system tasks
+    const taskCount = countIncompleteTasks(sessionId);
 
     // Check for incomplete todos
     const todosDir = join(homedir(), '.claude', 'todos');
@@ -56,20 +87,24 @@ async function main() {
       return;
     }
 
-    if (incompleteCount > 0) {
-      const reason = `[SYSTEM REMINDER - TODO CONTINUATION]
+    // Combine both counts
+    const totalIncomplete = taskCount + incompleteCount;
 
-Incomplete tasks remain in your todo list (${incompleteCount} remaining). Continue working on the next pending task.
+    if (totalIncomplete > 0) {
+      const sourceLabel = taskCount > 0 ? 'Task' : 'todo';
+      const reason = `[SYSTEM REMINDER - ${sourceLabel.toUpperCase()} CONTINUATION]
+
+Incomplete ${sourceLabel}s remain (${totalIncomplete} remaining). Continue working on the next pending ${sourceLabel}.
 
 - Proceed without asking for permission
-- Mark each task complete when finished
-- Do not stop until all tasks are done`;
+- Mark each ${sourceLabel} complete when finished
+- Do not stop until all ${sourceLabel}s are done`;
 
       console.log(JSON.stringify({ continue: false, reason }));
       return;
     }
 
-    // No incomplete todos - allow stop
+    // No incomplete tasks or todos - allow stop
     console.log(JSON.stringify({ continue: true }));
   } catch (error) {
     // On any error, allow continuation
