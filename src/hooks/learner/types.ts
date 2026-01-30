@@ -39,7 +39,7 @@ export interface LearnedSkill {
   path: string;
   /** Path relative to skills directory */
   relativePath: string;
-  /** Whether from user (~/.claude) or project (.omc) */
+  /** Whether from user directories (~/.omc/skills or ~/.claude/skills/omc-learned) or project (.omc/skills) */
   scope: 'user' | 'project';
   /** Parsed frontmatter metadata */
   metadata: SkillMetadata;
@@ -61,6 +61,8 @@ export interface SkillFileCandidate {
   realPath: string;
   /** Scope: user or project */
   scope: 'user' | 'project';
+  /** The root directory this skill was found in (for accurate relative path computation) */
+  sourceDir: string;
 }
 
 /**

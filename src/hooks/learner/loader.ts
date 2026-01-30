@@ -6,8 +6,8 @@
 
 import { readFileSync } from 'fs';
 import { createHash } from 'crypto';
-import { relative } from 'path';
-import { findSkillFiles, getSkillsDir } from './finder.js';
+import { relative, normalize } from 'path';
+import { findSkillFiles } from './finder.js';
 import { parseSkillFile } from './parser.js';
 import { DEBUG_ENABLED } from './constants.js';
 import type { LearnedSkill, SkillMetadata } from './types.js';
@@ -40,8 +40,7 @@ export function loadAllSkills(projectRoot: string | null): LearnedSkill[] {
       }
 
       const skillId = metadata.id!;
-      const skillsDir = getSkillsDir(candidate.scope, projectRoot || undefined);
-      const relativePath = relative(skillsDir, candidate.path);
+      const relativePath = normalize(relative(candidate.sourceDir, candidate.path));
 
       const skill: LearnedSkill = {
         path: candidate.path,

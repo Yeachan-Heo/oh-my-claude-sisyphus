@@ -14,11 +14,15 @@ import { homedir } from 'os';
 
 // Re-export constants
 export const USER_SKILLS_DIR = join(homedir(), '.claude', 'skills', 'omc-learned');
-export const PROJECT_SKILLS_SUBDIR = '.omc/skills';
+export const GLOBAL_SKILLS_DIR = join(homedir(), '.omc', 'skills');
+export const PROJECT_SKILLS_SUBDIR = join('.omc', 'skills');
 export const SKILL_EXTENSION = '.md';
 
 /** Session TTL: 1 hour */
 const SESSION_TTL_MS = 60 * 60 * 1000;
+
+/** Maximum recursion depth for directory traversal */
+const MAX_RECURSION_DEPTH = 10;
 
 /** State file path */
 const STATE_FILE = '.omc/state/skill-sessions.json';
@@ -31,6 +35,8 @@ export interface SkillFileCandidate {
   path: string;
   realPath: string;
   scope: 'user' | 'project';
+  /** The root directory this skill was found in */
+  sourceDir: string;
 }
 
 export interface ParseResult {
@@ -158,8 +164,9 @@ export function markSkillsInjected(sessionId: string, paths: string[], projectRo
 /**
  * Recursively find all skill files in a directory.
  */
-function findSkillFilesRecursive(dir: string, results: string[]): void {
+function findSkillFilesRecursive(dir: string, results: string[], depth: number = 0): void {
   if (!existsSync(dir)) return;
+  if (depth > MAX_RECURSION_DEPTH) return;
 
   try {
     const entries = readdirSync(dir, { withFileTypes: true });
@@ -167,7 +174,7 @@ function findSkillFilesRecursive(dir: string, results: string[]): void {
       const fullPath = join(dir, entry.name);
 
       if (entry.isDirectory()) {
-        findSkillFilesRecursive(fullPath, results);
+        findSkillFilesRecursive(fullPath, results, depth + 1);
       } else if (entry.isFile() && entry.name.endsWith(SKILL_EXTENSION)) {
         results.push(fullPath);
       }
@@ -189,45 +196,71 @@ function safeRealpathSync(filePath: string): string {
 }
 
 /**
+ * Check if a resolved path is within a boundary directory.
+ */
+function isWithinBoundary(realPath: string, boundary: string): boolean {
+  const sep = process.platform === 'win32' ? '\\' : '/';
+  const normalizedReal = realPath.replace(/\\/g, '/').replace(/\/+/g, '/');
+  const normalizedBoundary = boundary.replace(/\\/g, '/').replace(/\/+/g, '/');
+  return normalizedReal === normalizedBoundary ||
+         normalizedReal.startsWith(normalizedBoundary + '/');
+}
+
+/**
  * Find all skill files for a given project.
  * Returns project skills first (higher priority), then user skills.
  * Now supports RECURSIVE discovery (subdirectories included).
  */
-export function findSkillFiles(projectRoot: string): SkillFileCandidate[] {
+export function findSkillFiles(
+  projectRoot: string,
+  options?: { scope?: 'project' | 'user' | 'all' }
+): SkillFileCandidate[] {
   const candidates: SkillFileCandidate[] = [];
   const seenRealPaths = new Set<string>();
+  const scope = options?.scope ?? 'all';
 
   // 1. Search project-level skills (higher priority)
-  const projectSkillsDir = join(projectRoot, PROJECT_SKILLS_SUBDIR);
-  const projectFiles: string[] = [];
-  findSkillFilesRecursive(projectSkillsDir, projectFiles);
+  if (scope === 'project' || scope === 'all') {
+    const projectSkillsDir = join(projectRoot, PROJECT_SKILLS_SUBDIR);
+    const projectFiles: string[] = [];
+    findSkillFilesRecursive(projectSkillsDir, projectFiles);
 
-  for (const filePath of projectFiles) {
-    const realPath = safeRealpathSync(filePath);
-    if (seenRealPaths.has(realPath)) continue;
-    seenRealPaths.add(realPath);
+    for (const filePath of projectFiles) {
+      const realPath = safeRealpathSync(filePath);
+      if (seenRealPaths.has(realPath)) continue;
+      if (!isWithinBoundary(realPath, projectSkillsDir)) continue;
+      seenRealPaths.add(realPath);
 
-    candidates.push({
-      path: filePath,
-      realPath,
-      scope: 'project',
-    });
+      candidates.push({
+        path: filePath,
+        realPath,
+        scope: 'project',
+        sourceDir: projectSkillsDir,
+      });
+    }
   }
 
-  // 2. Search user-level skills (lower priority)
-  const userFiles: string[] = [];
-  findSkillFilesRecursive(USER_SKILLS_DIR, userFiles);
+  // 2. Search user-level skills from both directories (lower priority)
+  if (scope === 'user' || scope === 'all') {
+    const userDirs = [GLOBAL_SKILLS_DIR, USER_SKILLS_DIR];
+    for (const userDir of userDirs) {
+      const userFiles: string[] = [];
+      findSkillFilesRecursive(userDir, userFiles);
 
-  for (const filePath of userFiles) {
-    const realPath = safeRealpathSync(filePath);
-    if (seenRealPaths.has(realPath)) continue;
-    seenRealPaths.add(realPath);
+      for (const filePath of userFiles) {
+        const realPath = safeRealpathSync(filePath);
+        if (seenRealPaths.has(realPath)) continue;
+        if (!isWithinBoundary(realPath, userDir)) continue;
+        seenRealPaths.add(realPath);
 
-    candidates.push({
-      path: filePath,
-      realPath,
-      scope: 'user',
-    });
+        candidates.push({
+          path: filePath,
+          realPath,
+          scope: 'user',
+          sourceDir: userDir,
+        });
+      }
+    }
   }
 
   return candidates;

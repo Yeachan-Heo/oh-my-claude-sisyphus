@@ -3,6 +3,7 @@ import { mkdirSync, writeFileSync, rmSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import { findSkillFiles, getSkillsDir, ensureSkillsDir } from '../../hooks/learner/finder.js';
+import { PROJECT_SKILLS_SUBDIR } from '../../hooks/learner/constants.js';
 
 describe('Skill Finder', () => {
   let testDir: string;
@@ -72,5 +73,62 @@ describe('Skill Finder', () => {
   it('should ensure skills directory exists', () => {
     const result = ensureSkillsDir('project', projectRoot);
     expect(result).toBe(true);
+  });
+
+  it('should populate sourceDir for project skills', () => {
+    const skillPath = join(projectRoot, '.omc', 'skills', 'test-skill.md');
+    writeFileSync(skillPath, '# Test Skill');
+
+    const candidates = findSkillFiles(projectRoot);
+    const projectCandidate = candidates.find(c => c.scope === 'project');
+
+    expect(projectCandidate).toBeDefined();
+    expect(projectCandidate!.sourceDir).toBe(join(projectRoot, '.omc', 'skills'));
+  });
+
+  it('should filter by scope: project only', () => {
+    const skillPath = join(projectRoot, '.omc', 'skills', 'test-skill.md');
+    writeFileSync(skillPath, '# Test Skill');
+
+    const candidates = findSkillFiles(projectRoot, { scope: 'project' });
+
+    expect(candidates.every(c => c.scope === 'project')).toBe(true);
+    expect(candidates.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('should filter by scope: user only', () => {
+    const skillPath = join(projectRoot, '.omc', 'skills', 'test-skill.md');
+    writeFileSync(skillPath, '# Test Skill');
+
+    const candidates = findSkillFiles(projectRoot, { scope: 'user' });
+
+    // Should NOT include the project skill
+    expect(candidates.every(c => c.scope === 'user')).toBe(true);
+    expect(candidates.find(c => c.path === skillPath)).toBeUndefined();
+  });
+
+  it('should respect depth limit for deep directories', () => {
+    // Create a deeply nested directory structure (15 levels)
+    let deepDir = join(projectRoot, '.omc', 'skills');
+    for (let i = 0; i < 15; i++) {
+      deepDir = join(deepDir, `level-${i}`);
+      mkdirSync(deepDir, { recursive: true });
+    }
+    writeFileSync(join(deepDir, 'deep-skill.md'), '# Deep Skill');
+
+    const candidates = findSkillFiles(projectRoot, { scope: 'project' });
+
+    // Skill at depth 15 should NOT be found (limit is 10)
+    expect(candidates.find(c => c.path.includes('deep-skill.md'))).toBeUndefined();
+  });
+
+  it('should accept sourceDir hint in getSkillsDir', () => {
+    const hint = '/custom/source/dir';
+    const result = getSkillsDir('user', undefined, hint);
+    expect(result).toBe(hint);
+  });
+
+  it('should construct PROJECT_SKILLS_SUBDIR with path.join', () => {
+    expect(PROJECT_SKILLS_SUBDIR).toBe(join('.omc', 'skills'));
   });
 });
