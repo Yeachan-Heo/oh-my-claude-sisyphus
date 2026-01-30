@@ -130,7 +130,16 @@ if [ -d "$PLUGIN_DIR" ]; then
     # Check if dist/hud/index.js exists
     if [ ! -f "$PLUGIN_DIR/$PLUGIN_VERSION/dist/hud/index.js" ]; then
       echo "Plugin not built - building now..."
-      cd "$PLUGIN_DIR/$PLUGIN_VERSION" && npm install
+      cd "$PLUGIN_DIR/$PLUGIN_VERSION"
+      # Use bun (preferred) or npm for building
+      if command -v bun &> /dev/null; then
+        bun install
+      elif command -v npm &> /dev/null; then
+        npm install
+      else
+        echo "ERROR: Neither bun nor npm found. Please install Node.js or Bun first."
+        exit 1
+      fi
       if [ -f "dist/hud/index.js" ]; then
         echo "Build successful - HUD is ready"
       else
@@ -165,6 +174,11 @@ Ask user: "Would you like to install the OMC CLI for standalone analytics? (Reco
 # Check for bun (preferred) or npm
 if command -v bun &> /dev/null; then
   echo "Installing OMC CLI via bun..."
+  # Clean up npm version if it exists to avoid duplicates
+  if command -v npm &> /dev/null && npm list -g oh-my-claude-sisyphus &>/dev/null; then
+    echo "Removing existing npm installation to avoid duplicates..."
+    npm uninstall -g oh-my-claude-sisyphus 2>/dev/null
+  fi
   bun install -g oh-my-claude-sisyphus
 elif command -v npm &> /dev/null; then
   echo "Installing OMC CLI via npm..."
@@ -186,7 +200,7 @@ fi
 
 ### If User Chooses NO:
 
-Skip this step. User can install later with `npm install -g oh-my-claude-sisyphus`.
+Skip this step. User can install later with `bun install -g oh-my-claude-sisyphus` or `npm install -g oh-my-claude-sisyphus`.
 
 ## Step 4: Verify Plugin Installation
 
@@ -207,20 +221,42 @@ Ask user: "Would you like to install AST tools for advanced code search? (Patter
 ### If User Chooses YES:
 
 ```bash
-# Check for npm
-if command -v npm &> /dev/null; then
-  echo "Installing @ast-grep/napi..."
+# Check for bun (preferred) or npm
+if command -v bun &> /dev/null; then
+  PKG_MANAGER="bun"
+  echo "Installing @ast-grep/napi via bun..."
+  # Clean up npm version if it exists to avoid duplicates
+  if command -v npm &> /dev/null && npm list -g @ast-grep/napi &>/dev/null; then
+    echo "Removing existing npm installation to avoid duplicates..."
+    npm uninstall -g @ast-grep/napi 2>/dev/null
+  fi
+  bun install -g @ast-grep/napi
+elif command -v npm &> /dev/null; then
+  PKG_MANAGER="npm"
+  echo "Installing @ast-grep/napi via npm..."
   npm install -g @ast-grep/napi
+else
+  echo "ERROR: Neither bun nor npm found. Please install Node.js or Bun first."
+  exit 1
+fi
+
+# Verify installation
+if [ "$PKG_MANAGER" = "bun" ]; then
+  if bun pm ls -g 2>/dev/null | grep -q "@ast-grep/napi"; then
+    echo "✓ AST tools installed successfully via bun!"
+    echo "  Available tools: ast_grep_search, ast_grep_replace"
+    echo "  Supports: JavaScript, TypeScript, Python, Go, Rust, Java, and 11 more languages"
+  else
+    echo "⚠ Installation may have failed. You can install later with: bun install -g @ast-grep/napi"
+  fi
+else
   if npm list -g @ast-grep/napi &>/dev/null; then
-    echo "✓ AST tools installed successfully!"
+    echo "✓ AST tools installed successfully via npm!"
     echo "  Available tools: ast_grep_search, ast_grep_replace"
     echo "  Supports: JavaScript, TypeScript, Python, Go, Rust, Java, and 11 more languages"
   else
     echo "⚠ Installation may have failed. You can install later with: npm install -g @ast-grep/napi"
   fi
-else
-  echo "ERROR: npm not found. Please install Node.js first."
-  echo "You can install later with: npm install -g @ast-grep/napi"
 fi
 ```
 
