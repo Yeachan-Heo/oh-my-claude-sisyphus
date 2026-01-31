@@ -5,6 +5,7 @@
  */
 
 import type { HudRenderContext, HudConfig } from './types.js';
+import { DEFAULT_HUD_CONFIG } from './types.js';
 import { bold, dim } from './colors.js';
 import { renderRalph } from './elements/ralph.js';
 import { renderAgentsByFormat, renderAgentsMultiLine } from './elements/agents.js';
@@ -27,6 +28,22 @@ import {
   renderCacheEfficiency
 } from './analytics-display.js';
 import type { SessionHealth, HudElementConfig } from './types.js';
+
+/**
+ * Limit output lines to prevent input field shrinkage (Issue #222).
+ * Trims lines from the end while preserving the first (header) line.
+ *
+ * @param lines - Array of output lines
+ * @param maxLines - Maximum number of lines to output (uses DEFAULT_HUD_CONFIG if not specified)
+ * @returns Trimmed array of lines
+ */
+export function limitOutputLines(lines: string[], maxLines?: number): string[] {
+  const limit = maxLines ?? DEFAULT_HUD_CONFIG.maxOutputLines;
+  if (lines.length <= limit) {
+    return lines;
+  }
+  return lines.slice(0, limit);
+}
 
 /**
  * Render session health analytics respecting config toggles.
@@ -106,13 +123,7 @@ export async function render(context: HudRenderContext, config: HudConfig): Prom
       if (todos) lines.push(todos);
     }
 
-    // Apply maxOutputLines limit for analytics preset too (Issue #222)
-    const maxLines = config.maxOutputLines ?? 4;
-    if (lines.length > maxLines) {
-      return lines.slice(0, maxLines).join('\n');
-    }
-
-    return lines.join('\n');
+    return limitOutputLines(lines, config.maxOutputLines).join('\n');
   }
 
   // [OMC] label
@@ -246,20 +257,5 @@ export async function render(context: HudRenderContext, config: HudConfig): Prom
     }
   }
 
-  // Apply maxOutputLines limit to prevent input field shrinkage (Issue #222)
-  // The limit applies to total output lines (header + detail lines)
-  const maxLines = config.maxOutputLines ?? 4;
-  let outputLines = [headerLine, ...detailLines];
-
-  if (outputLines.length > maxLines) {
-    // Keep header line, trim detail lines from the end
-    outputLines = outputLines.slice(0, maxLines);
-  }
-
-  // If we have detail lines, output multi-line
-  if (outputLines.length > 1) {
-    return outputLines.join('\n');
-  }
-
-  return headerLine;
+  return limitOutputLines([headerLine, ...detailLines], config.maxOutputLines).join('\n');
 }
