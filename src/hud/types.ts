@@ -230,6 +230,7 @@ export type HudPreset = 'minimal' | 'focused' | 'full' | 'opencode' | 'dense' | 
 export type AgentsFormat = 'count' | 'codes' | 'codes-duration' | 'detailed' | 'descriptions' | 'tasks' | 'multiline';
 
 export interface HudElementConfig {
+  cwd: boolean;              // Show working directory
   omcLabel: boolean;
   rateLimits: boolean;  // Show 5h and weekly rate limits
   ralph: boolean;
@@ -272,6 +273,7 @@ export interface HudConfig {
 export const DEFAULT_HUD_CONFIG: HudConfig = {
   preset: 'focused',
   elements: {
+    cwd: true,                // Show working directory by default
     omcLabel: true,
     rateLimits: true,  // Show rate limits by default
     ralph: true,
@@ -302,6 +304,7 @@ export const DEFAULT_HUD_CONFIG: HudConfig = {
 
 export const PRESET_CONFIGS: Record<HudPreset, Partial<HudElementConfig>> = {
   minimal: {
+    cwd: false,
     omcLabel: true,
     rateLimits: true,
     ralph: true,
@@ -323,6 +326,7 @@ export const PRESET_CONFIGS: Record<HudPreset, Partial<HudElementConfig>> = {
     showCost: false,
   },
   analytics: {
+    cwd: false,
     omcLabel: false,
     rateLimits: false,
     ralph: false,
@@ -344,6 +348,7 @@ export const PRESET_CONFIGS: Record<HudPreset, Partial<HudElementConfig>> = {
     showCost: true,
   },
   focused: {
+    cwd: true,
     omcLabel: true,
     rateLimits: true,
     ralph: true,
@@ -365,6 +370,7 @@ export const PRESET_CONFIGS: Record<HudPreset, Partial<HudElementConfig>> = {
     showCost: true,
   },
   full: {
+    cwd: true,
     omcLabel: true,
     rateLimits: true,
     ralph: true,
@@ -386,6 +392,7 @@ export const PRESET_CONFIGS: Record<HudPreset, Partial<HudElementConfig>> = {
     showCost: true,
   },
   opencode: {
+    cwd: true,
     omcLabel: true,
     rateLimits: false,
     ralph: true,
@@ -407,6 +414,7 @@ export const PRESET_CONFIGS: Record<HudPreset, Partial<HudElementConfig>> = {
     showCost: true,
   },
   dense: {
+    cwd: true,
     omcLabel: true,
     rateLimits: true,
     ralph: true,

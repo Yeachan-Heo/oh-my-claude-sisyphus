@@ -18,6 +18,7 @@ import { renderPermission } from './elements/permission.js';
 import { renderThinking } from './elements/thinking.js';
 import { renderSession } from './elements/session.js';
 import { renderAutopilot } from './elements/autopilot.js';
+import { renderCwd } from './elements/cwd.js';
 import {
   getAnalyticsDisplay,
   renderAnalyticsLineWithConfig,
@@ -107,6 +108,12 @@ export async function render(context: HudRenderContext, config: HudConfig): Prom
     }
 
     return lines.join('\n');
+  }
+
+  // Working directory (first element)
+  if (enabledElements.cwd) {
+    const cwdElement = renderCwd(context.cwd);
+    if (cwdElement) elements.push(cwdElement);
   }
 
   // [OMC] label

@@ -13,9 +13,9 @@ const CYAN = '\x1b[36m';
 /**
  * Render thinking indicator.
  *
- * Format: thinking
+ * Format: 💭 (thought bubble emoji)
  */
 export function renderThinking(state: ThinkingState | null): string | null {
   if (!state?.active) return null;
-  return `${CYAN}thinking${RESET}`;
+  return '💭';
 }
