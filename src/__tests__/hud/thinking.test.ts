@@ -14,8 +14,13 @@ describe('renderThinking', () => {
     expect(renderThinking(inactiveState)).toBeNull();
   });
 
-  it('returns 💭 for bubble format (default)', () => {
-    expect(renderThinking(activeState)).toBe('💭');
+  it('returns styled "thinking" for text format (default)', () => {
+    const result = renderThinking(activeState);
+    expect(result).toContain('thinking');
+    expect(result).toContain('\x1b[36m'); // cyan
+  });
+
+  it('returns 💭 for bubble format', () => {
     expect(renderThinking(activeState, 'bubble')).toBe('💭');
   });
 
@@ -27,7 +32,7 @@ describe('renderThinking', () => {
     expect(renderThinking(activeState, 'face')).toBe('🤔');
   });
 
-  it('returns styled "thinking" for text format', () => {
+  it('returns styled "thinking" for explicit text format', () => {
     const result = renderThinking(activeState, 'text');
     expect(result).toContain('thinking');
     expect(result).toContain('\x1b[36m'); // cyan

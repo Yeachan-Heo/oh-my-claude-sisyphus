@@ -137,7 +137,7 @@ export async function render(context: HudRenderContext, config: HudConfig): Prom
 
   // Extended thinking indicator
   if (enabledElements.thinking && context.thinkingState) {
-    const thinking = renderThinking(context.thinkingState, enabledElements.thinkingFormat || 'bubble');
+    const thinking = renderThinking(context.thinkingState, enabledElements.thinkingFormat || 'text');
     if (thinking) elements.push(thinking);
   }
 

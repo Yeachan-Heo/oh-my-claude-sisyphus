@@ -18,7 +18,7 @@ const CYAN = '\x1b[36m';
  */
 export function renderThinking(
   state: ThinkingState | null,
-  format: ThinkingFormat = 'bubble'
+  format: ThinkingFormat = 'text'
 ): string | null {
   if (!state?.active) return null;
 
