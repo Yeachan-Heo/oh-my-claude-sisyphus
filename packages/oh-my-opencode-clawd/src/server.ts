@@ -1,4 +1,5 @@
 import * as sessionManager from './core/session-manager.js';
+import { validateWorkingDirectory } from './utils/validation.js';
 import type { User } from './types.js';
 
 // Tool definitions for MCP
@@ -63,7 +64,14 @@ export const toolDefinitions = [
   },
 ];
 
-// System user for MCP tool calls (no platform authentication)
+// SECURITY: MCP tools use a system user with admin role.
+// This is intentional: MCP communicates over stdio, which is inherently
+// local-only. The parent process (Claude Code) is already authenticated
+// by the user who started it. Adding auth here would add no security value
+// since anyone with stdio access already has full system access.
+//
+// If MCP transport changes to HTTP/SSE in the future, authentication
+// MUST be added before that change.
 const systemUser: User = {
   id: 'system',
   username: 'mcp-client',
@@ -80,9 +88,10 @@ export function createTools(): Record<string, (args: Record<string, unknown>) =>
         workingDirectory: string;
         initialPrompt?: string;
       };
+      const validatedDir = validateWorkingDirectory(workingDirectory);
       const session = await sessionManager.createSession({
         name,
-        workingDirectory,
+        workingDirectory: validatedDir,
         user: systemUser,
         initialPrompt,
       });
@@ -114,7 +123,7 @@ export function createTools(): Record<string, (args: Record<string, unknown>) =>
 
     clawd_session_kill: async (args) => {
       const { sessionId } = args as { sessionId: string };
-      sessionManager.killSession(sessionId);
+      sessionManager.killSession(sessionId, systemUser);
       return { success: true, sessionId };
     },
 

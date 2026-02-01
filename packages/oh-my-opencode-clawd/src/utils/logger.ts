@@ -57,7 +57,7 @@ function log(level: LogLevel, msg: string, data?: Record<string, unknown>): void
   // Also log to console in development
   if (process.env.NODE_ENV !== 'production') {
     const prefix = `[${level.toUpperCase()}]`;
-    console.log(prefix, msg, data ? JSON.stringify(data) : '');
+    console.error(prefix, msg, data ? JSON.stringify(data) : '');
   }
 }
 

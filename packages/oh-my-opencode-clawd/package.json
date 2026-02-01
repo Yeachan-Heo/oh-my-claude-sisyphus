@@ -16,9 +16,7 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.25.3",
     "better-sqlite3": "^12.6.2",
-    "grammy": "^1.39.3",
-    "pino": "^9.14.0",
-    "zod": "^3.23.8"
+    "grammy": "^1.39.3"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",

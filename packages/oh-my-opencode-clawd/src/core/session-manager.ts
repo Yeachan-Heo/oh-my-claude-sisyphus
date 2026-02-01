@@ -9,6 +9,16 @@ import type { Session, User } from '../types.js';
 
 const sessionRepo = new SessionRepository();
 
+const SESSION_NAME_REGEX = /^[a-zA-Z0-9_-]{1,64}$/;
+
+function validateSessionName(name: string): void {
+  if (!SESSION_NAME_REGEX.test(name)) {
+    throw new Error(
+      'Invalid session name. Use only letters, numbers, hyphens, and underscores (1-64 characters).'
+    );
+  }
+}
+
 export interface CreateSessionOptions {
   name: string;
   workingDirectory: string;
@@ -25,50 +35,64 @@ export interface SessionManagerStatus {
 
 let startTime = Date.now();
 let telegramConnected = false;
+let creatingSession = false;
 
 export function setTelegramConnected(connected: boolean): void {
   telegramConnected = connected;
 }
 
 export async function createSession(options: CreateSessionOptions): Promise<Session> {
-  const config = loadConfig();
-
-  // Check session limit
-  const activeCount = sessionRepo.countActive();
-  if (activeCount >= (config.maxSessions ?? 5)) {
-    throw new Error(`Maximum session limit reached (${config.maxSessions ?? 5})`);
+  // Prevent concurrent session creation (race condition protection)
+  if (creatingSession) {
+    throw new Error('Session creation in progress, try again');
   }
 
-  // Check if name already exists
-  const existing = sessionRepo.findByName(options.name);
-  if (existing) {
-    throw new Error(`Session with name "${options.name}" already exists`);
+  creatingSession = true;
+  try {
+    const config = loadConfig();
+
+    // Validate session name format
+    validateSessionName(options.name);
+
+    // Check session limit
+    const activeCount = sessionRepo.countActive();
+    if (activeCount >= (config.maxSessions ?? 5)) {
+      throw new Error(`Maximum session limit reached (${config.maxSessions ?? 5})`);
+    }
+
+    // Check if name already exists
+    const existing = sessionRepo.findByName(options.name);
+    if (existing) {
+      throw new Error(`Session with name "${options.name}" already exists`);
+    }
+
+    const sessionId = randomUUID();
+
+    // Create tmux session
+    const tmuxSession = tmux.createSession(sessionId, options.workingDirectory);
+
+    // Create DB record
+    const session = sessionRepo.create({
+      name: options.name,
+      tmuxSession,
+      workingDirectory: options.workingDirectory,
+      createdBy: options.user.id,
+    });
+
+    // Start Claude Code
+    await claude.startClaudeSession(
+      session.id,
+      tmuxSession,
+      options.workingDirectory,
+      options.initialPrompt
+    );
+
+    logger.info('Created session', { sessionId: session.id, name: options.name });
+
+    return session;
+  } finally {
+    creatingSession = false;
   }
-
-  const sessionId = randomUUID();
-
-  // Create tmux session
-  const tmuxSession = tmux.createSession(sessionId, options.workingDirectory);
-
-  // Create DB record
-  const session = sessionRepo.create({
-    name: options.name,
-    tmuxSession,
-    workingDirectory: options.workingDirectory,
-    createdBy: options.user.id,
-  });
-
-  // Start Claude Code
-  await claude.startClaudeSession(
-    session.id,
-    tmuxSession,
-    options.workingDirectory,
-    options.initialPrompt
-  );
-
-  logger.info('Created session', { sessionId: session.id, name: options.name });
-
-  return session;
 }
 
 export async function sendPrompt(sessionId: string, prompt: string, user?: User): Promise<number> {
@@ -100,10 +124,15 @@ export function getOutput(sessionId: string, lines: number = 100): string {
   return tmux.capturePane(session.tmuxSession, lines);
 }
 
-export function killSession(sessionId: string): void {
+export function killSession(sessionId: string, user: User): void {
   const session = sessionRepo.findById(sessionId);
   if (!session) {
     throw new Error(`Session ${sessionId} not found`);
+  }
+
+  // Verify ownership or admin role
+  if (session.createdBy !== user.id && user.role !== 'admin') {
+    throw new Error(`Unauthorized: You do not own session ${sessionId}`);
   }
 
   // Kill tmux session
@@ -122,8 +151,18 @@ export function listActiveSessions(): Session[] {
   return sessionRepo.findActive();
 }
 
-export function getSession(sessionId: string): Session | null {
-  return sessionRepo.findById(sessionId);
+export function getSession(sessionId: string, user: User): Session | null {
+  const session = sessionRepo.findById(sessionId);
+  if (!session) {
+    return null;
+  }
+
+  // Verify ownership or admin role
+  if (session.createdBy !== user.id && user.role !== 'admin') {
+    throw new Error(`Unauthorized: You do not own session ${sessionId}`);
+  }
+
+  return session;
 }
 
 export function getSessionByName(name: string): Session | null {
@@ -134,10 +173,15 @@ export function getUserSessions(userId: string): Session[] {
   return sessionRepo.findByUser(userId);
 }
 
-export function interruptSession(sessionId: string): void {
+export function interruptSession(sessionId: string, user: User): void {
   const session = sessionRepo.findById(sessionId);
   if (!session) {
     throw new Error(`Session ${sessionId} not found`);
+  }
+
+  // Verify ownership or admin role
+  if (session.createdBy !== user.id && user.role !== 'admin') {
+    throw new Error(`Unauthorized: You do not own session ${sessionId}`);
   }
 
   tmux.sendInterrupt(session.tmuxSession);

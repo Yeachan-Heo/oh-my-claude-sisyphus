@@ -10,8 +10,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const CLAWD_DIR = join(homedir(), '.clawd');
-const PID_FILE = join(CLAWD_DIR, 'clawd.pid');
+const PID_FILE = join(CLAWD_DIR, 'state', 'clawd.pid');
 const LOG_FILE = join(CLAWD_DIR, 'clawd.log');
+// TODO: align LOG_FILE with config.ts getLogPath() -> ~/.clawd/logs/clawd.log
 
 function ensureDir() {
   if (!existsSync(CLAWD_DIR)) {
@@ -34,6 +35,7 @@ function isRunning() {
 
 function start() {
   ensureDir();
+  mkdirSync(join(CLAWD_DIR, 'state'), { recursive: true });
   if (isRunning()) {
     console.log('clawd is already running');
     process.exit(1);

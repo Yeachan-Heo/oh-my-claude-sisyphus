@@ -36,6 +36,37 @@ export async function startTelegram(): Promise<Bot<MyContext> | null> {
     initial: (): SessionData => ({}),
   }));
 
+  // Rate limiting middleware
+  const rateLimitMap = new Map<string, number[]>();
+  const RATE_LIMIT_WINDOW_MS = 60000; // 1 minute
+  const RATE_LIMIT_MAX_COMMANDS = 10;
+
+  bot.use(async (ctx, next) => {
+    const userId = ctx.from?.id.toString();
+    if (!userId) {
+      return next();
+    }
+
+    const now = Date.now();
+    const userTimestamps = rateLimitMap.get(userId) || [];
+
+    // Remove timestamps older than the window
+    const recentTimestamps = userTimestamps.filter(
+      (timestamp) => now - timestamp < RATE_LIMIT_WINDOW_MS
+    );
+
+    if (recentTimestamps.length >= RATE_LIMIT_MAX_COMMANDS) {
+      await ctx.reply('Rate limit exceeded. Please wait.');
+      return;
+    }
+
+    // Add current timestamp
+    recentTimestamps.push(now);
+    rateLimitMap.set(userId, recentTimestamps);
+
+    return next();
+  });
+
   // Register commands
   registerCommands(bot);
 
