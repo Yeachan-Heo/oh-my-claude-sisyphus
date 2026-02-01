@@ -7,6 +7,8 @@
  * Ported from oh-my-opencode's keyword-detector hook.
  */
 
+import { isEcomodeEnabled } from '../../features/auto-update.js';
+
 export type KeywordType =
   | 'cancel'      // Priority 1
   | 'ralph'       // Priority 2
@@ -143,6 +145,11 @@ export function detectKeywordsWithType(
 
   // Check each keyword type
   for (const type of KEYWORD_PRIORITY) {
+    // Skip ecomode detection if disabled in config
+    if (type === 'ecomode' && !isEcomodeEnabled()) {
+      continue;
+    }
+
     const pattern = KEYWORD_PATTERNS[type];
     const match = cleanedText.match(pattern);
 
@@ -180,8 +187,8 @@ export function getAllKeywords(text: string): KeywordType[] {
   // Exclusive: cancel suppresses everything
   if (types.includes('cancel')) return ['cancel'];
 
-  // Mutual exclusion: ecomode beats ultrawork
-  if (types.includes('ecomode') && types.includes('ultrawork')) {
+  // Mutual exclusion: ecomode beats ultrawork (only if ecomode is enabled)
+  if (types.includes('ecomode') && types.includes('ultrawork') && isEcomodeEnabled()) {
     types = types.filter(t => t !== 'ultrawork');
   }
 

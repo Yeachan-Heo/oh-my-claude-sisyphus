@@ -53,6 +53,20 @@ Run `/oh-my-claudecode:omc-setup` to set ecomode as your default parallel execut
 
 When set as default, saying "fast" or "parallel" will activate ecomode instead of ultrawork.
 
+## Disabling Ecomode
+
+To completely disable ecomode (prevents all ecomode keyword detection and activation), add to `~/.claude/.omc-config.json`:
+
+```json
+{
+  "ecomode": {
+    "enabled": false
+  }
+}
+```
+
+When disabled, ecomode keywords ("eco", "ecomode", "efficient", "save-tokens", "budget") will be ignored and will not trigger ecomode activation.
+
 ## Cancellation
 
 - `/oh-my-claudecode:cancel` - Cancel active mode

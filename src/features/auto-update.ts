@@ -48,6 +48,11 @@ export interface SisyphusConfig {
   };
   /** Preferred execution mode for parallel work (set by omc-setup Step 3.7) */
   defaultExecutionMode?: 'ultrawork' | 'ecomode';
+  /** Ecomode-specific configuration */
+  ecomode?: {
+    /** Whether ecomode is enabled (default: true). Set to false to disable ecomode completely. */
+    enabled?: boolean;
+  };
 }
 
 /**
@@ -69,6 +74,7 @@ export function getSisyphusConfig(): SisyphusConfig {
       taskTool: config.taskTool,
       taskToolConfig: config.taskToolConfig,
       defaultExecutionMode: config.defaultExecutionMode,
+      ecomode: config.ecomode,
     };
   } catch {
     // If config file is invalid, default to disabled for security
@@ -81,6 +87,16 @@ export function getSisyphusConfig(): SisyphusConfig {
  */
 export function isSilentAutoUpdateEnabled(): boolean {
   return getSisyphusConfig().silentAutoUpdate;
+}
+
+/**
+ * Check if ecomode is enabled
+ * Returns true by default if not explicitly disabled
+ */
+export function isEcomodeEnabled(): boolean {
+  const config = getSisyphusConfig();
+  // Default to true if not configured
+  return config.ecomode?.enabled !== false;
 }
 
 /**

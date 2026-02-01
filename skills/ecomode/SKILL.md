@@ -89,6 +89,19 @@ Long-running commands (install, build, test) run in background. Maximum 5 concur
 4. **Use writer (haiku)** for all documentation tasks
 5. **Avoid opus agents** unless the task genuinely requires deep reasoning
 
+## Disabling Ecomode
+
+Ecomode can be completely disabled via config. When disabled, all ecomode keywords are ignored.
+
+Set in `~/.claude/.omc-config.json`:
+```json
+{
+  "ecomode": {
+    "enabled": false
+  }
+}
+```
+
 ## State Management
 
 Ecomode state is tracked in `.omc/state/ecomode-state.json`.

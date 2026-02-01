@@ -552,6 +552,15 @@ echo "Default execution mode set to: USER_CHOICE"
 
 **Note**: This preference ONLY affects generic keywords ("fast", "parallel"). Explicit keywords ("ulw", "eco") always override this preference.
 
+### Optional: Disable Ecomode Entirely
+
+If the user wants to disable ecomode completely (so ecomode keywords are ignored), add to the config:
+
+```bash
+echo "$EXISTING" | jq '. + {ecomode: {enabled: false}}' > "$CONFIG_FILE"
+echo "Ecomode disabled completely"
+```
+
 ## Step 3.8: Install CLI Analytics Tools (Optional)
 
 The OMC CLI provides standalone token analytics commands (`omc stats`, `omc agents`, `omc tui`).

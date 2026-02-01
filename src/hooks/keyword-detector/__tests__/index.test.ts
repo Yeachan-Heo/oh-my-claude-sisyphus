@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   removeCodeBlocks,
   extractPromptText,
@@ -9,6 +9,14 @@ import {
   type KeywordType,
   type DetectedKeyword,
 } from '../index.js';
+
+// Mock isEcomodeEnabled
+vi.mock('../../../features/auto-update.js', () => ({
+  isEcomodeEnabled: vi.fn(() => true),
+}));
+
+import { isEcomodeEnabled } from '../../../features/auto-update.js';
+const mockedIsEcomodeEnabled = vi.mocked(isEcomodeEnabled);
 
 describe('keyword-detector', () => {
   describe('removeCodeBlocks', () => {
@@ -372,6 +380,42 @@ World`);
         const result = detectKeywordsWithType('budget fix all errors');
         const ecoMatch = result.find((r) => r.type === 'ecomode');
         expect(ecoMatch).toBeDefined();
+      });
+
+      describe('when ecomode is disabled via config', () => {
+        beforeEach(() => {
+          mockedIsEcomodeEnabled.mockReturnValue(false);
+        });
+
+        afterEach(() => {
+          mockedIsEcomodeEnabled.mockReturnValue(true);
+        });
+
+        it('should NOT detect eco keyword when disabled', () => {
+          const result = detectKeywordsWithType('eco fix all errors');
+          const ecoMatch = result.find((r) => r.type === 'ecomode');
+          expect(ecoMatch).toBeUndefined();
+        });
+
+        it('should NOT detect ecomode keyword when disabled', () => {
+          const result = detectKeywordsWithType('ecomode fix build');
+          const ecoMatch = result.find((r) => r.type === 'ecomode');
+          expect(ecoMatch).toBeUndefined();
+        });
+
+        it('should still detect ultrawork when ecomode is disabled', () => {
+          const result = detectKeywordsWithType('ulw eco fix errors');
+          const ultraworkMatch = result.find((r) => r.type === 'ultrawork');
+          expect(ultraworkMatch).toBeDefined();
+          const ecoMatch = result.find((r) => r.type === 'ecomode');
+          expect(ecoMatch).toBeUndefined();
+        });
+
+        it('should not suppress ultrawork when ecomode disabled and both keywords present', () => {
+          const result = getAllKeywords('ulw eco fix errors');
+          expect(result).toContain('ultrawork');
+          expect(result).not.toContain('ecomode');
+        });
       });
     });
 
