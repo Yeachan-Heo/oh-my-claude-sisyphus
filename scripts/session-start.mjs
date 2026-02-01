@@ -9,6 +9,7 @@
 import { existsSync, readFileSync, readdirSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
+import { execSync } from 'child_process';
 
 // Read all stdin
 async function readStdin() {
@@ -44,6 +45,43 @@ function countIncompleteTodos(todosDir) {
     } catch {}
   }
   return count;
+}
+
+// Get git worktrees for current repo
+function getWorktrees(directory) {
+  try {
+    const output = execSync('git worktree list --porcelain', {
+      cwd: directory,
+      encoding: 'utf-8',
+      timeout: 5000,
+    }).trim();
+
+    if (!output) return [];
+
+    const worktrees = [];
+    let currentPath = '';
+    let currentBranch = '';
+
+    for (const line of output.split('\n')) {
+      if (line.startsWith('worktree ')) {
+        currentPath = line.substring('worktree '.length);
+      } else if (line.startsWith('branch ')) {
+        currentBranch = line.substring('branch '.length).replace('refs/heads/', '');
+      } else if (line === '') {
+        if (currentPath) {
+          worktrees.push({ path: currentPath, branch: currentBranch });
+        }
+        currentPath = '';
+        currentBranch = '';
+      }
+    }
+    if (currentPath) {
+      worktrees.push({ path: currentPath, branch: currentBranch });
+    }
+    return worktrees;
+  } catch {
+    return [];
+  }
 }
 
 // Check if HUD is properly installed
@@ -88,6 +126,24 @@ async function main() {
     if (!hudCheck.installed) {
       messages.push(`<system-reminder>
 [Sisyphus] HUD not configured (${hudCheck.reason}). Run /hud setup then restart Claude Code.
+</system-reminder>`);
+    }
+
+    // Worktree isolation awareness
+    const worktrees = getWorktrees(directory);
+    if (worktrees.length > 1) {
+      const currentWorktree = worktrees.find(wt => wt.path === directory);
+      const siblingWorktrees = worktrees.filter(wt => wt.path !== directory);
+
+      messages.push(`<system-reminder>
+[WORKTREE ISOLATION ACTIVE]
+
+Current worktree: ${directory} (${currentWorktree?.branch || 'unknown'})
+
+Other worktrees detected (DO NOT MODIFY):
+${siblingWorktrees.map(wt => `- ${wt.path} (${wt.branch})`).join('\n')}
+
+RULE: Only modify files within your current worktree. Other worktrees are managed by separate terminal sessions.
 </system-reminder>`);
     }
 

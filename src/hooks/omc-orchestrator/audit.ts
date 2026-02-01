@@ -14,7 +14,7 @@ export interface AuditEntry {
   tool: string;
   filePath: string;
   decision: 'allowed' | 'warned' | 'blocked';
-  reason: 'allowed_path' | 'source_file' | 'other';
+  reason: 'allowed_path' | 'source_file' | 'worktree_isolation' | 'other';
   enforcementLevel?: 'off' | 'warn' | 'strict';
   sessionId?: string;
 }

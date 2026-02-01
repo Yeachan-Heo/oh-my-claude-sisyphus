@@ -20,6 +20,7 @@ import {
   WRITE_EDIT_TOOLS,
   DIRECT_WORK_REMINDER,
   ORCHESTRATOR_DELEGATION_REQUIRED,
+  WORKTREE_ISOLATION_WARNING,
   BOULDER_CONTINUATION_PROMPT,
   VERIFICATION_REMINDER,
   SINGLE_TASK_DIRECTIVE,
@@ -42,6 +43,111 @@ export type EnforcementLevel = 'off' | 'warn' | 'strict';
 // Config caching (30s TTL)
 let enforcementCache: { level: EnforcementLevel; directory: string; timestamp: number } | null = null;
 const CACHE_TTL_MS = 30_000; // 30 seconds
+
+// Worktree cache (60s TTL - worktrees don't change often)
+let worktreeCache: { worktrees: WorktreeInfo[]; directory: string; timestamp: number } | null = null;
+const WORKTREE_CACHE_TTL_MS = 60_000;
+
+interface WorktreeInfo {
+  path: string;
+  branch: string;
+}
+
+/**
+ * Get all git worktrees for the current repo.
+ * Returns array of worktree paths and branches.
+ */
+export function getWorktrees(directory: string): WorktreeInfo[] {
+  const now = Date.now();
+
+  // Return cached value if valid
+  if (worktreeCache &&
+      worktreeCache.directory === directory &&
+      (now - worktreeCache.timestamp) < WORKTREE_CACHE_TTL_MS) {
+    return worktreeCache.worktrees;
+  }
+
+  try {
+    const output = execSync('git worktree list --porcelain', {
+      cwd: directory,
+      encoding: 'utf-8',
+      timeout: 5000,
+    }).trim();
+
+    if (!output) {
+      worktreeCache = { worktrees: [], directory, timestamp: now };
+      return [];
+    }
+
+    const worktrees: WorktreeInfo[] = [];
+    let currentPath = '';
+    let currentBranch = '';
+
+    for (const line of output.split('\n')) {
+      if (line.startsWith('worktree ')) {
+        currentPath = line.substring('worktree '.length);
+      } else if (line.startsWith('branch ')) {
+        currentBranch = line.substring('branch '.length).replace('refs/heads/', '');
+      } else if (line === '') {
+        if (currentPath) {
+          worktrees.push({ path: currentPath, branch: currentBranch });
+        }
+        currentPath = '';
+        currentBranch = '';
+      }
+    }
+    // Handle last entry (no trailing newline)
+    if (currentPath) {
+      worktrees.push({ path: currentPath, branch: currentBranch });
+    }
+
+    worktreeCache = { worktrees, directory, timestamp: now };
+    return worktrees;
+  } catch {
+    worktreeCache = { worktrees: [], directory, timestamp: now };
+    return [];
+  }
+}
+
+/**
+ * Clear worktree cache (for testing)
+ * @internal
+ */
+export function clearWorktreeCache(): void {
+  worktreeCache = null;
+}
+
+/**
+ * Check if a file path is inside a sibling worktree (not the current one).
+ * Returns the sibling worktree info if found, null otherwise.
+ */
+export function getSiblingWorktree(
+  filePath: string,
+  currentDirectory: string,
+): WorktreeInfo | null {
+  const worktrees = getWorktrees(currentDirectory);
+
+  // Only relevant if there are multiple worktrees
+  if (worktrees.length <= 1) return null;
+
+  // Resolve the file path to absolute
+  const absoluteFilePath = path.isAbsolute(filePath)
+    ? filePath
+    : path.resolve(currentDirectory, filePath);
+
+  // Find which worktree this file belongs to (if any)
+  for (const wt of worktrees) {
+    // Skip the current worktree
+    if (wt.path === currentDirectory) continue;
+
+    // Check if the file is inside this sibling worktree
+    if (absoluteFilePath.startsWith(wt.path + '/') || absoluteFilePath === wt.path) {
+      return wt;
+    }
+  }
+
+  return null;
+}
 
 /**
  * Clear enforcement level cache (for testing)
@@ -354,13 +460,45 @@ export function processOrchestratorPreTool(input: ToolExecuteInput): ToolExecute
     return { continue: true };
   }
 
-  // Only check write/edit tools
-  if (!isWriteEditTool(toolName)) {
+  // Only check write/edit tools and Bash
+  if (!isWriteEditTool(toolName) && toolName !== 'Bash' && toolName !== 'bash') {
     return { continue: true };
   }
 
   // Extract file path from tool input
   const filePath = (toolInput?.filePath ?? toolInput?.path ?? toolInput?.file) as string | undefined;
+
+  // === WORKTREE ISOLATION CHECK ===
+  // Always block writes to sibling worktrees, regardless of enforcement level
+  if (filePath) {
+    const siblingWorktree = getSiblingWorktree(filePath, directory);
+    if (siblingWorktree) {
+      const warning = WORKTREE_ISOLATION_WARNING
+        .replace('$CURRENT_WORKTREE', directory)
+        .replace('$TARGET_PATH', filePath)
+        .replace('$TARGET_WORKTREE', `${siblingWorktree.path} (${siblingWorktree.branch})`);
+
+      logAuditEntry({
+        tool: toolName,
+        filePath,
+        decision: 'blocked',
+        reason: 'worktree_isolation',
+        enforcementLevel,
+        sessionId,
+      });
+
+      return {
+        continue: false,
+        reason: 'WORKTREE_ISOLATION',
+        message: warning,
+      };
+    }
+  }
+
+  // For Bash tool, only worktree isolation applies (no delegation check)
+  if (toolName === 'Bash' || toolName === 'bash') {
+    return { continue: true };
+  }
 
   // Allow if path is in allowed prefix
   if (!filePath || isAllowedPath(filePath)) {

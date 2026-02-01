@@ -50,6 +50,51 @@ export const WARNED_EXTENSIONS = [
 /** Tools that perform file modifications */
 export const WRITE_EDIT_TOOLS = ['Write', 'Edit', 'write', 'edit'];
 
+/** Warning when attempting to modify files in a sibling worktree */
+export const WORKTREE_ISOLATION_WARNING = `
+
+---
+
+[CRITICAL SYSTEM DIRECTIVE - WORKTREE ISOLATION VIOLATION]
+
+**STOP. YOU ARE VIOLATING WORKTREE ISOLATION.**
+
+You are attempting to modify a file in a **different git worktree**.
+
+**Current worktree:** $CURRENT_WORKTREE
+**Target path:** $TARGET_PATH
+**Target worktree:** $TARGET_WORKTREE
+
+---
+
+**THIS IS FORBIDDEN.**
+
+Each terminal/session operates on its own worktree independently:
+- Terminal 1: /project (main) - DO NOT touch from Terminal 2
+- Terminal 2: /project-feature (worktree) - DO NOT touch from Terminal 1
+
+**WHY THIS MATTERS:**
+- User runs multiple Claude Code instances in parallel
+- Each instance works on a separate feature branch
+- Cross-worktree modifications cause merge conflicts and lost work
+
+**CORRECT APPROACH:**
+1. Only modify files within your current worktree ($CURRENT_WORKTREE)
+2. For other worktree work, the user will use a separate terminal
+3. If you need to reference another worktree, provide information only - NO modifications
+
+**ALLOWED:**
+- Reading files from any worktree (for reference)
+- Providing information about what should be done
+- Creating new worktrees (\`git worktree add\`)
+
+**FORBIDDEN:**
+- Writing/editing files in sibling worktrees
+- Running build/test commands in sibling worktrees
+
+---
+`;
+
 /** Reminder when orchestrator performs direct file work */
 export const DIRECT_WORK_REMINDER = `
 
