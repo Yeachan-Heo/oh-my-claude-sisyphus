@@ -112,19 +112,37 @@ describe('delegation-enforcer', () => {
       expect(result.warning).toBeUndefined();
     });
 
-    it('works with all tiered agents', () => {
+    it('works with all Claude Code agent types', () => {
+      // Claude Code's Task tool only accepts: general-purpose, Explore, Plan, Bash
+      // Each maps to a default model in the delegation-enforcer
       const testCases = [
         { agent: 'Plan', expectedModel: 'opus' },
-        { agent: 'Plan', expectedModel: 'sonnet' },
         { agent: 'Explore', expectedModel: 'haiku' },
         { agent: 'general-purpose', expectedModel: 'sonnet' },
-        { agent: 'general-purpose', expectedModel: 'opus' },
-        { agent: 'general-purpose', expectedModel: 'haiku' },
-        { agent: 'Explore', expectedModel: 'haiku' },
-        { agent: 'Explore', expectedModel: 'sonnet' },
-        { agent: 'general-purpose', expectedModel: 'sonnet' },
-        { agent: 'general-purpose', expectedModel: 'opus' },
-        { agent: 'general-purpose', expectedModel: 'haiku' }
+      ];
+
+      for (const testCase of testCases) {
+        const input: AgentInput = {
+          description: 'Test',
+          prompt: 'Test',
+          subagent_type: testCase.agent
+        };
+
+        const result = enforceModel(input);
+        expect(result.modifiedInput.model).toBe(testCase.expectedModel);
+        expect(result.injected).toBe(true);
+      }
+    });
+
+    it('works with plugin internal agent types', () => {
+      // Plugin's internal agents (oh-my-claudecode:executor, etc.) can also be looked up
+      const testCases = [
+        { agent: 'executor', expectedModel: 'sonnet' },
+        { agent: 'architect', expectedModel: 'opus' },
+        { agent: 'explore', expectedModel: 'haiku' },
+        { agent: 'designer', expectedModel: 'sonnet' },
+        { agent: 'executor-low', expectedModel: 'haiku' },
+        { agent: 'executor-high', expectedModel: 'opus' },
       ];
 
       for (const testCase of testCases) {

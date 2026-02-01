@@ -12,6 +12,17 @@ import { getAgentDefinitions } from '../agents/definitions.js';
 import type { ModelType } from '../shared/types.js';
 
 /**
+ * Map Claude Code's Task tool subagent_types to plugin agent types
+ * Claude Code only accepts: general-purpose, Explore, Plan, Bash
+ */
+const CLAUDE_CODE_TYPE_MAP: Record<string, { pluginAgent: string; defaultModel: 'sonnet' | 'opus' | 'haiku' }> = {
+  'general-purpose': { pluginAgent: 'executor', defaultModel: 'sonnet' },
+  'Explore': { pluginAgent: 'explore', defaultModel: 'haiku' },
+  'Plan': { pluginAgent: 'planner', defaultModel: 'opus' },
+  'Bash': { pluginAgent: 'executor', defaultModel: 'sonnet' }, // Bash doesn't need model but provide fallback
+};
+
+/**
  * Agent input structure from Claude Agent SDK
  */
 export interface AgentInput {
@@ -63,7 +74,34 @@ export function enforceModel(agentInput: AgentInput): EnforcementResult {
   // Extract agent type (strip oh-my-claudecode: prefix if present)
   const agentType = agentInput.subagent_type.replace(/^oh-my-claudecode:/, '');
 
-  // Get agent definition
+  // Check if this is a Claude Code built-in type
+  const claudeCodeMapping = CLAUDE_CODE_TYPE_MAP[agentType];
+  if (claudeCodeMapping) {
+    // Use the default model for Claude Code types
+    const sdkModel = claudeCodeMapping.defaultModel;
+
+    // Create modified input with model injected
+    const modifiedInput: AgentInput = {
+      ...agentInput,
+      model: sdkModel,
+    };
+
+    // Create warning message (only shown if OMC_DEBUG=true)
+    let warning: string | undefined;
+    if (process.env.OMC_DEBUG === 'true') {
+      warning = `[OMC] Auto-injecting model: ${sdkModel} for ${agentType}`;
+    }
+
+    return {
+      originalInput: agentInput,
+      modifiedInput,
+      injected: true,
+      model: sdkModel,
+      warning,
+    };
+  }
+
+  // Get agent definition from plugin registry
   const agentDefs = getAgentDefinitions();
   const agentDef = agentDefs[agentType];
 
@@ -168,6 +206,14 @@ export function processPreToolUse(
  */
 export function getModelForAgent(agentType: string): ModelType {
   const normalizedType = agentType.replace(/^oh-my-claudecode:/, '');
+
+  // Check if this is a Claude Code built-in type
+  const claudeCodeMapping = CLAUDE_CODE_TYPE_MAP[normalizedType];
+  if (claudeCodeMapping) {
+    return claudeCodeMapping.defaultModel;
+  }
+
+  // Otherwise, look up in plugin registry
   const agentDefs = getAgentDefinitions();
   const agentDef = agentDefs[normalizedType];
 
