@@ -29,6 +29,25 @@ function readJsonFile(path) {
   }
 }
 
+/**
+ * Sanitize a prompt string for safe re-injection in stop hook reasons.
+ * Strips injected context tags, collapses whitespace, and truncates to prevent
+ * the model from re-interpreting AskUser patterns or other instruction-like text.
+ */
+function sanitizePromptForReason(text) {
+  if (!text || typeof text !== 'string') return '';
+  return text
+    .replace(/<session-restore>[\s\S]*?<\/session-restore>/g, '')
+    .replace(/<system-reminder>[\s\S]*?<\/system-reminder>/g, '')
+    .replace(/<notepad-context>[\s\S]*?<\/notepad-context>/g, '')
+    .replace(/<ultrawork-persistence>[\s\S]*?<\/ultrawork-persistence>/g, '')
+    .replace(/^\s*HOOKS.*$/gm, '')
+    .replace(/\[MAGIC KEYWORD:[\s\S]*?IMMEDIATELY\./g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 160);
+}
+
 function writeJsonFile(path, data) {
   try {
     // Ensure directory exists
@@ -96,15 +115,17 @@ function countIncompleteTodos(sessionId, projectDir) {
     } catch { /* skip */ }
   }
 
-  // Project-local todos only
+  // Project-local todos only (first valid path wins — avoid double-counting)
   for (const path of [
     join(projectDir, '.omc', 'todos.json'),
     join(projectDir, '.claude', 'todos.json')
   ]) {
     try {
       const data = readJsonFile(path);
+      if (!data) continue;
       const todos = Array.isArray(data) ? data : (Array.isArray(data?.todos) ? data.todos : []);
       count += todos.filter(t => t.status !== 'completed' && t.status !== 'cancelled').length;
+      break;
     } catch { /* skip */ }
   }
 
@@ -218,7 +239,7 @@ async function main() {
 
         console.log(JSON.stringify({
           decision: 'block',
-          reason: `[RALPH LOOP - ITERATION ${iteration + 1}/${maxIter}] Work is NOT done. Continue. When complete, output: <promise>${ralph.state.completion_promise || 'DONE'}</promise>\n${ralph.state.prompt ? `Task: ${ralph.state.prompt}` : ''}`
+          reason: `[RALPH LOOP - ITERATION ${iteration + 1}/${maxIter}] Work is NOT done. Continue. When complete, output: <promise>${ralph.state.completion_promise || 'DONE'}</promise>\n${ralph.state.prompt ? `Task: ${sanitizePromptForReason(ralph.state.prompt)}` : ''}`
         }));
         return;
       }
@@ -337,7 +358,7 @@ async function main() {
         reason = `[ULTRAWORK #${newCount}] ${totalIncomplete} incomplete ${itemType}. Continue working.`;
       }
       if (ultrawork.state.original_prompt) {
-        reason += `\nTask: ${ultrawork.state.original_prompt}`;
+        reason += `\nTask: ${sanitizePromptForReason(ultrawork.state.original_prompt)}`;
       }
 
       console.log(JSON.stringify({
