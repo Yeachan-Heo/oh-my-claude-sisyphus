@@ -45,9 +45,9 @@ Task(subagent_type="oh-my-claudecode:architect", model="opus", prompt="...")
 ## Background Execution Rules
 
 **Run in Background** (set `run_in_background: true`):
-- Package installation: npm install, pip install, cargo build
-- Build processes: npm run build, make, tsc
-- Test suites: npm test, pytest, cargo test
+- Package installation (npm install, pip install, cargo build, etc.)
+- Build processes (project build command, make, etc.)
+- Test suites (project test command, etc.)
 
 **Run Blocking** (foreground):
 - Quick status checks: git status, ls, pwd
@@ -86,7 +86,7 @@ Use `ralph` instead when you want:
 When ultrawork is invoked directly (not via ralph), apply lightweight verification before claiming completion:
 
 ### Quick Verification Checklist
-- [ ] **BUILD:** `tsc --noEmit` or equivalent passes
+- [ ] **BUILD:** Project type check/build command passes
 - [ ] **TESTS:** Run affected tests, all pass
 - [ ] **ERRORS:** No new errors introduced
 

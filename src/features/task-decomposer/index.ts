@@ -751,9 +751,9 @@ function generateVerificationSteps(
 ): string[] {
   const steps: string[] = [];
 
-  steps.push('Run TypeScript compiler: tsc --noEmit');
-  steps.push('Run linter: eslint');
-  steps.push('Run tests: npm test');
+  steps.push('Run the project type check command');
+  steps.push('Run the project lint command');
+  steps.push('Run the project test command');
 
   if (component.role === 'frontend' || component.role === 'ui') {
     steps.push('Visual inspection of UI components');

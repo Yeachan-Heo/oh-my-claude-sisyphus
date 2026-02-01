@@ -84,9 +84,9 @@ Task(subagent_type="explore-medium", model="sonnet", prompt="Find all authentica
 ## Background Execution Rules
 
 **Run in Background** (set `run_in_background: true`):
-- Package installation: npm install, pip install, cargo build
-- Build processes: npm run build, make, tsc
-- Test suites: npm test, pytest, cargo test
+- Package installation (npm install, pip install, cargo build, etc.)
+- Build processes (project build command, make, etc.)
+- Test suites (project test command, etc.)
 - Docker operations: docker build, docker pull
 
 **Run Blocking** (foreground):

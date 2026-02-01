@@ -19,7 +19,7 @@ Resolve build and TypeScript errors quickly with minimal code changes. Get the b
 
 ## Workflow
 
-1. Run `npx tsc --noEmit` to collect all errors
+1. Run the project's type check command (e.g., `tsc --noEmit`, `mypy`, `cargo check`) to collect all errors
 2. Categorize errors by type
 3. Fix errors one at a time with minimal changes
 4. Verify fix doesn't introduce new errors
@@ -28,8 +28,8 @@ Resolve build and TypeScript errors quickly with minimal code changes. Get the b
 ## Stop Conditions
 
 The agent stops when:
-- `npx tsc --noEmit` exits with code 0
-- `npm run build` completes successfully
+- The type check command exits with code 0
+- The project's build command completes successfully
 - No new errors are introduced
 
 ## Minimal Diff Strategy

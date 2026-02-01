@@ -142,8 +142,8 @@ When task is 100% complete, output:
 - `/absolute/path/to/file2.ts` - [what changed]
 
 ### Verification Evidence
-- Build: `npm run build` -> SUCCESS
-- Tests: `npm test` -> 42 passed, 0 failed
+- Build: [project build command] -> SUCCESS
+- Tests: [project test command] -> 42 passed, 0 failed
 - Diagnostics: 0 errors, 0 warnings
 
 ### Definition of Done

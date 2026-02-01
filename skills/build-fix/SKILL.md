@@ -5,14 +5,14 @@ description: Fix build and TypeScript errors with minimal changes
 
 # Build Fix Skill
 
-Fix build and TypeScript errors quickly with minimal code changes. Get the build green without refactoring.
+Fix build and compilation errors quickly with minimal code changes. Get the build green without refactoring.
 
 ## When to Use
 
 This skill activates when:
 - User says "fix the build", "build is broken"
 - TypeScript compilation fails
-- `npm run build` or `tsc` reports errors
+- the build command or type checker reports errors
 - User requests "minimal fixes" for errors
 
 ## What It Does
@@ -20,8 +20,8 @@ This skill activates when:
 Delegates to the `build-fixer` agent (Sonnet model) to:
 
 1. **Collect Errors**
-   - Run `npx tsc --noEmit` to get all TypeScript errors
-   - Or run `npm run build` to get build failures
+   - Run the project's type check command (e.g., `tsc --noEmit`, `mypy`, `cargo check`, `go vet`)
+   - Or run the project's build command to get build failures
    - Categorize errors by type and severity
 
 2. **Fix Strategically**
@@ -38,7 +38,7 @@ Delegates to the `build-fixer` agent (Sonnet model) to:
    - ONLY what's needed to make build pass
 
 4. **Verify**
-   - Run `npx tsc --noEmit` after each fix
+   - Run the project's type check command after each fix
    - Ensure no new errors introduced
    - Stop when build passes
 
@@ -69,8 +69,8 @@ Output: Build error resolution report with:
 ## Stop Conditions
 
 The build-fixer agent stops when:
-- `npx tsc --noEmit` exits with code 0
-- `npm run build` completes successfully
+- Type check command exits with code 0
+- Build command completes successfully
 - No new errors introduced
 
 ## Output Format
@@ -90,7 +90,7 @@ Fixes Applied:
 ...
 
 Final Build Status: ✓ PASSING
-Verification: npx tsc --noEmit (exit code 0)
+Verification: [type check command] (exit code 0)
 ```
 
 ## Best Practices

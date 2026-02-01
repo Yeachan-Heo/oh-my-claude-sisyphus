@@ -80,7 +80,7 @@ Before any analysis, gather context via parallel tool calls:
 
 1. **Codebase Structure**: Use Glob to understand project layout
 2. **Related Code**: Use Grep/Read to find relevant implementations
-3. **Dependencies**: Check package.json, imports, etc.
+3. **Dependencies**: Check project manifest (package.json, Cargo.toml, go.mod, pyproject.toml, etc.), imports
 4. **Test Coverage**: Find existing tests for the area
 
 **PARALLEL EXECUTION**: Make multiple tool calls in single message for speed.
@@ -188,7 +188,7 @@ FAIL_IF: [conditions indicating the fix didn't work]
 1. Fix the race condition in src/server.ts:142
 2. **Verify with qa-tester**:
    VERIFY: Server handles concurrent connections
-   SETUP: npm run build
+   SETUP: Build the project
    COMMANDS:
    1. Start server → expect "Listening on port 3000"
    2. Send 10 concurrent requests → expect all return 200

@@ -31,7 +31,7 @@ export const STANDARD_CHECKS = {
     description: 'Code compiles without errors',
     evidenceType: 'build_success' as VerificationEvidenceType,
     required: true,
-    command: 'npm run build',
+    command: undefined,
     completed: false
   },
   TEST: {
@@ -40,7 +40,7 @@ export const STANDARD_CHECKS = {
     description: 'All tests pass without errors',
     evidenceType: 'test_pass' as VerificationEvidenceType,
     required: true,
-    command: 'npm test',
+    command: undefined,
     completed: false
   },
   LINT: {
@@ -49,7 +49,7 @@ export const STANDARD_CHECKS = {
     description: 'No linting errors',
     evidenceType: 'lint_clean' as VerificationEvidenceType,
     required: true,
-    command: 'npm run lint',
+    command: undefined,
     completed: false
   },
   FUNCTIONALITY: {

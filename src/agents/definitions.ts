@@ -439,7 +439,7 @@ This is the recommended workflow for any bug that requires running actual servic
 ### Verification Guidance (Gated for Token Efficiency)
 
 **Verification priority order:**
-1. **Existing tests** (npm test, pytest, etc.) - PREFERRED, cheapest
+1. **Existing tests** (run the project's test command) - PREFERRED, cheapest
 2. **Direct commands** (curl, simple CLI) - cheap
 3. **QA-Tester** (tmux sessions) - expensive, use sparingly
 
