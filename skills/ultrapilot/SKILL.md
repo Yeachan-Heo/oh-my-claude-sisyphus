@@ -284,9 +284,9 @@ Deliver: Code changes + list of boundary dependencies`,
 **Goal:** Verify integrated system works
 
 **Checks (parallel):**
-1. **Build** - `npm run build` or equivalent
-2. **Lint** - `npm run lint`
-3. **Type check** - `tsc --noEmit`
+1. **Build** - Run the project's build command
+2. **Lint** - Run the project's lint command
+3. **Type check** - Run the project's type check command
 4. **Unit tests** - All tests pass
 5. **Integration tests** - Cross-component tests
 

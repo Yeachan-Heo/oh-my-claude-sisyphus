@@ -5,6 +5,43 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.9.1] - 2026-02-01
+
+### Changed
+
+- **Framework-Agnostic Prompts** - All agent prompts, skill files, and TypeScript source code now use generic, language-neutral commands instead of hardcoded npm/Node.js-specific commands. This makes OMC work seamlessly with any project type (Python, Go, Rust, Java, etc.).
+
+### Files Updated
+
+**Agent Prompts:**
+- `agents/deep-executor.md` - Generic verification evidence placeholders
+- `agents/architect.md` - Generic project manifest and build references
+
+**Skill Files:**
+- `skills/build-fix/SKILL.md` - Generic type check and build command references
+- `skills/ultrawork/SKILL.md` - Generic background task examples
+- `skills/ralph/SKILL.md` - Generic background task examples
+- `skills/ultraqa/SKILL.md` - Generic goal command references
+- `skills/tdd/SKILL.md` - Generic test command references
+- `skills/ultrapilot/SKILL.md` - Generic validation commands
+- `skills/deepinit/SKILL.md` - Generic dependency and test instructions
+
+**Command Files:**
+- `commands/build-fix.md` - Generic type check command
+- `commands/ralph.md` - Generic background task examples
+- `commands/ultrawork.md` - Generic background task examples
+- `commands/ultraqa.md` - Generic goal commands
+
+**TypeScript Source:**
+- `src/hooks/ultraqa/index.ts` - `getGoalCommand()` returns generic comments with examples
+- `src/features/verification/index.ts` - Removed hardcoded npm commands from STANDARD_CHECKS
+- `src/hooks/autopilot/state.ts` - Generic QA phase instructions
+- `src/agents/definitions.ts` - Generic test command reference
+- `src/features/background-tasks.ts` - Generic background task documentation
+- `src/features/task-decomposer/index.ts` - Generic verification commands
+
+---
+
 ## [3.8.17] - 2026-02-01
 
 ### Fixed

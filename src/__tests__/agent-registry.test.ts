@@ -10,7 +10,7 @@ const __dirname = path.dirname(__filename);
 describe('Agent Registry Validation', () => {
   test('agent count matches documentation', () => {
     const agents = getAgentDefinitions();
-    expect(Object.keys(agents).length).toBe(32);
+    expect(Object.keys(agents).length).toBe(33);
   });
 
   test('all agents have .md prompt files', () => {

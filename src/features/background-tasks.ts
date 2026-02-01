@@ -313,9 +313,9 @@ For long-running operations, use the \`run_in_background\` parameter to avoid bl
 ### When to Use Background Execution
 
 **Run in Background** (set \`run_in_background: true\`):
-- Package installation: \`npm install\`, \`pip install\`, \`cargo build\`
-- Build processes: \`npm run build\`, \`make\`, \`tsc\`
-- Test suites: \`npm test\`, \`pytest\`, \`cargo test\`
+- Package installation (\`npm install\`, \`pip install\`, \`cargo build\`, etc.)
+- Build processes (project build command, \`make\`, etc.)
+- Test suites (project test command, etc.)
 - Docker operations: \`docker build\`, \`docker pull\`
 - Git operations on large repos: \`git clone\`, \`git fetch\`
 - Database migrations: \`prisma migrate\`, \`typeorm migration:run\`
@@ -330,7 +330,7 @@ For long-running operations, use the \`run_in_background\` parameter to avoid bl
 
 1. **Start in background:**
    \`\`\`
-   Bash(command: "npm run build", run_in_background: true)
+   Bash(command: "project build command", run_in_background: true)
    \`\`\`
 
 2. **Continue with other work** while the task runs

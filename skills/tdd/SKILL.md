@@ -47,12 +47,12 @@ Write code before test? DELETE IT. Start over. No exceptions.
 
 Before each implementation:
 ```bash
-npm test  # Should have ONE new failure
+# Run the project's test command - should have ONE new failure
 ```
 
 After implementation:
 ```bash
-npm test  # New test should pass, all others still pass
+# Run the project's test command - new test should pass, all others still pass
 ```
 
 ## Output Format

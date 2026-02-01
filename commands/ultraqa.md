@@ -31,10 +31,10 @@ If no structured goal provided, interpret the argument as a custom goal.
 ### Cycle N (Max 5)
 
 1. **RUN QA**: Execute verification based on goal type
-   - `--tests`: Run `npm test` or equivalent
-   - `--build`: Run `npm run build` or equivalent
-   - `--lint`: Run `npm run lint` or equivalent
-   - `--typecheck`: Run `npm run typecheck` or `tsc --noEmit`
+   - `--tests`: Run the project's test command
+   - `--build`: Run the project's build command
+   - `--lint`: Run the project's lint command
+   - `--typecheck`: Run the project's type check command
    - `--custom`: Run appropriate command and check for pattern
    - `--interactive`: Use qa-tester for interactive CLI/service testing:
      ```
