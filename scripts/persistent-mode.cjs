@@ -1,0 +1,418 @@
+#!/usr/bin/env node
+
+/**
+ * OMC Persistent Mode Hook (Node.js) - CommonJS Version
+ * For Windows compatibility where the Stop hook uses the CJS loader.
+ * Minimal continuation enforcer for all OMC modes.
+ * Stripped down for reliability — no optional imports, no PRD, no notepad pruning.
+ *
+ * Supported modes: ralph, autopilot, ultrapilot, swarm, ultrawork, ecomode, ultraqa, pipeline
+ */
+
+const { existsSync, readFileSync, writeFileSync, readdirSync, mkdirSync } = require('fs');
+const { join } = require('path');
+const { homedir } = require('os');
+
+async function readStdin() {
+  const chunks = [];
+  for await (const chunk of process.stdin) {
+    chunks.push(chunk);
+  }
+  return Buffer.concat(chunks).toString('utf-8');
+}
+
+function readJsonFile(path) {
+  try {
+    if (!existsSync(path)) return null;
+    return JSON.parse(readFileSync(path, 'utf-8'));
+  } catch {
+    return null;
+  }
+}
+
+function writeJsonFile(path, data) {
+  try {
+    // Ensure directory exists
+    const dir = path.substring(0, path.lastIndexOf('/'));
+    if (dir && !existsSync(dir)) {
+      mkdirSync(dir, { recursive: true });
+    }
+    writeFileSync(path, JSON.stringify(data, null, 2));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Staleness threshold for mode states (2 hours in milliseconds).
+ * States older than this are treated as inactive to prevent stale state
+ * from causing the stop hook to malfunction in new sessions.
+ */
+const STALE_STATE_THRESHOLD_MS = 2 * 60 * 60 * 1000; // 2 hours
+
+/**
+ * Check if a state is stale based on its timestamps.
+ * A state is considered stale if it hasn't been updated recently.
+ * We check both `last_checked_at` and `started_at` - using whichever is more recent.
+ */
+function isStaleState(state) {
+  if (!state) return true;
+
+  const lastChecked = state.last_checked_at ? new Date(state.last_checked_at).getTime() : 0;
+  const startedAt = state.started_at ? new Date(state.started_at).getTime() : 0;
+  const mostRecent = Math.max(lastChecked, startedAt);
+
+  if (mostRecent === 0) return true; // No valid timestamps
+
+  const age = Date.now() - mostRecent;
+  return age > STALE_STATE_THRESHOLD_MS;
+}
+
+/**
+ * Read state file from local location only.
+ */
+function readStateFile(stateDir, filename) {
+  const localPath = join(stateDir, filename);
+  const state = readJsonFile(localPath);
+  return { state, path: localPath };
+}
+
+/**
+ * Count incomplete Tasks from Claude Code's native Task system.
+ */
+function countIncompleteTasks(sessionId) {
+  if (!sessionId || typeof sessionId !== 'string') return 0;
+  if (!/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,255}$/.test(sessionId)) return 0;
+
+  const taskDir = join(homedir(), '.claude', 'tasks', sessionId);
+  if (!existsSync(taskDir)) return 0;
+
+  let count = 0;
+  try {
+    const files = readdirSync(taskDir).filter(f => f.endsWith('.json') && f !== '.lock');
+    for (const file of files) {
+      try {
+        const content = readFileSync(join(taskDir, file), 'utf-8');
+        const task = JSON.parse(content);
+        if (task.status === 'pending' || task.status === 'in_progress') count++;
+      } catch { /* skip */ }
+    }
+  } catch { /* skip */ }
+  return count;
+}
+
+function countIncompleteTodos(sessionId, projectDir) {
+  let count = 0;
+
+  // Session-specific todos only (no global scan)
+  if (sessionId && typeof sessionId === 'string' && /^[a-zA-Z0-9][a-zA-Z0-9_-]{0,255}$/.test(sessionId)) {
+    const sessionTodoPath = join(homedir(), '.claude', 'todos', `${sessionId}.json`);
+    try {
+      const data = readJsonFile(sessionTodoPath);
+      const todos = Array.isArray(data) ? data : (Array.isArray(data?.todos) ? data.todos : []);
+      count += todos.filter(t => t.status !== 'completed' && t.status !== 'cancelled').length;
+    } catch { /* skip */ }
+  }
+
+  // Project-local todos only
+  for (const path of [
+    join(projectDir, '.omc', 'todos.json'),
+    join(projectDir, '.claude', 'todos.json')
+  ]) {
+    try {
+      const data = readJsonFile(path);
+      const todos = Array.isArray(data) ? data : (Array.isArray(data?.todos) ? data.todos : []);
+      count += todos.filter(t => t.status !== 'completed' && t.status !== 'cancelled').length;
+    } catch { /* skip */ }
+  }
+
+  return count;
+}
+
+/**
+ * Detect if stop was triggered by context-limit related reasons.
+ * When context is exhausted, Claude Code needs to stop so it can compact.
+ * Blocking these stops causes a deadlock: can't compact because can't stop,
+ * can't continue because context is full.
+ *
+ * See: https://github.com/Yeachan-Heo/oh-my-claudecode/issues/213
+ */
+function isContextLimitStop(data) {
+  const reason = (data.stop_reason || data.stopReason || '').toLowerCase();
+
+  const contextPatterns = [
+    'context_limit',
+    'context_window',
+    'context_exceeded',
+    'context_full',
+    'max_context',
+    'token_limit',
+    'max_tokens',
+    'conversation_too_long',
+    'input_too_long',
+  ];
+
+  if (contextPatterns.some(p => reason.includes(p))) {
+    return true;
+  }
+
+  const endTurnReason = (data.end_turn_reason || data.endTurnReason || '').toLowerCase();
+  if (endTurnReason && contextPatterns.some(p => endTurnReason.includes(p))) {
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * Detect if stop was triggered by user abort (Ctrl+C, cancel button, etc.)
+ */
+function isUserAbort(data) {
+  if (data.user_requested || data.userRequested) return true;
+
+  const reason = (data.stop_reason || data.stopReason || '').toLowerCase();
+  // Exact-match patterns: short generic words that cause false positives with .includes()
+  const exactPatterns = ['aborted', 'abort', 'cancel', 'interrupt'];
+  // Substring patterns: compound words safe for .includes() matching
+  const substringPatterns = ['user_cancel', 'user_interrupt', 'ctrl_c', 'manual_stop'];
+
+  return exactPatterns.some(p => reason === p) ||
+         substringPatterns.some(p => reason.includes(p));
+}
+
+async function main() {
+  try {
+    const input = await readStdin();
+    let data = {};
+    try { data = JSON.parse(input); } catch {}
+
+    const directory = data.directory || process.cwd();
+    const sessionId = data.sessionId || data.session_id || '';
+    const stateDir = join(directory, '.omc', 'state');
+
+    // CRITICAL: Never block context-limit stops.
+    // Blocking these causes a deadlock where Claude Code cannot compact.
+    // See: https://github.com/Yeachan-Heo/oh-my-claudecode/issues/213
+    if (isContextLimitStop(data)) {
+      console.log(JSON.stringify({ continue: true }));
+      return;
+    }
+
+    // Respect user abort (Ctrl+C, cancel)
+    if (isUserAbort(data)) {
+      console.log(JSON.stringify({ continue: true }));
+      return;
+    }
+
+    // Read all mode states (local-only)
+    const ralph = readStateFile(stateDir, 'ralph-state.json');
+    const autopilot = readStateFile(stateDir, 'autopilot-state.json');
+    const ultrapilot = readStateFile(stateDir, 'ultrapilot-state.json');
+    const ultrawork = readStateFile(stateDir, 'ultrawork-state.json');
+    const ecomode = readStateFile(stateDir, 'ecomode-state.json');
+    const ultraqa = readStateFile(stateDir, 'ultraqa-state.json');
+    const pipeline = readStateFile(stateDir, 'pipeline-state.json');
+
+    // Swarm uses swarm-summary.json (not swarm-state.json) + marker file
+    const swarmMarker = existsSync(join(stateDir, 'swarm-active.marker'));
+    const swarmSummary = readJsonFile(join(stateDir, 'swarm-summary.json'));
+
+    // Count incomplete items (session-specific + project-local only)
+    const taskCount = countIncompleteTasks(sessionId);
+    const todoCount = countIncompleteTodos(sessionId, directory);
+    const totalIncomplete = taskCount + todoCount;
+
+    // Priority 1: Ralph Loop (explicit persistence mode)
+    // Skip if state is stale (older than 2 hours) - prevents blocking new sessions
+    if (ralph.state?.active && !isStaleState(ralph.state)) {
+      const iteration = ralph.state.iteration || 1;
+      const maxIter = ralph.state.max_iterations || 100;
+
+      if (iteration < maxIter) {
+        ralph.state.iteration = iteration + 1;
+        ralph.state.last_checked_at = new Date().toISOString();
+        writeJsonFile(ralph.path, ralph.state);
+
+        console.log(JSON.stringify({
+          decision: 'block',
+          reason: `[RALPH LOOP - ITERATION ${iteration + 1}/${maxIter}] Work is NOT done. Continue working.\nWhen FULLY complete (after Architect verification), run /oh-my-claudecode:cancel to cleanly exit ralph mode and clean up all state files. If cancel fails, retry with /oh-my-claudecode:cancel --force.\n${ralph.state.prompt ? `Task: ${ralph.state.prompt}` : ''}`
+        }));
+        return;
+      }
+    }
+
+    // Priority 2: Autopilot (high-level orchestration)
+    if (autopilot.state?.active && !isStaleState(autopilot.state)) {
+      const phase = autopilot.state.phase || 'unknown';
+      if (phase !== 'complete') {
+        const newCount = (autopilot.state.reinforcement_count || 0) + 1;
+        if (newCount <= 20) {
+          autopilot.state.reinforcement_count = newCount;
+          autopilot.state.last_checked_at = new Date().toISOString();
+          writeJsonFile(autopilot.path, autopilot.state);
+
+          console.log(JSON.stringify({
+            decision: 'block',
+            reason: `[AUTOPILOT - Phase: ${phase}] Autopilot not complete. Continue working. When all phases are complete, run /oh-my-claudecode:cancel to cleanly exit and clean up state files. If cancel fails, retry with /oh-my-claudecode:cancel --force.`
+          }));
+          return;
+        }
+      }
+    }
+
+    // Priority 3: Ultrapilot (parallel autopilot)
+    if (ultrapilot.state?.active && !isStaleState(ultrapilot.state)) {
+      const workers = ultrapilot.state.workers || [];
+      const incomplete = workers.filter(w => w.status !== 'complete' && w.status !== 'failed').length;
+      if (incomplete > 0) {
+        const newCount = (ultrapilot.state.reinforcement_count || 0) + 1;
+        if (newCount <= 20) {
+          ultrapilot.state.reinforcement_count = newCount;
+          ultrapilot.state.last_checked_at = new Date().toISOString();
+          writeJsonFile(ultrapilot.path, ultrapilot.state);
+
+          console.log(JSON.stringify({
+            decision: 'block',
+            reason: `[ULTRAPILOT] ${incomplete} workers still running. Continue working. When all workers complete, run /oh-my-claudecode:cancel to cleanly exit and clean up state files. If cancel fails, retry with /oh-my-claudecode:cancel --force.`
+          }));
+          return;
+        }
+      }
+    }
+
+    // Priority 4: Swarm (coordinated agents with SQLite)
+    if (swarmMarker && swarmSummary?.active && !isStaleState(swarmSummary)) {
+      const pending = (swarmSummary.tasks_pending || 0) + (swarmSummary.tasks_claimed || 0);
+      if (pending > 0) {
+        const newCount = (swarmSummary.reinforcement_count || 0) + 1;
+        if (newCount <= 15) {
+          swarmSummary.reinforcement_count = newCount;
+          swarmSummary.last_checked_at = new Date().toISOString();
+          writeJsonFile(join(stateDir, 'swarm-summary.json'), swarmSummary);
+
+          console.log(JSON.stringify({
+            decision: 'block',
+            reason: `[SWARM ACTIVE] ${pending} tasks remain. Continue working. When all tasks are done, run /oh-my-claudecode:cancel to cleanly exit and clean up state files. If cancel fails, retry with /oh-my-claudecode:cancel --force.`
+          }));
+          return;
+        }
+      }
+    }
+
+    // Priority 5: Pipeline (sequential stages)
+    if (pipeline.state?.active && !isStaleState(pipeline.state)) {
+      const currentStage = pipeline.state.current_stage || 0;
+      const totalStages = pipeline.state.stages?.length || 0;
+      if (currentStage < totalStages) {
+        const newCount = (pipeline.state.reinforcement_count || 0) + 1;
+        if (newCount <= 15) {
+          pipeline.state.reinforcement_count = newCount;
+          pipeline.state.last_checked_at = new Date().toISOString();
+          writeJsonFile(pipeline.path, pipeline.state);
+
+          console.log(JSON.stringify({
+            decision: 'block',
+            reason: `[PIPELINE - Stage ${currentStage + 1}/${totalStages}] Pipeline not complete. Continue working. When all stages complete, run /oh-my-claudecode:cancel to cleanly exit and clean up state files. If cancel fails, retry with /oh-my-claudecode:cancel --force.`
+          }));
+          return;
+        }
+      }
+    }
+
+    // Priority 6: UltraQA (QA cycling)
+    if (ultraqa.state?.active && !isStaleState(ultraqa.state)) {
+      const cycle = ultraqa.state.cycle || 1;
+      const maxCycles = ultraqa.state.max_cycles || 10;
+      if (cycle < maxCycles && !ultraqa.state.all_passing) {
+        ultraqa.state.cycle = cycle + 1;
+        ultraqa.state.last_checked_at = new Date().toISOString();
+        writeJsonFile(ultraqa.path, ultraqa.state);
+
+        console.log(JSON.stringify({
+          decision: 'block',
+          reason: `[ULTRAQA - Cycle ${cycle + 1}/${maxCycles}] Tests not all passing. Continue fixing. When all tests pass, run /oh-my-claudecode:cancel to cleanly exit and clean up state files. If cancel fails, retry with /oh-my-claudecode:cancel --force.`
+        }));
+        return;
+      }
+    }
+
+    // Priority 7: Ultrawork - ALWAYS continue while active (not just when tasks exist)
+    // This prevents false stops from bash errors, transient failures, etc.
+    if (ultrawork.state?.active && !isStaleState(ultrawork.state)) {
+      const newCount = (ultrawork.state.reinforcement_count || 0) + 1;
+      const maxReinforcements = ultrawork.state.max_reinforcements || 50;
+
+      if (newCount > maxReinforcements) {
+        // Max reinforcements reached - allow stop
+        console.log(JSON.stringify({ continue: true }));
+        return;
+      }
+
+      ultrawork.state.reinforcement_count = newCount;
+      ultrawork.state.last_checked_at = new Date().toISOString();
+      writeJsonFile(ultrawork.path, ultrawork.state);
+
+      let reason = `[ULTRAWORK #${newCount}/${maxReinforcements}] Mode active.`;
+
+      if (totalIncomplete > 0) {
+        const itemType = taskCount > 0 ? 'Tasks' : 'todos';
+        reason += ` ${totalIncomplete} incomplete ${itemType} remain. Continue working.`;
+      } else if (newCount >= 3) {
+        // Only suggest cancel after minimum iterations (guard against no-tasks-created scenario)
+        reason += ` If all work is complete, run /oh-my-claudecode:cancel to cleanly exit ultrawork mode and clean up state files. If cancel fails, retry with /oh-my-claudecode:cancel --force. Otherwise, continue working.`;
+      } else {
+        // Early iterations with no tasks yet - just tell LLM to continue
+        reason += ` Continue working - create Tasks to track your progress.`;
+      }
+
+      if (ultrawork.state.original_prompt) {
+        reason += `\nTask: ${ultrawork.state.original_prompt}`;
+      }
+
+      console.log(JSON.stringify({ decision: 'block', reason }));
+      return;
+    }
+
+    // Priority 8: Ecomode - ALWAYS continue while active
+    if (ecomode.state?.active && !isStaleState(ecomode.state)) {
+      const newCount = (ecomode.state.reinforcement_count || 0) + 1;
+      const maxReinforcements = ecomode.state.max_reinforcements || 50;
+
+      if (newCount > maxReinforcements) {
+        // Max reinforcements reached - allow stop
+        console.log(JSON.stringify({ continue: true }));
+        return;
+      }
+
+      ecomode.state.reinforcement_count = newCount;
+      ecomode.state.last_checked_at = new Date().toISOString();
+      writeJsonFile(ecomode.path, ecomode.state);
+
+      let reason = `[ECOMODE #${newCount}/${maxReinforcements}] Mode active.`;
+
+      if (totalIncomplete > 0) {
+        const itemType = taskCount > 0 ? 'Tasks' : 'todos';
+        reason += ` ${totalIncomplete} incomplete ${itemType} remain. Continue working.`;
+      } else if (newCount >= 3) {
+        // Only suggest cancel after minimum iterations (guard against no-tasks-created scenario)
+        reason += ` If all work is complete, run /oh-my-claudecode:cancel to cleanly exit ecomode and clean up state files. If cancel fails, retry with /oh-my-claudecode:cancel --force. Otherwise, continue working.`;
+      } else {
+        // Early iterations with no tasks yet - just tell LLM to continue
+        reason += ` Continue working - create Tasks to track your progress.`;
+      }
+
+      console.log(JSON.stringify({ decision: 'block', reason }));
+      return;
+    }
+
+    // No blocking needed
+    console.log(JSON.stringify({ continue: true }));
+  } catch (error) {
+    // On any error, allow stop rather than blocking forever
+    console.error(`[persistent-mode] Error: ${error.message}`);
+    console.log(JSON.stringify({ continue: true }));
+  }
+}
+
+main();
