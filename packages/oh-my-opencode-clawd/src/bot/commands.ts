@@ -3,6 +3,7 @@ import * as sessionManager from '../core/session-manager.js';
 import { UserRepository } from '../db/users.js';
 import { truncateOutput, wrapCodeBlock, formatSessionStatus, formatCost } from '../utils/format.js';
 import { logger } from '../utils/logger.js';
+import { validateWorkingDirectory } from '../utils/validation.js';
 import type { User } from '../types.js';
 
 const userRepo = new UserRepository();
@@ -76,7 +77,7 @@ export function registerCommands(bot: Bot<MyContext>): void {
         ctx.session.activeSessionId = sessionId;
       }
 
-      const session = sessionManager.getSession(sessionId);
+      const session = sessionManager.getSession(sessionId, user);
       if (!session || session.status !== 'active') {
         await ctx.reply('Session no longer active. Use /session to create a new one.');
         ctx.session.activeSessionId = undefined;
@@ -106,7 +107,7 @@ export function registerCommands(bot: Bot<MyContext>): void {
         sessionId = userSessions[0].id;
       }
 
-      const session = sessionManager.getSession(sessionId);
+      const session = sessionManager.getSession(sessionId, user);
       if (!session) {
         await ctx.reply('Session not found.');
         return;
@@ -219,16 +220,21 @@ export function registerCommands(bot: Bot<MyContext>): void {
   bot.callbackQuery(/^switch:(.+)$/, async (ctx) => {
     await ctx.answerCallbackQuery();
 
-    const sessionId = ctx.match[1];
-    const session = sessionManager.getSession(sessionId);
+    try {
+      const user = await getOrCreateUser(ctx);
+      const sessionId = ctx.match[1];
+      const session = sessionManager.getSession(sessionId, user);
 
-    if (!session) {
-      await ctx.editMessageText('Session not found.');
-      return;
+      if (!session) {
+        await ctx.editMessageText('Session not found.');
+        return;
+      }
+
+      ctx.session.activeSessionId = sessionId;
+      await ctx.editMessageText(`Switched to *${session.name}*`, { parse_mode: 'Markdown' });
+    } catch (error) {
+      await ctx.editMessageText(`Error: ${error instanceof Error ? error.message : String(error)}`);
     }
-
-    ctx.session.activeSessionId = sessionId;
-    await ctx.editMessageText(`Switched to *${session.name}*`, { parse_mode: 'Markdown' });
   });
 
   // Kill session handler
@@ -238,13 +244,14 @@ export function registerCommands(bot: Bot<MyContext>): void {
     const sessionId = ctx.match[1];
 
     try {
-      const session = sessionManager.getSession(sessionId);
+      const user = await getOrCreateUser(ctx);
+      const session = sessionManager.getSession(sessionId, user);
       if (!session) {
         await ctx.editMessageText('Session not found.');
         return;
       }
 
-      sessionManager.killSession(sessionId);
+      sessionManager.killSession(sessionId, user);
 
       if (ctx.session.activeSessionId === sessionId) {
         ctx.session.activeSessionId = undefined;
@@ -270,10 +277,11 @@ export function registerCommands(bot: Bot<MyContext>): void {
 
     try {
       const user = await getOrCreateUser(ctx);
+      const validatedDir = validateWorkingDirectory(directory);
 
       const session = await sessionManager.createSession({
         name,
-        workingDirectory: directory,
+        workingDirectory: validatedDir,
         user,
         initialPrompt,
       });

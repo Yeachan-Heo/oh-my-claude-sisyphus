@@ -1,6 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import { getDatabase } from './index.js';
 import type { User } from '../types.js';
+import { loadConfig } from '../config.js';
+import { logger } from '../utils/logger.js';
 
 interface UserRow {
   id: string;
@@ -60,10 +62,27 @@ export class UserRepository {
       if (existing) return existing;
     }
 
-    // Check if this is the first user (make them admin)
-    const db = getDatabase();
-    const count = db.prepare('SELECT COUNT(*) as count FROM users').get() as { count: number };
-    const role: User['role'] = count.count === 0 ? 'admin' : 'user';
+    // Determine role based on config or fallback
+    let role: User['role'] = 'user';
+    const config = loadConfig();
+
+    if (config.adminTelegramIds && config.adminTelegramIds.length > 0) {
+      // If allowlist is configured, only those IDs get admin
+      if (data.telegramId && config.adminTelegramIds.includes(data.telegramId)) {
+        role = 'admin';
+      }
+    } else {
+      // Fallback: first user becomes admin (with warning)
+      const db = getDatabase();
+      const count = db.prepare('SELECT COUNT(*) as count FROM users').get() as { count: number };
+      if (count.count === 0) {
+        role = 'admin';
+        logger.warn('No adminTelegramIds configured. First user auto-promoted to admin.', {
+          telegramId: data.telegramId,
+          username: data.username,
+        });
+      }
+    }
 
     return this.create({ ...data, role });
   }

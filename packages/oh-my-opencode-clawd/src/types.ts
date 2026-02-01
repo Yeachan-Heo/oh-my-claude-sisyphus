@@ -75,4 +75,5 @@ export interface ClawdConfig {
   maxSessions?: number;
   autoCleanupHours?: number;
   dbPath?: string;
+  adminTelegramIds?: string[];
 }

@@ -29,16 +29,15 @@ export async function startClaudeSession(
   activeSessions.set(sessionId, session);
 
   // Start Claude Code in the tmux session
-  // Use --dangerously-skip-permissions for automated use
-  let command = 'claude';
+  sendKeys(tmuxSession, 'claude');
 
+  // If there's an initial prompt, send it after Claude starts
+  // Use a small delay to ensure Claude is ready
   if (initialPrompt) {
-    // Use -p for headless mode with initial prompt
-    const escapedPrompt = initialPrompt.replace(/'/g, "'\\''");
-    command = `claude -p '${escapedPrompt}'`;
+    // Wait for Claude to initialize before sending the prompt
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    sendKeys(tmuxSession, initialPrompt);
   }
-
-  sendKeys(tmuxSession, command);
 
   logger.info('Started Claude session', { sessionId, tmuxSession, workingDirectory });
 

@@ -1,4 +1,4 @@
-import { execSync, spawnSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import { logger } from '../utils/logger.js';
 
 const SESSION_PREFIX = 'cc-';
@@ -11,9 +11,8 @@ export interface TmuxSession {
 }
 
 function checkTmuxInstalled(): void {
-  try {
-    execSync('which tmux', { encoding: 'utf8', stdio: 'pipe' });
-  } catch {
+  const result = spawnSync('which', ['tmux'], { encoding: 'utf8', stdio: 'pipe' });
+  if (result.status !== 0) {
     throw new Error('tmux is not installed. Please install tmux to use clawd.');
   }
 }
@@ -55,16 +54,25 @@ export function killSession(name: string): void {
 export function sendKeys(name: string, text: string): void {
   checkTmuxInstalled();
 
-  // Escape special characters for tmux
-  const escaped = text.replace(/"/g, '\\"');
-
-  const result = spawnSync('tmux', ['send-keys', '-t', name, escaped, 'Enter'], {
+  // Use -l (literal) flag to prevent tmux from interpreting special characters
+  // This is CRITICAL for security - prevents command injection via backticks, $(), etc.
+  const textResult = spawnSync('tmux', ['send-keys', '-t', name, '-l', text], {
     encoding: 'utf8',
     stdio: 'pipe',
   });
 
-  if (result.status !== 0) {
-    throw new Error(`Failed to send keys to tmux session: ${result.stderr || 'Unknown error'}`);
+  if (textResult.status !== 0) {
+    throw new Error(`Failed to send keys to tmux session: ${textResult.stderr || 'Unknown error'}`);
+  }
+
+  // Send Enter key separately (Enter is a tmux key name, not literal text)
+  const enterResult = spawnSync('tmux', ['send-keys', '-t', name, 'Enter'], {
+    encoding: 'utf8',
+    stdio: 'pipe',
+  });
+
+  if (enterResult.status !== 0) {
+    throw new Error(`Failed to send Enter to tmux session: ${enterResult.stderr || 'Unknown error'}`);
   }
 }
 
@@ -85,13 +93,16 @@ export function capturePane(name: string, lines: number = 100): string {
   checkTmuxInstalled();
 
   try {
-    const output = execSync(`tmux capture-pane -t ${name} -p -S -${lines}`, {
+    const result = spawnSync('tmux', ['capture-pane', '-t', name, '-p', '-S', `-${lines}`], {
       encoding: 'utf8',
       stdio: ['pipe', 'pipe', 'pipe'],
     });
-    return output;
-  } catch (error) {
-    logger.error('Failed to capture tmux pane', { name, error: String(error) });
+    if (result.status !== 0) {
+      logger.error('Failed to capture tmux pane', { name, error: result.stderr });
+      return '';
+    }
+    return result.stdout;
+  } catch {
     return '';
   }
 }
@@ -111,12 +122,14 @@ export function listSessions(): TmuxSession[] {
   checkTmuxInstalled();
 
   try {
-    const output = execSync(
-      'tmux list-sessions -F "#{session_name}|#{session_windows}|#{session_created}|#{session_attached}"',
-      { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }
-    );
+    const result = spawnSync('tmux', [
+      'list-sessions', '-F',
+      '#{session_name}|#{session_windows}|#{session_created}|#{session_attached}'
+    ], { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });
 
-    return output
+    if (result.status !== 0) return [];
+
+    return result.stdout
       .trim()
       .split('\n')
       .filter(line => line.startsWith(SESSION_PREFIX))
