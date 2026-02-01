@@ -46,27 +46,54 @@ function countIncompleteTodos(todosDir) {
   return count;
 }
 
-// Check if HUD is properly installed
-function checkHudInstallation() {
-  const hudScript = join(homedir(), '.claude', 'hud', 'sisyphus-hud.mjs');
+// Check if HUD is properly installed (with retry for race conditions)
+function checkHudInstallation(retryCount = 0) {
+  const hudDir = join(homedir(), '.claude', 'hud');
+  // Support both legacy (sisyphus-hud.mjs) and current (omc-hud.mjs) naming
+  const hudScriptOmc = join(hudDir, 'omc-hud.mjs');
+  const hudScriptSisyphus = join(hudDir, 'sisyphus-hud.mjs');
   const settingsFile = join(homedir(), '.claude', 'settings.json');
 
-  // Check if HUD script exists
-  if (!existsSync(hudScript)) {
+  // Check if HUD script exists (either naming convention)
+  const hudScriptExists = existsSync(hudScriptOmc) || existsSync(hudScriptSisyphus);
+  if (!hudScriptExists) {
     return { installed: false, reason: 'HUD script missing' };
   }
 
-  // Check if statusLine is configured
+  // Check if statusLine is configured (with retry for race conditions)
   try {
     if (existsSync(settingsFile)) {
-      const settings = JSON.parse(readFileSync(settingsFile, 'utf-8'));
+      const content = readFileSync(settingsFile, 'utf-8');
+      // Handle empty or whitespace-only content (race condition during write)
+      if (!content || !content.trim()) {
+        if (retryCount < 2) {
+          // Brief delay and retry
+          const start = Date.now();
+          while (Date.now() - start < 100) { /* busy wait 100ms */ }
+          return checkHudInstallation(retryCount + 1);
+        }
+        return { installed: false, reason: 'settings.json empty (possible race condition)' };
+      }
+      const settings = JSON.parse(content);
       if (!settings.statusLine) {
+        // Retry once if statusLine not found (could be mid-write)
+        if (retryCount < 2) {
+          const start = Date.now();
+          while (Date.now() - start < 100) { /* busy wait 100ms */ }
+          return checkHudInstallation(retryCount + 1);
+        }
         return { installed: false, reason: 'statusLine not configured' };
       }
     } else {
       return { installed: false, reason: 'settings.json missing' };
     }
-  } catch {
+  } catch (err) {
+    // JSON parse error - could be mid-write, retry
+    if (retryCount < 2) {
+      const start = Date.now();
+      while (Date.now() - start < 100) { /* busy wait 100ms */ }
+      return checkHudInstallation(retryCount + 1);
+    }
     return { installed: false, reason: 'Could not read settings' };
   }
 
