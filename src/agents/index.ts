@@ -53,7 +53,7 @@ export {
   scientistHighAgent
 } from './definitions.js';
 
-// Specialized agents (Security, Build, TDD, Code Review)
+// Specialized agents (Security, Build, TDD, Code Review, Git)
 export {
   securityReviewerAgent,
   securityReviewerLowAgent,
@@ -62,7 +62,8 @@ export {
   tddGuideAgent,
   tddGuideLowAgent,
   codeReviewerAgent,
-  codeReviewerLowAgent
+  codeReviewerLowAgent,
+  gitMasterAgent
 } from './definitions.js';
 
 // Core exports (getAgentDefinitions and omcSystemPrompt)

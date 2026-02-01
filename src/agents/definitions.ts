@@ -296,6 +296,18 @@ export const codeReviewerLowAgent: AgentConfig = {
   defaultModel: 'haiku'
 };
 
+/**
+ * Git-Master Agent - Git Operations Expert (Sonnet)
+ */
+export const gitMasterAgent: AgentConfig = {
+  name: 'git-master',
+  description: 'Git expert for atomic commits, rebasing, and history management with style detection',
+  prompt: loadAgentPrompt('git-master'),
+  tools: ['Read', 'Glob', 'Grep', 'Bash'],
+  model: 'sonnet',
+  defaultModel: 'sonnet'
+};
+
 // ============================================================
 // AGENT REGISTRY
 // ============================================================
@@ -369,7 +381,8 @@ export function getAgentDefinitions(overrides?: Partial<Record<string, Partial<A
     'tdd-guide': tddGuideAgent,
     'tdd-guide-low': tddGuideLowAgent,
     'code-reviewer': codeReviewerAgent,
-    'code-reviewer-low': codeReviewerLowAgent
+    'code-reviewer-low': codeReviewerLowAgent,
+    'git-master': gitMasterAgent
   };
 
   const result: Record<string, { description: string; prompt: string; tools: string[]; model?: ModelType; defaultModel?: ModelType }> = {};
