@@ -16,7 +16,8 @@
 import { detectKeywordsWithType, removeCodeBlocks, getPrimaryKeyword, getAllKeywords } from './keyword-detector/index.js';
 import { readRalphState, incrementRalphIteration, clearRalphState, createRalphLoopHook } from './ralph/index.js';
 import { processOrchestratorPreTool } from './omc-orchestrator/index.js';
-import { addBackgroundTask, completeBackgroundTask } from '../hud/background-tasks.js';
+import { addBackgroundTask, completeBackgroundTask, getRunningTaskCount } from '../hud/background-tasks.js';
+import { loadConfig } from '../config/loader.js';
 import {
   readVerificationState,
   getArchitectVerificationPrompt,
@@ -470,6 +471,32 @@ function processPreToolUse(input: HookInput): HookOutput {
           'Proceeding anyway, but the command may kill this shell session.',
         ].join('\n'),
       };
+    }
+  }
+
+  // Background process guard - prevent forkbomb (issue #302)
+  // Block new background tasks if limit is exceeded
+  if (input.toolName === 'Task' || input.toolName === 'Bash') {
+    const toolInput = input.toolInput as {
+      description?: string;
+      subagent_type?: string;
+      run_in_background?: boolean;
+      command?: string;
+    } | undefined;
+
+    if (toolInput?.run_in_background) {
+      const config = loadConfig();
+      const maxBgTasks = config.permissions?.maxBackgroundTasks ?? 5;
+      const runningCount = getRunningTaskCount(directory);
+
+      if (runningCount >= maxBgTasks) {
+        return {
+          continue: false,
+          reason: `Background process limit reached (${runningCount}/${maxBgTasks}). ` +
+            `Wait for running tasks to complete before starting new ones. ` +
+            `Limit is configurable via permissions.maxBackgroundTasks in config or OMC_MAX_BACKGROUND_TASKS env var.`,
+        };
+      }
     }
   }
 
