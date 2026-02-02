@@ -91,7 +91,8 @@ export interface SubagentStopInput {
   agent_id: string;
   agent_type: string;
   output?: string;
-  success: boolean;
+  /** @deprecated The SDK does not provide a success field. Use inferred status instead. */
+  success?: boolean;
 }
 
 export interface HookOutput {
@@ -395,11 +396,12 @@ export function processSubagentStop(input: SubagentStopInput): HookOutput {
     // Find the agent
     const agentIndex = state.agents.findIndex((a) => a.agent_id === input.agent_id);
 
+    // SDK does not provide `success` field, so default to 'completed' when undefined (Bug #1 fix)
+    const succeeded = input.success !== false;
+
     if (agentIndex !== -1) {
       const agent = state.agents[agentIndex];
-
-      // Update agent status
-      agent.status = input.success ? 'completed' : 'failed';
+      agent.status = succeeded ? 'completed' : 'failed';
       agent.completed_at = new Date().toISOString();
 
       // Calculate duration
@@ -413,7 +415,7 @@ export function processSubagentStop(input: SubagentStopInput): HookOutput {
       }
 
       // Update counters
-      if (input.success) {
+      if (succeeded) {
         state.total_completed++;
       } else {
         state.total_failed++;
@@ -443,7 +445,7 @@ export function processSubagentStop(input: SubagentStopInput): HookOutput {
       continue: true,
       hookSpecificOutput: {
         hookEventName: 'SubagentStop',
-        additionalContext: `Agent ${input.agent_type} ${input.success ? 'completed' : 'failed'} (${input.agent_id})`,
+        additionalContext: `Agent ${input.agent_type} ${succeeded ? 'completed' : 'failed'} (${input.agent_id})`,
         agent_count: runningCount,
       },
     };

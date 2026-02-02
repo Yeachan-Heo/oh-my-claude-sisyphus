@@ -108,11 +108,12 @@ describe('Ultrawork Session Isolation (Issue #269)', () => {
       expect(result).toBe(false);
     });
 
-    it('should return true when both state and caller have undefined session_id', () => {
+    it('should return false when both state and caller have undefined session_id (Bug #5 fix)', () => {
       activateUltrawork('Test task', undefined, tempDir);
 
+      // Both undefined should NOT match - prevents cross-session contamination
       const result = shouldReinforceUltrawork(undefined, tempDir);
-      expect(result).toBe(true);
+      expect(result).toBe(false);
     });
 
     it('should return false when ultrawork is not active', () => {
@@ -212,12 +213,13 @@ describe('Ultrawork Session Isolation (Issue #269)', () => {
   });
 
   describe('Edge cases', () => {
-    it('should handle empty string session IDs as distinct from undefined', () => {
+    it('should reject empty string and undefined session IDs for isolation safety', () => {
       const emptySession = '';
       activateUltrawork('Task with empty session', emptySession, tempDir);
 
-      // Empty string should be treated as a valid session ID
-      expect(shouldReinforceUltrawork(emptySession, tempDir)).toBe(true);
+      // Empty string and undefined should both be rejected to prevent
+      // cross-session contamination (Bug #5 fix)
+      expect(shouldReinforceUltrawork(emptySession, tempDir)).toBe(false);
       expect(shouldReinforceUltrawork(undefined, tempDir)).toBe(false);
     });
 

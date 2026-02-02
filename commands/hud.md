@@ -82,13 +82,19 @@ import { pathToFileURL } from "node:url";
 
 // Semantic version comparison: returns negative if a < b, positive if a > b, 0 if equal
 function semverCompare(a, b) {
-  const pa = a.replace(/^v/, "").split(".").map(Number);
-  const pb = b.replace(/^v/, "").split(".").map(Number);
+  // Use parseInt to handle pre-release suffixes (e.g. "0-beta" -> 0)
+  const pa = a.replace(/^v/, "").split(".").map(s => parseInt(s, 10) || 0);
+  const pb = b.replace(/^v/, "").split(".").map(s => parseInt(s, 10) || 0);
   for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
     const na = pa[i] || 0;
     const nb = pb[i] || 0;
     if (na !== nb) return na - nb;
   }
+  // If numeric parts equal, non-pre-release > pre-release
+  const aHasPre = /-/.test(a);
+  const bHasPre = /-/.test(b);
+  if (aHasPre && !bHasPre) return -1;
+  if (!aHasPre && bHasPre) return 1;
   return 0;
 }
 

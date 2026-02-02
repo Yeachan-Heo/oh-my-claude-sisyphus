@@ -105,14 +105,14 @@ function activateState(directory, prompt, stateName) {
   if (!existsSync(localDir)) {
     try { mkdirSync(localDir, { recursive: true }); } catch {}
   }
-  try { writeFileSync(join(localDir, `${stateName}-state.json`), JSON.stringify(state, null, 2)); } catch {}
+  try { writeFileSync(join(localDir, `${stateName}-state.json`), JSON.stringify(state, null, 2), { mode: 0o600 }); } catch {}
 
   // Write to global .omc/state directory
   const globalDir = join(homedir(), '.omc', 'state');
   if (!existsSync(globalDir)) {
     try { mkdirSync(globalDir, { recursive: true }); } catch {}
   }
-  try { writeFileSync(join(globalDir, `${stateName}-state.json`), JSON.stringify(state, null, 2)); } catch {}
+  try { writeFileSync(join(globalDir, `${stateName}-state.json`), JSON.stringify(state, null, 2), { mode: 0o600 }); } catch {}
 }
 
 /**

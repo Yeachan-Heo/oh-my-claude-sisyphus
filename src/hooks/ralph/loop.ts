@@ -116,7 +116,8 @@ export function readRalphState(directory: string): RalphLoopState | null {
   try {
     const content = readFileSync(stateFile, 'utf-8');
     return JSON.parse(content);
-  } catch {
+  } catch (error) {
+    console.error('[ralph] Failed to read state file:', error);
     return null;
   }
 }
@@ -128,7 +129,7 @@ export function writeRalphState(directory: string, state: RalphLoopState): boole
   try {
     ensureStateDir(directory);
     const stateFile = getStateFilePath(directory);
-    writeFileSync(stateFile, JSON.stringify(state, null, 2));
+    writeFileSync(stateFile, JSON.stringify(state, null, 2), { mode: 0o600 });
     return true;
   } catch {
     return false;

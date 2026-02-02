@@ -65,7 +65,8 @@ export function readUltraworkState(directory?: string): UltraworkState | null {
     try {
       const content = readFileSync(localStateFile, 'utf-8');
       return JSON.parse(content);
-    } catch {
+    } catch (error) {
+      console.error('[ultrawork] Failed to read state file:', error);
       return null;
     }
   }
@@ -80,7 +81,7 @@ export function writeUltraworkState(state: UltraworkState, directory?: string): 
   try {
     ensureStateDir(directory);
     const localStateFile = getStateFilePath(directory);
-    writeFileSync(localStateFile, JSON.stringify(state, null, 2));
+    writeFileSync(localStateFile, JSON.stringify(state, null, 2), { mode: 0o600 });
     return true;
   } catch {
     return false;
@@ -160,8 +161,9 @@ export function shouldReinforceUltrawork(
   }
 
   // Strict session isolation: state must match the requesting session
-  // If state has session_id, caller must match. If caller has sessionId, state must match.
-  if (state.session_id !== sessionId) {
+  // Both must be defined and equal - prevent cross-session contamination
+  // when both are undefined (Bug #5 fix)
+  if (!state.session_id || !sessionId || state.session_id !== sessionId) {
     return false;
   }
 

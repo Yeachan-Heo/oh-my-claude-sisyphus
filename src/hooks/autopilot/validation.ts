@@ -20,6 +20,9 @@ import type {
   ValidationVerdict
 } from './types.js';
 
+/** Number of architects required for validation consensus */
+export const REQUIRED_ARCHITECTS = 3;
+
 export interface ValidationCoordinatorResult {
   success: boolean;
   allApproved: boolean;
@@ -60,8 +63,8 @@ export function recordValidationVerdict(
     state.validation.architects_spawned++;
   }
 
-  // Check if all verdicts are in (3 architects)
-  if (state.validation.verdicts.length >= 3) {
+  // Check if all verdicts are in
+  if (state.validation.verdicts.length >= REQUIRED_ARCHITECTS) {
     state.validation.all_approved = state.validation.verdicts.every(
       v => v.verdict === 'APPROVED'
     );
@@ -87,7 +90,7 @@ export function getValidationStatus(directory: string): ValidationCoordinatorRes
   }
 
   return {
-    success: state.validation.verdicts.length >= 3,
+    success: state.validation.verdicts.length >= REQUIRED_ARCHITECTS,
     allApproved: state.validation.all_approved,
     verdicts: state.validation.verdicts,
     round: state.validation.validation_rounds,

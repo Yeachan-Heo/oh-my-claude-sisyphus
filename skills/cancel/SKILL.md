@@ -75,6 +75,8 @@ Or use the `--all` alias:
 This removes all state files:
 - `.omc/state/autopilot-state.json`
 - `.omc/state/ralph-state.json`
+- `.omc/state/ralph-plan-state.json`
+- `.omc/state/ralph-verification.json`
 - `.omc/state/ultrawork-state.json`
 - `.omc/state/ecomode-state.json`
 - `.omc/state/ultraqa-state.json`
@@ -82,10 +84,19 @@ This removes all state files:
 - `.omc/state/swarm.db-wal`
 - `.omc/state/swarm.db-shm`
 - `.omc/state/swarm-active.marker`
+- `.omc/state/swarm-tasks.db`
 - `.omc/state/ultrapilot-state.json`
+- `.omc/state/ultrapilot-ownership.json`
 - `.omc/state/pipeline-state.json`
 - `.omc/state/plan-consensus.json`
 - `.omc/state/ralplan-state.json`
+- `.omc/state/boulder.json`
+- `.omc/state/hud-state.json`
+- `.omc/state/subagent-tracking.json`
+- `.omc/state/subagent-tracker.lock`
+- `.omc/state/rate-limit-daemon.pid`
+- `.omc/state/rate-limit-daemon.log`
+- `.omc/state/checkpoints/` (directory)
 
 ## Implementation Steps
 
@@ -150,19 +161,34 @@ if [[ "$FORCE_MODE" == "true" ]]; then
   # Remove local state files
   rm -f .omc/state/autopilot-state.json
   rm -f .omc/state/ralph-state.json
+  rm -f .omc/state/ralph-plan-state.json
+  rm -f .omc/state/ralph-verification.json
   rm -f .omc/state/ultrawork-state.json
   rm -f .omc/state/ecomode-state.json
   rm -f .omc/state/ultraqa-state.json
-  rm -f .omc/state/ralph-plan-state.json
-  rm -f .omc/state/ralph-verification.json
   rm -f .omc/state/swarm.db
   rm -f .omc/state/swarm.db-wal
   rm -f .omc/state/swarm.db-shm
   rm -f .omc/state/swarm-active.marker
+  rm -f .omc/state/swarm-tasks.db
   rm -f .omc/state/ultrapilot-state.json
+  rm -f .omc/state/ultrapilot-ownership.json
   rm -f .omc/state/pipeline-state.json
   rm -f .omc/state/plan-consensus.json
   rm -f .omc/state/ralplan-state.json
+  rm -f .omc/state/boulder.json
+  rm -f .omc/state/hud-state.json
+  rm -f .omc/state/subagent-tracking.json
+  rm -f .omc/state/subagent-tracker.lock
+  rm -f .omc/state/rate-limit-daemon.pid
+  rm -f .omc/state/rate-limit-daemon.log
+  rm -rf .omc/state/checkpoints/
+
+  # Stop rate-limit daemon if running
+  if [[ -f .omc/state/rate-limit-daemon.pid ]]; then
+    kill "$(cat .omc/state/rate-limit-daemon.pid)" 2>/dev/null || true
+    rm -f .omc/state/rate-limit-daemon.pid
+  fi
 
   echo "All OMC modes cleared. You are free to start fresh."
   exit 0
@@ -309,22 +335,36 @@ if [[ "$FORCE_MODE" == "true" ]]; then
 
   mkdir -p .omc/state
 
+  # Stop rate-limit daemon if running
+  if [[ -f .omc/state/rate-limit-daemon.pid ]]; then
+    kill "$(cat .omc/state/rate-limit-daemon.pid)" 2>/dev/null || true
+    rm -f .omc/state/rate-limit-daemon.pid
+  fi
+
   # Remove local state files
   rm -f .omc/state/autopilot-state.json
   rm -f .omc/state/ralph-state.json
+  rm -f .omc/state/ralph-plan-state.json
+  rm -f .omc/state/ralph-verification.json
   rm -f .omc/state/ultrawork-state.json
   rm -f .omc/state/ecomode-state.json
   rm -f .omc/state/ultraqa-state.json
-  rm -f .omc/state/ralph-plan-state.json
-  rm -f .omc/state/ralph-verification.json
   rm -f .omc/state/swarm.db
   rm -f .omc/state/swarm.db-wal
   rm -f .omc/state/swarm.db-shm
   rm -f .omc/state/swarm-active.marker
+  rm -f .omc/state/swarm-tasks.db
   rm -f .omc/state/ultrapilot-state.json
+  rm -f .omc/state/ultrapilot-ownership.json
   rm -f .omc/state/pipeline-state.json
   rm -f .omc/state/plan-consensus.json
   rm -f .omc/state/ralplan-state.json
+  rm -f .omc/state/boulder.json
+  rm -f .omc/state/hud-state.json
+  rm -f .omc/state/subagent-tracking.json
+  rm -f .omc/state/subagent-tracker.lock
+  rm -f .omc/state/rate-limit-daemon.log
+  rm -rf .omc/state/checkpoints/
 
   echo ""
   echo "All OMC modes cleared. You are free to start fresh."

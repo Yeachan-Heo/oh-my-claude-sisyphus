@@ -666,13 +666,13 @@ export async function processHook(
         }
         const stopInput = input as SubagentStopInput;
         const result = processSubagentStop(stopInput);
-        // Record to session replay
+        // Record to session replay (default to true when SDK doesn't provide success)
         recordAgentStop(
           stopInput.cwd,
           stopInput.session_id,
           stopInput.agent_id,
           stopInput.agent_type,
-          stopInput.success
+          stopInput.success !== false
         );
         return result;
       }

@@ -1,5 +1,6 @@
 import { readState, writeState, StateLocation } from '../features/state-manager/index.js';
 import { TokenUsage, SessionTokenStats, AggregateTokenStats } from './types.js';
+import { normalizeModelName } from './cost-estimator.js';
 import { getTokscaleAdapter, TokscaleAdapter, TokscaleReport } from './tokscale-adapter.js';
 import * as fs from 'fs/promises';
 import * as path from 'path';
@@ -12,8 +13,16 @@ export class TokenTracker {
   private currentSessionId: string;
   private sessionStats: SessionTokenStats;
 
-  constructor(sessionId?: string) {
+  constructor(sessionId?: string, skipRestore?: boolean) {
     this.currentSessionId = sessionId || this.generateSessionId();
+    // Try to restore existing session stats before initializing fresh (Bug #4 fix)
+    if (!skipRestore) {
+      const existing = readState<SessionTokenStats>('session-token-stats', StateLocation.GLOBAL);
+      if (existing.exists && existing.data && existing.data.sessionId === this.currentSessionId) {
+        this.sessionStats = existing.data;
+        return;
+      }
+    }
     this.sessionStats = this.initializeSessionStats();
   }
 
@@ -39,6 +48,7 @@ export class TokenTracker {
   async recordTokenUsage(usage: Omit<TokenUsage, 'sessionId' | 'timestamp'>): Promise<void> {
     const record: TokenUsage = {
       ...usage,
+      modelName: normalizeModelName(usage.modelName), // Bug #15: normalize model names
       sessionId: this.currentSessionId,
       timestamp: new Date().toISOString()
     };
@@ -389,6 +399,6 @@ export function getTokenTracker(sessionId?: string): TokenTracker {
 }
 
 export function resetTokenTracker(sessionId?: string): TokenTracker {
-  globalTracker = new TokenTracker(sessionId);
+  globalTracker = new TokenTracker(sessionId, true);
   return globalTracker;
 }

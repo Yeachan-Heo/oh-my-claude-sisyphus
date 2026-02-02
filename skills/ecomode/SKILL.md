@@ -39,8 +39,8 @@ Ecomode is a modifier that combines with execution modes:
 
 | Decision | Rule |
 |----------|------|
-| DEFAULT | Use LOW tier (Haiku) for all tasks |
-| UPGRADE | Use MEDIUM (Sonnet) only when task complexity warrants |
+| DEFAULT | Start with LOW tier (Haiku) for most tasks |
+| UPGRADE | Escalate to MEDIUM (Sonnet) when LOW tier fails or task requires multi-file reasoning |
 | AVOID | HIGH tier (Opus) - only for planning/critique if essential |
 
 ## Agent Selection in Ecomode

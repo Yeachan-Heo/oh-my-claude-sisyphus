@@ -130,7 +130,7 @@ function getPricingForModel(modelName: string): ModelPricing {
   return PRICING['claude-sonnet-4.5'];
 }
 
-function normalizeModelName(modelName: string): string {
+export function normalizeModelName(modelName: string): string {
   // Handle various model name formats
   const lower = modelName.toLowerCase();
 
