@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.9.9] - Unreleased
+
+### Breaking Changes
+
+- **Node.js 20 Required** - Minimum Node.js version increased from 18 to 20. Users on Node.js 18 must upgrade before using this version. This aligns with Node.js LTS schedule (Node 18 EOL: April 2025).
+
+### Performance
+
+- **Levenshtein LRU Cache** - Added LRU cache for Levenshtein distance calculations in skill matching with canonical key ordering for maximum cache hits
+- **Skill Metadata Cache** - Added 30-second TTL cache for skill metadata to reduce repeated file system reads
+- **Debounced State Writes** - Subagent tracker now batches state file writes with 100ms debounce to reduce I/O
+- **Pre-compiled Regex Patterns** - Pre-compiled 15+ regex patterns in hot paths (auto-learner, live-data, bridge) to eliminate repeated compilation
+- **Parallel State File Reads** - Pre-compact module now reads all state files in parallel using Promise.all
+- **Session Index Caching** - Token tracker now caches session indices with 5-minute TTL for 50-100ms faster stats loading
+- **Space-Optimized Levenshtein** - Levenshtein algorithm now uses O(n) space instead of O(n²)
+
+### Fixed
+
+- **Per-Directory Debounce** - Fixed race condition in subagent tracker where global debounce state could lose writes for different directories
+- **TOCTOU Race Condition** - Fixed time-of-check-time-of-use race in pre-compact by removing existsSync check before async read
+- **True LRU Cache** - Fixed Levenshtein cache to use true LRU eviction (delete+reinsert on hit) instead of FIFO
+- **Session Index Off-by-One** - Fixed off-by-one error in token tracker session index offset calculation
+
+---
+
 ## [3.9.7] - 2026-02-02
 
 ### Fixed
@@ -50,10 +75,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Files Updated
 
 **Agent Prompts:**
+
 - `agents/deep-executor.md` - Generic verification evidence placeholders
 - `agents/architect.md` - Generic project manifest and build references
 
 **Skill Files:**
+
 - `skills/build-fix/SKILL.md` - Generic type check and build command references
 - `skills/ultrawork/SKILL.md` - Generic background task examples
 - `skills/ralph/SKILL.md` - Generic background task examples
@@ -63,12 +90,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `skills/deepinit/SKILL.md` - Generic dependency and test instructions
 
 **Command Files:**
+
 - `commands/build-fix.md` - Generic type check command
 - `commands/ralph.md` - Generic background task examples
 - `commands/ultrawork.md` - Generic background task examples
 - `commands/ultraqa.md` - Generic goal commands
 
 **TypeScript Source:**
+
 - `src/hooks/ultraqa/index.ts` - `getGoalCommand()` returns generic comments with examples
 - `src/features/verification/index.ts` - Removed hardcoded npm commands from STANDARD_CHECKS
 - `src/hooks/autopilot/state.ts` - Generic QA phase instructions
@@ -175,6 +204,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 #### MCP Server Plugin Distribution (Hotfix)
+
 Fixed MCP server not working in Claude Code plugin cache.
 
 - **Bundled MCP Server** (`bridge/mcp-server.cjs`)
@@ -199,6 +229,7 @@ Fixed MCP server not working in Claude Code plugin cache.
 ### Added
 
 #### Plugin-Scoped MCP Server Discovery
+
 Standalone MCP server for Claude Code plugin discovery, making omc-tools visible in the `/mcp` management UI.
 
 - **Standalone MCP Server** (`src/mcp/standalone-server.ts`)
@@ -227,6 +258,7 @@ Standalone MCP server for Claude Code plugin discovery, making omc-tools visible
 ### Added
 
 #### SDK MCP Server for Custom Tools (Major Feature)
+
 In-process MCP server exposing 15 custom tools to Claude Code subagents via the Claude Agent SDK.
 
 - **OMC Tools Server** (`src/mcp/omc-tools-server.ts`)
@@ -254,16 +286,18 @@ In-process MCP server exposing 15 custom tools to Claude Code subagents via the 
 ### Technical Details
 
 **New Files:**
+
 - `src/mcp/omc-tools-server.ts` - SDK MCP server implementation
 - `src/__tests__/omc-tools-server.test.ts` - 10 tests for tool exposure
 
 **Usage:**
+
 ```typescript
 // Tools available to subagents as:
-mcp__omc-tools__lsp_hover
-mcp__omc-tools__lsp_definition
-mcp__omc-tools__ast_query
-mcp__omc-tools__python_repl
+mcp__omc - tools__lsp_hover;
+mcp__omc - tools__lsp_definition;
+mcp__omc - tools__ast_query;
+mcp__omc - tools__python_repl;
 // ... etc
 ```
 
@@ -342,6 +376,7 @@ In response to security review by @shaun0927:
 6. **Path Traversal** - Added `isPathWithinDirectory()` with symlink resolution to prevent directory escape
 
 #### Other Fixes
+
 - **fix(hud):** Address code review feedback for cache toggle feature (#164)
 - **fix(rate-limit-wait):** Add ESM compatibility for `__filename` in daemon (#169, #172)
 
@@ -359,6 +394,7 @@ In response to security review by @shaun0927:
 ### Technical Details
 
 **New Files:**
+
 - `src/compatibility/` - Complete compatibility layer (6 source files)
   - `index.ts` - Main exports and initialization
   - `types.ts` - TypeScript interfaces (276 lines)
@@ -380,6 +416,7 @@ In response to security review by @shaun0927:
 ### Fixed
 
 #### Security Hardening
+
 - **fix(security):** Extend DANGEROUS_SHELL_CHARS regex for complete injection prevention (#146)
   - Added `\r`, `\t`, `\0`, `{}`, `[]`, `*`, `?`, `~`, `!`, `#` to blocked characters
   - Intentionally excludes quotes (`"'`) for paths with spaces
@@ -397,6 +434,7 @@ In response to security review by @shaun0927:
 ### Fixed
 
 #### Security & Stability Fixes
+
 - **fix(daemon):** Filter environment variables to prevent credential leakage (#155)
   - New `createMinimalDaemonEnv()` function with allowlist approach
   - Blocks `ANTHROPIC_API_KEY`, `GITHUB_TOKEN`, AWS credentials from daemon subprocess
@@ -421,6 +459,7 @@ In response to security review by @shaun0927:
   - Safer jq usage with `// empty` for missing timestamps
 
 ### Removed
+
 - Closed PR #153 in favor of PR #158 (superset with better design decisions)
 
 ---
@@ -430,6 +469,7 @@ In response to security review by @shaun0927:
 ### Added
 
 #### Rate Limit Auto-Resume (Major Feature)
+
 Automatic session resumption when rate limits reset for users running in tmux.
 
 - **Rate Limit Monitor** (`src/features/rate-limit-wait/`)
@@ -450,6 +490,7 @@ Automatic session resumption when rate limits reset for users running in tmux.
   - 61 tests covering real-world scenarios
 
 #### Async Hook Lifecycle Modules (5 New Hooks)
+
 Claude Code integration hooks for session and tool lifecycle events.
 
 - **SubagentTracker** (`src/hooks/subagent-tracker/`)
@@ -476,6 +517,7 @@ Claude Code integration hooks for session and tool lifecycle events.
   - Export summaries
 
 #### Delegation Enforcement (Production-Ready)
+
 Configurable enforcement for orchestrator delegation behavior.
 
 - **Configuration Levels**
@@ -505,6 +547,7 @@ Configurable enforcement for orchestrator delegation behavior.
 ### Technical Details
 
 **New Files:**
+
 - `src/features/rate-limit-wait/` - Rate limit auto-resume feature (6 files)
 - `src/cli/commands/wait.ts` - CLI integration
 - `src/hooks/subagent-tracker/index.ts` - Subagent lifecycle tracking
@@ -516,11 +559,13 @@ Configurable enforcement for orchestrator delegation behavior.
 - `SECURITY-FIXES.md` - Security fix documentation
 
 **Tests Added:**
+
 - 61 rate-limit-wait tests (daemon, integration, monitor, tmux-detector)
 - 69 permission-handler security tests
 - 635 delegation-enforcement-levels tests
 
 **Configuration:**
+
 - Local: `.omc/config.json` → `delegationEnforcementLevel`
 - Global: `~/.claude/.omc-config.json` → `delegationEnforcementLevel`
 
@@ -535,6 +580,7 @@ Configurable enforcement for orchestrator delegation behavior.
 ### Added
 
 #### Project Session Manager (PSM) Skill
+
 New skill for managing isolated project sessions with automatic context injection.
 
 - **PSM Skill** (`skills/psm/`)
@@ -553,6 +599,7 @@ New skill for managing isolated project sessions with automatic context injectio
 ### Added
 
 #### SQLite-based Swarm Coordination (Major Feature)
+
 Production-ready multi-agent task coordination with atomic claiming and transaction isolation.
 
 - **SQLite Database Backend** (`src/hooks/swarm/`)
@@ -584,7 +631,9 @@ Production-ready multi-agent task coordination with atomic claiming and transact
 ### Changed
 
 #### State File Standardization
+
 All execution mode state files consolidated into `.omc/state/` subdirectory:
+
 - `autopilot-state.json`
 - `ralph-state.json`
 - `ultrawork-state.json`
@@ -595,6 +644,7 @@ All execution mode state files consolidated into `.omc/state/` subdirectory:
 - `ecomode-state.json`
 
 #### Skill Files Updated
+
 All skill files now include explicit "STATE CLEANUP ON COMPLETION" sections instructing to delete state files rather than just setting `active: false`.
 
 ### Fixed
@@ -606,6 +656,7 @@ All skill files now include explicit "STATE CLEANUP ON COMPLETION" sections inst
 ### Technical Details
 
 **New Files:**
+
 - `src/hooks/swarm/index.ts` - Main swarm coordination module
 - `src/hooks/swarm/state.ts` - SQLite state management
 - `src/hooks/swarm/claiming.ts` - Atomic task claiming
@@ -615,22 +666,27 @@ All skill files now include explicit "STATE CLEANUP ON COMPLETION" sections inst
 - `src/hooks/ultrapilot/decomposer.ts` - Task decomposition
 
 **Dependencies Added:**
+
 - `better-sqlite3` - SQLite3 binding for Node.js
 
 ## [3.5.7] - 2026-01-25
 
 ### Added
+
 - feat(skills): add learn-about-omc skill for usage pattern analysis
 
 ### Changed
-- feat(skills): consolidate 42 skills to 37 (removed deprecated cancel-* skills, added build-fix, code-review, security-review, writer-memory, project-session-manager, local-skills-setup, skill)
+
+- feat(skills): consolidate 42 skills to 37 (removed deprecated cancel-\* skills, added build-fix, code-review, security-review, writer-memory, project-session-manager, local-skills-setup, skill)
 
 ### Fixed
+
 - fix(tests): skip unimplemented delegation-enforcer tests
 - fix(tests): correct analytics agent attribution expectations
 
 ### Removed
-- chore: remove deprecated cancel-* skills (use /cancel instead)
+
+- chore: remove deprecated cancel-\* skills (use /cancel instead)
 
 ## [3.5.1] - 2026-01-24
 
@@ -664,6 +720,7 @@ Smart skill matching with fuzzy matching, pattern detection, and auto-invocation
 - **90 new tests** for matcher, auto-learner edge cases, security, and performance
 
 #### Analytics Backfill System
+
 Complete offline transcript analysis pipeline for token usage and cost tracking.
 
 - **Transcript Scanner** (`src/analytics/transcript-scanner.ts`)
@@ -721,6 +778,7 @@ Complete offline transcript analysis pipeline for token usage and cost tracking.
 ### Technical Details
 
 **Agent Attribution Fix:**
+
 ```
 Before: Assistant entries with Task calls → incorrectly attributed to agent
         Progress entries (actual agent work) → hidden in "(main session)"
@@ -730,6 +788,7 @@ After:  Assistant entries → correctly attributed to "(main session)"
 ```
 
 **New Files:**
+
 - `src/analytics/transcript-scanner.ts` - Directory scanning
 - `src/analytics/transcript-parser.ts` - JSONL streaming parser
 - `src/analytics/transcript-token-extractor.ts` - Token extraction with agent lookup
@@ -757,6 +816,7 @@ After:  Assistant entries → correctly attributed to "(main session)"
 ### Added
 
 #### New Features
+
 - **Metadata Sync System**: Automated documentation synchronization tool
   - `scripts/sync-metadata.ts` - Syncs version, agent count, skill count across all docs
   - npm scripts: `sync-metadata`, `sync-metadata:verify`, `sync-metadata:dry-run`
@@ -813,6 +873,7 @@ After:  Assistant entries → correctly attributed to "(main session)"
 ### Added
 
 #### New Features
+
 - **Ultrapilot**: Parallel autopilot with up to 5 concurrent workers
   - Task decomposition engine for breaking complex tasks into parallelizable subtasks
   - File ownership coordination to prevent worker conflicts
@@ -878,6 +939,7 @@ After:  Assistant entries → correctly attributed to "(main session)"
 ### Changed
 
 #### Consolidation
+
 - **Ralph Hooks**: Consolidated from 4 directories into single `src/hooks/ralph/`
   - Merged: ralph-loop, ralph-prd, ralph-progress, ralph-verifier
   - Clean facade via `src/hooks/ralph/index.ts`
@@ -892,7 +954,7 @@ After:  Assistant entries → correctly attributed to "(main session)"
   - Merged: transition.ts → state.ts
   - Merged: summary.ts → validation.ts
 
-- **Ultra* Hooks**: Renamed for consistency
+- **Ultra\* Hooks**: Renamed for consistency
   - `ultrawork-state/` → `ultrawork/`
   - `ultraqa-loop/` → `ultraqa/`
 
@@ -911,6 +973,7 @@ After:  Assistant entries → correctly attributed to "(main session)"
   - Version-organized sections: v2.x→v3.0, v3.0→v3.1, v3.x→v4.0
 
 #### Bug Fixes
+
 - **Agent defaultModel Property**: All 30 agents now have explicit `defaultModel` property
   - LOW tier: haiku
   - MEDIUM tier: sonnet
@@ -921,36 +984,41 @@ After:  Assistant entries → correctly attributed to "(main session)"
   - Follows same pattern as other agents with external prompts
 
 #### Test Fixes
+
 - Updated skills.test.ts count from 35 to 37 (added cancel-ecomode, ecomode)
 - Updated installer.test.ts to check for Migration section instead of inline compatibility text
 - All 612 tests passing
 
 ### Skills (37 total, 7 new)
-| New Skill | Description |
-|-----------|-------------|
-| `cancel` | Unified cancellation for all modes |
-| `pipeline` | Sequential agent chaining |
-| `swarm` | N coordinated agents with task claiming |
-| `ultrapilot` | Parallel autopilot (3-5x faster) |
-| `mcp-setup` | MCP server configuration |
-| `ecomode` | Token-efficient parallel execution |
-| `cancel-ecomode` | Cancel ecomode mode |
+
+| New Skill        | Description                             |
+| ---------------- | --------------------------------------- |
+| `cancel`         | Unified cancellation for all modes      |
+| `pipeline`       | Sequential agent chaining               |
+| `swarm`          | N coordinated agents with task claiming |
+| `ultrapilot`     | Parallel autopilot (3-5x faster)        |
+| `mcp-setup`      | MCP server configuration                |
+| `ecomode`        | Token-efficient parallel execution      |
+| `cancel-ecomode` | Cancel ecomode mode                     |
 
 ### Agents (30 total, 1 new)
-| New Agent | Model | Description |
-|-----------|-------|-------------|
-| `explore-high` | opus | Complex architectural search |
+
+| New Agent      | Model | Description                  |
+| -------------- | ----- | ---------------------------- |
+| `explore-high` | opus  | Complex architectural search |
 
 ### New Modules
-| Module | Location | Purpose |
-|--------|----------|---------|
-| Verification | `src/features/verification/` | Reusable verification protocols |
-| State Manager | `src/features/state-manager/` | Standardized state management |
-| Task Decomposer | `src/features/task-decomposer/` | Task decomposition for parallel execution |
-| Ultrapilot | `src/hooks/ultrapilot/` | Parallel autopilot coordinator |
-| Delegation Enforcer | `src/features/delegation-enforcer.ts` | Model injection middleware |
+
+| Module              | Location                              | Purpose                                   |
+| ------------------- | ------------------------------------- | ----------------------------------------- |
+| Verification        | `src/features/verification/`          | Reusable verification protocols           |
+| State Manager       | `src/features/state-manager/`         | Standardized state management             |
+| Task Decomposer     | `src/features/task-decomposer/`       | Task decomposition for parallel execution |
+| Ultrapilot          | `src/hooks/ultrapilot/`               | Parallel autopilot coordinator            |
+| Delegation Enforcer | `src/features/delegation-enforcer.ts` | Model injection middleware                |
 
 ### Files Changed Summary
+
 - **New files**: 50+
 - **Modified files**: 35+
 - **Deleted files**: 15+ (consolidated into unified modules)
@@ -959,6 +1027,7 @@ After:  Assistant entries → correctly attributed to "(main session)"
 ## [3.3.10] - 2026-01-23
 
 ### Added
+
 - **omc-setup**: GitHub star prompt after setup completion (#82)
   - Uses AskUserQuestion for clickable UI
   - Falls back to URL display if `gh` CLI unavailable
@@ -970,6 +1039,7 @@ After:  Assistant entries → correctly attributed to "(main session)"
 ## [3.3.8] - 2026-01-23
 
 ### Added
+
 - **Windows 100% Cross-Platform Compatibility**: Full Windows support across the entire codebase
   - New `src/platform/` module with unified platform detection utilities
   - Cross-platform process management (taskkill on Windows, negative PID on Unix)
@@ -981,16 +1051,19 @@ After:  Assistant entries → correctly attributed to "(main session)"
   - windowsHide: true on all exec calls to prevent console flashing
 
 ### Changed
+
 - Deduplicated process utilities in bridge-manager.ts and session-lock.ts to use central platform module
 - Improved LSP workspace root detection for Windows paths
 
 ## [3.3.7] - 2026-01-22
 
 ### Added
+
 - MCP server configuration skill (`/oh-my-claudecode:mcp-setup`) for Context7, Exa, Filesystem, GitHub (#74)
 - MCP setup integrated into omc-setup wizard
 
 ### Fixed
+
 - ralplan now ensures critic agent executes before plan approval in plan mode (#73)
 - README contradiction about command learning vs magic keywords (#72)
 
@@ -1035,6 +1108,7 @@ After:  Assistant entries → correctly attributed to "(main session)"
 ### Technical Details
 
 **New Files Created:**
+
 - `src/tools/python-repl/` - Complete MCP tool implementation (~2,100 lines)
   - `types.ts` - TypeScript interfaces
   - `paths.ts` - Path utilities with security validation
@@ -1050,6 +1124,7 @@ After:  Assistant entries → correctly attributed to "(main session)"
 - `skills/research/SKILL.md` - Research orchestration skill
 
 **Usage Example:**
+
 ```
 # Variables persist across calls!
 python_repl(action="execute", researchSessionID="analysis",
@@ -1072,6 +1147,7 @@ python_repl(action="execute", researchSessionID="analysis",
 ## [3.2.5] - 2026-01-21
 
 ### Added
+
 - **PreToolUse hooks**: Soft enforcement for delegation via `pre-tool-use.sh` and `pre-tool-use.mjs`
   - Warns when orchestrator attempts direct Edit/Write on source files
   - Detects file modification patterns in Bash commands (sed -i, redirects, etc.)
@@ -1079,6 +1155,7 @@ python_repl(action="execute", researchSessionID="analysis",
   - Soft warning only - operations proceed but reminder to delegate is shown
 
 ### Changed
+
 - **Command file updates**: autopilot.md, ralph.md, ultrawork.md now include explicit delegation enforcement tables
 - **Clearer orchestrator vs implementer distinction**: Documentation emphasizes "YOU ARE AN ORCHESTRATOR, NOT AN IMPLEMENTER"
 
@@ -1087,6 +1164,7 @@ python_repl(action="execute", researchSessionID="analysis",
 ## [3.2.0] - 2026-01-21
 
 ### Added
+
 - **Autopilot Command** (`/oh-my-claudecode:autopilot`): Full autonomous execution from idea to working code
   - 5-phase workflow: Expansion → Planning → Execution → QA → Validation
   - Magic keywords: "autopilot", "build me", "create me", "I want a/an"
@@ -1097,6 +1175,7 @@ python_repl(action="execute", researchSessionID="analysis",
 - **Autopilot HUD element**: Real-time phase progress display
 
 ### Changed
+
 - Agent count: 20 → 28 (8 previously documented agents now registered)
 - Skill count: 26 → 28 (autopilot + cancel-autopilot)
 - Updated docs/CLAUDE.md with autopilot integration
@@ -1106,17 +1185,20 @@ python_repl(action="execute", researchSessionID="analysis",
 ## [3.1.1] - 2026-01-21
 
 ### Added
+
 - **Non-blocking queue system**: Background tasks now enter `'queued'` status when waiting for concurrency slot
 - **Stale session detection**: New `staleThresholdMs` and `onStaleSession` callback detect hung tasks (default: 5 min)
 - **Model preservation**: Background tasks inherit parent session's model via `parentModel` field
 - **User abort detection**: New `StopContext` and `isUserAbort()` detect user-initiated stops (Ctrl+C, cancel)
 
 ### Changed
+
 - **Capacity enforcement**: `maxTotalTasks` now counts both running AND queued tasks
 - **Status display**: `getStatusSummary()` shows queued count and wait times
 - **Continuation hooks**: Ralph-loop, ultrawork, and todo-continuation now respect user aborts
 
 ### Fixed
+
 - **Graceful stop handling**: Users can now cleanly exit persistent modes without forced continuation
 
 ---
@@ -1124,6 +1206,7 @@ python_repl(action="execute", researchSessionID="analysis",
 ## [3.1.0] - 2026-01-21
 
 ### Added
+
 - **8 new specialized agents** (ECC integration):
   - `security-reviewer` / `security-reviewer-low`: Security vulnerability analysis
   - `build-fixer` / `build-fixer-low`: Build error diagnosis and fixes
@@ -1134,12 +1217,14 @@ python_repl(action="execute", researchSessionID="analysis",
 - **Todos on second line**: HUD now displays todos separately as `todos:3/5 (working: task)`
 
 ### Changed
+
 - **omc-setup rebuild behavior**: Now shows version changes when refreshing CLAUDE.md
 - **Cache clearing**: omc-setup automatically removes stale plugin cache versions
 - **API timeout**: Increased from 5s to 10s for slower connections
 - **Cache TTL**: Reduced from 60s to 30s for fresher rate limit data
 
 ### Fixed
+
 - **Credential reading**: Handle nested `claudeAiOauth` wrapper in credentials.json
 - **HUD semver sorting**: Fixed version comparison to use numeric sort instead of alphabetical
 - **ESLint**: Disabled `no-control-regex` for ANSI escape code handling in tests
@@ -1207,6 +1292,7 @@ For existing users upgrading from 2.x:
 ### Rationale
 
 The Greek mythology naming convention, while elegant, created barriers for new users:
+
 - Non-obvious agent purposes ("What does Prometheus do?")
 - Cultural accessibility concerns
 - Increased cognitive load for remembering agent roles
@@ -1392,30 +1478,40 @@ Implements structured task tracking inspired by the original [Ralph](https://git
 ### Technical Details
 
 **Notepad.md Structure:**
+
 ```markdown
 # Notepad
+
 <!-- Auto-managed by Sisyphus. Manual edits preserved in MANUAL section. -->
 
 ## Priority Context
+
 <!-- ALWAYS loaded. Keep under 500 chars. Critical discoveries only. -->
+
 Project uses pnpm not npm
 API client at src/api/client.ts
 
 ## Working Memory
+
 <!-- Session notes. Auto-pruned after 7 days. -->
 
 ### 2026-01-19 10:30
+
 Discovered auth middleware in src/middleware/auth.ts
 
 ### 2026-01-19 09:15
+
 Database schema uses PostgreSQL with Prisma ORM
 
 ## MANUAL
+
 <!-- User content. Never auto-pruned. -->
+
 User's permanent notes here
 ```
 
 **Remember Tag Usage:**
+
 ```
 Agent output: <remember>Project uses TypeScript strict mode</remember>
 → Saved to Working Memory with timestamp
@@ -1425,6 +1521,7 @@ Agent output: <remember priority>API base URL is https://api.example.com</rememb
 ```
 
 **PRD Structure:**
+
 ```json
 {
   "project": "ProjectName",
@@ -1444,6 +1541,7 @@ Agent output: <remember priority>API base URL is https://api.example.com</rememb
 ```
 
 **Progress.txt Structure:**
+
 ```
 # Ralph Progress Log
 Started: 2026-01-19T...
@@ -1468,6 +1566,7 @@ Started: 2026-01-19T...
 ## [2.0.1] - 2026-01-13
 
 ### Added
+
 - **Vitest test framework** with comprehensive test suite (231 tests)
   - Model routing tests (100 tests)
   - Hook system tests (78 tests)
@@ -1479,11 +1578,13 @@ Started: 2026-01-19T...
   - Fixed Unix-only shell redirects
 
 ### Changed
+
 - Synced shell script installer with TypeScript installer
 - Removed deprecated orchestrator command from shell script
 - Removed separate skills directory (now via commands only)
 
 ### Fixed
+
 - Cross-platform `which` command replaced with platform-aware detection
 - Auto-update now handles Windows gracefully with helpful error message
 - Shell script command count matches TypeScript installer (11 commands)
@@ -1499,6 +1600,7 @@ Started: 2026-01-19T...
 **Added tmux-based interactive testing capabilities for CLI/service verification.**
 
 ### Added
+
 - **QA-Tester Agent** (`src/agents/qa-tester.ts`)
   - Interactive CLI testing using tmux sessions
   - Prerequisite checking (tmux availability, server connections)
@@ -1516,11 +1618,13 @@ Started: 2026-01-19T...
   - Complex integration → Opus
 
 ### Changed
+
 - Updated ultrawork skill with verification protocol and qa-tester gating
 - Updated ralph-loop and orchestrator with qa-tester integration
 - Updated sisyphus command with Agent Combinations section
 
 ### Refactored
+
 - **Merged sisyphus+orchestrator+ultrawork into default mode** - 80% behavior overlap consolidated
   - Default mode is now an intelligent orchestrator
   - `/oh-my-claudecode:orchestrator` command deprecated (use default mode or `/oh-my-claudecode:ultrawork`)
@@ -1529,6 +1633,7 @@ Started: 2026-01-19T...
 - **Updated attribution** - Changed from "Port of" to "Inspired by" oh-my-opencode (70% divergence)
 
 ### Fixed
+
 - **Migrated to ESLint v9 flat config** - Created `eslint.config.js` for modern ESLint
 - **Resolved all 50 lint warnings** - Removed unused imports, fixed prefer-const, updated re-exports
 - Synced installer COMMAND_DEFINITIONS with updated skills
@@ -1545,6 +1650,7 @@ Started: 2026-01-19T...
 The orchestrator (Opus) now analyzes task complexity BEFORE delegation and routes to the appropriate model tier (Haiku/Sonnet/Opus). This dramatically improves efficiency - simple tasks use faster, cheaper models while complex tasks get the full power of Opus.
 
 ### Added
+
 - **Intelligent Model Routing System** (`src/features/model-routing/`)
   - `types.ts`: Core types for routing (ComplexityTier, RoutingDecision, etc.)
   - `signals.ts`: Complexity signal extraction (lexical, structural, context)
@@ -1575,18 +1681,26 @@ The orchestrator (Opus) now analyzes task complexity BEFORE delegation and route
   - Opus: Deep reasoning prompts with thinking mode
 
 ### Changed
+
 - **Orchestrator Prompts** updated with intelligent routing guidance
 - **Configuration** (`src/config/loader.ts`) now includes routing options
 - **Types** (`src/shared/types.ts`) extended with routing configuration
 
 ### Breaking Changes
+
 - Routing is now proactive (orchestrator decides upfront) instead of reactive
 - Deprecated `routeWithEscalation()` - use `getModelForTask()` instead
 
 ### Migration Guide
+
 No action needed - the system automatically routes based on complexity. To override:
+
 ```typescript
-Task(subagent_type="oracle", model="opus", prompt="Force Opus for this task")
+Task(
+  (subagent_type = "oracle"),
+  (model = "opus"),
+  (prompt = "Force Opus for this task"),
+);
 ```
 
 ---
@@ -1594,6 +1708,7 @@ Task(subagent_type="oracle", model="opus", prompt="Force Opus for this task")
 ## [1.11.0] - 2026-01-13
 
 ### Added
+
 - **Enhanced Hook Enforcement System** - Stronger Sisyphus behavior enforcement beyond CLAUDE.md
   - `pre-tool-enforcer.sh`: PreToolUse hook that injects contextual Sisyphus reminders before every tool execution
   - `post-tool-verifier.sh`: PostToolUse hook for verification after tools, with failure detection
@@ -1602,6 +1717,7 @@ Task(subagent_type="oracle", model="opus", prompt="Force Opus for this task")
   - `sisyphus-aliases.sh`: Shell aliases (`claude-s`, `claudew`) for easy activation
 
 ### Changed
+
 - **Stop Hook** now enforces additional verification requirements:
   - Build verification (if build scripts exist)
   - Test verification (if tests exist)
@@ -1612,12 +1728,14 @@ Task(subagent_type="oracle", model="opus", prompt="Force Opus for this task")
 - **Hook Configuration** - Added PreToolUse and PostToolUse to `hooks.json`
 
 ### Technical Details
+
 - PreToolUse hook provides tool-specific reminders (Bash, Task, Edit, Write, Read, Grep/Glob)
 - PostToolUse hook tracks session statistics in `~/.claude/.session-stats.json`
 - Stop hook returns `continue: false` until ALL verification requirements are met
 - CLI wrapper appends core Sisyphus rules directly to Claude's system prompt
 
 ### Enforcement Hierarchy
+
 1. **Stop Hook** with `continue: false` - Blocks ALL stopping until verified
 2. **PreToolUse** - Injects reminders BEFORE every tool
 3. **PostToolUse** - Verifies AFTER every tool
@@ -1626,6 +1744,7 @@ Task(subagent_type="oracle", model="opus", prompt="Force Opus for this task")
 ## [1.10.0] - 2026-01-11
 
 ### Added
+
 - **Persistent Mode System** - Enhanced hook system for auto-continuation
   - `ultrawork-state` module: Manages persistent ultrawork mode state across sessions
   - `persistent-mode` hook: Unified Stop handler for ultrawork, ralph-loop, and todo continuation
@@ -1646,11 +1765,13 @@ Task(subagent_type="oracle", model="opus", prompt="Force Opus for this task")
   - Pre-commit validation workflow
 
 ### Changed
+
 - **Bridge Module** - Added persistent-mode and session-start hook handlers
 - **Keyword Detector** - Now activates ultrawork state when ultrawork keyword is detected
 - **Settings Configuration** - Added SessionStart hook configuration for both Bash and Node.js
 
 ### Technical Details
+
 - New hooks: `persistent-mode.sh/.mjs`, `session-start.sh/.mjs`
 - State files: `.sisyphus/ultrawork-state.json`, `~/.claude/ultrawork-state.json`
 - Ultrawork mode now persists across stop attempts when todos remain incomplete
@@ -1659,6 +1780,7 @@ Task(subagent_type="oracle", model="opus", prompt="Force Opus for this task")
 ## [1.9.0] - 2026-01-10
 
 ### Changed
+
 - **Synced all builtin skills with oh-my-opencode source implementation**
   - Updated `orchestrator` skill (1302 lines) with complete orchestrator-sisyphus.ts template
   - Updated `sisyphus` skill (362 lines) with complete sisyphus.ts template
@@ -1668,6 +1790,7 @@ Task(subagent_type="oracle", model="opus", prompt="Force Opus for this task")
   - Updated `frontend-ui-ux` skill with enhanced Work Principles section
 
 ### Fixed
+
 - **Installer improvements**
   - Fixed skill path format from `'skill-name.md'` to `'skill-name/skill.md'`
   - Fixed agent path for prometheus from `'prometheus/skill.md'` to `'prometheus.md'`
@@ -1685,6 +1808,7 @@ Task(subagent_type="oracle", model="opus", prompt="Force Opus for this task")
     - References to OhMyOpenCode → Oh-My-ClaudeCode-Sisyphus
 
 ### Verified
+
 - All 6 builtin skills install correctly to `~/.claude/skills/`
 - Orchestrator skill properly delegates with `Task(subagent_type=...)`
 - Ultrawork skill contains clean verification guarantees and zero-tolerance failures
@@ -1694,16 +1818,19 @@ Task(subagent_type="oracle", model="opus", prompt="Force Opus for this task")
 ## [1.8.0] - 2026-01-10
 
 ### Added
+
 - Intelligent Skill Composition with task-type routing
 - Architecture comparison documentation (OpenCode vs Claude Code)
 - Intelligent Skill Activation section to README
 
 ### Changed
+
 - Merged feature/auto-skill-routing branch
 
 ## [1.7.0] - Previous Release
 
 ### Added
+
 - Windows support with Node.js hooks
 - ESM import for tmpdir
 
@@ -1720,11 +1847,13 @@ Task(subagent_type="oracle", model="opus", prompt="Force Opus for this task")
 ## [3.9.8] - 2026-02-03
 
 ### Bug Fixes
+
 - fix: auto-recover status bar after plugin update (#327, #329)
   - Filter plugin cache versions to only those with built dist/hud/index.js
   - Prevents picking unbuilt new version after plugin update
 
 ### Features
+
 - feat: add project isolation to state files (#326, #328)
   - Added project_path validation to all persistent mode states
   - Prevents cross-project state contamination
