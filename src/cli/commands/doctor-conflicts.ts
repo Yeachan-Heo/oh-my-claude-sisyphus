@@ -151,6 +151,9 @@ export function checkConfigIssues(): ConflictReport['configIssues'] {
       'taskToolConfig',
       'defaultExecutionMode',
       'bashHistory',
+      'ecomode',
+      'setupCompleted',
+      'setupVersion',
     ]);
 
     for (const field of Object.keys(config)) {

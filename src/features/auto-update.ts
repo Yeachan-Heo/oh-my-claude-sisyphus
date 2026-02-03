@@ -53,6 +53,10 @@ export interface SisyphusConfig {
     /** Whether ecomode is enabled (default: true). Set to false to disable ecomode completely. */
     enabled?: boolean;
   };
+  /** Whether initial setup has been completed (ISO timestamp) */
+  setupCompleted?: string;
+  /** Version of setup wizard that was completed */
+  setupVersion?: string;
 }
 
 /**
@@ -75,6 +79,8 @@ export function getSisyphusConfig(): SisyphusConfig {
       taskToolConfig: config.taskToolConfig,
       defaultExecutionMode: config.defaultExecutionMode,
       ecomode: config.ecomode,
+      setupCompleted: config.setupCompleted,
+      setupVersion: config.setupVersion,
     };
   } catch {
     // If config file is invalid, default to disabled for security
