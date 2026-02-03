@@ -6,28 +6,28 @@
  */
 
 export type TaskType =
-  | 'fullstack-app'
-  | 'refactoring'
-  | 'bug-fix'
-  | 'feature'
-  | 'testing'
-  | 'documentation'
-  | 'infrastructure'
-  | 'migration'
-  | 'optimization'
-  | 'unknown';
+  | "fullstack-app"
+  | "refactoring"
+  | "bug-fix"
+  | "feature"
+  | "testing"
+  | "documentation"
+  | "infrastructure"
+  | "migration"
+  | "optimization"
+  | "unknown";
 
 export type ComponentRole =
-  | 'frontend'
-  | 'backend'
-  | 'database'
-  | 'api'
-  | 'ui'
-  | 'shared'
-  | 'testing'
-  | 'docs'
-  | 'config'
-  | 'module';
+  | "frontend"
+  | "backend"
+  | "database"
+  | "api"
+  | "ui"
+  | "shared"
+  | "testing"
+  | "docs"
+  | "config"
+  | "module";
 
 export interface TaskAnalysis {
   /** Original task description */
@@ -121,7 +121,7 @@ export interface Subtask {
   agentType: string;
 
   /** Recommended model tier */
-  modelTier: 'low' | 'medium' | 'high';
+  modelTier: "low" | "medium" | "high";
 
   /** Acceptance criteria */
   acceptanceCriteria: string[];
@@ -183,8 +183,13 @@ export interface ProjectContext {
   /** Existing files that might be affected */
   existingFiles?: string[];
 
-  /** Framework conventions */
-  conventions?: Record<string, any>;
+  /**
+   * Framework-specific conventions and patterns.
+   * May include naming conventions, folder structures, file patterns,
+   * and other framework-specific metadata that varies by project type.
+   * Examples: { namingConvention: 'camelCase', componentFolder: 'src/components' }
+   */
+  conventions?: Record<string, unknown>;
 }
 
 export interface DecompositionStrategy {
@@ -197,7 +202,7 @@ export interface DecompositionStrategy {
   /** Function to decompose task */
   decompose: (
     analysis: TaskAnalysis,
-    context: ProjectContext
+    context: ProjectContext,
   ) => {
     components: Component[];
     sharedFiles: SharedFile[];

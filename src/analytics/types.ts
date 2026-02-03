@@ -1,45 +1,57 @@
 /**
  * Transcript entry from .claude session logs
  */
+/**
+ * Content block in transcript message
+ * Note: `id` is undocumented but present on tool_use blocks in Claude Code transcripts.
+ * If Claude Code changes this, the code will gracefully handle missing IDs.
+ */
+export interface TranscriptContentBlock {
+  type: string;
+  name?: string;
+  /** Tool use ID - undocumented but present on tool_use blocks */
+  id?: string;
+  input?: {
+    subagent_type?: string;
+    model?: string;
+  };
+}
+
+export interface TranscriptUsage {
+  input_tokens: number;
+  output_tokens: number;
+  cache_creation_input_tokens?: number;
+  cache_read_input_tokens?: number;
+  cache_creation?: {
+    ephemeral_5m_input_tokens?: number;
+    ephemeral_1h_input_tokens?: number;
+  };
+}
+
 export interface TranscriptEntry {
   type: string;
   timestamp: string;
   sessionId: string;
   agentId?: string;
   slug?: string;
+  /**
+   * Parent tool use ID - undocumented but present on progress entries.
+   * Used to attribute agent costs to the correct spawned task.
+   * If Claude Code changes this, agent attribution will fall back to agentId.
+   */
+  parentToolUseID?: string;
   message?: {
     model?: string;
     role?: string;
-    usage?: {
-      input_tokens: number;
-      output_tokens: number;
-      cache_creation_input_tokens?: number;
-      cache_read_input_tokens?: number;
-      cache_creation?: {
-        ephemeral_5m_input_tokens?: number;
-        ephemeral_1h_input_tokens?: number;
-      };
-    };
-    content?: Array<{
-      type: string;
-      name?: string;
-      input?: {
-        subagent_type?: string;
-        model?: string;
-      };
-    }>;
+    usage?: TranscriptUsage;
+    content?: TranscriptContentBlock[];
   };
   // For progress entries from agent responses
   data?: {
     message?: {
       message?: {
         model?: string;
-        usage?: {
-          input_tokens: number;
-          output_tokens: number;
-          cache_creation_input_tokens?: number;
-          cache_read_input_tokens?: number;
-        };
+        usage?: TranscriptUsage;
       };
     };
   };
@@ -109,7 +121,7 @@ export interface TokscalePricingResult {
   cacheWritePerMillion?: number;
   cacheWriteMarkup: number;
   cacheReadDiscount: number;
-  source: 'tokscale' | 'fallback';
+  source: "tokscale" | "fallback";
 }
 
 /**
@@ -118,22 +130,22 @@ export interface TokscalePricingResult {
  * @deprecated Use tokscale-adapter.ts lookupPricingWithFallback() instead
  */
 export const PRICING: Record<string, ModelPricing> = {
-  'claude-haiku-4': {
-    inputPerMillion: 0.80,
-    outputPerMillion: 4.00,
+  "claude-haiku-4": {
+    inputPerMillion: 0.8,
+    outputPerMillion: 4.0,
     cacheWriteMarkup: 0.25,
-    cacheReadDiscount: 0.90
+    cacheReadDiscount: 0.9,
   },
-  'claude-sonnet-4.5': {
-    inputPerMillion: 3.00,
-    outputPerMillion: 15.00,
+  "claude-sonnet-4.5": {
+    inputPerMillion: 3.0,
+    outputPerMillion: 15.0,
     cacheWriteMarkup: 0.25,
-    cacheReadDiscount: 0.90
+    cacheReadDiscount: 0.9,
   },
-  'claude-opus-4.5': {
-    inputPerMillion: 15.00,
-    outputPerMillion: 75.00,
+  "claude-opus-4.5": {
+    inputPerMillion: 15.0,
+    outputPerMillion: 75.0,
     cacheWriteMarkup: 0.25,
-    cacheReadDiscount: 0.90
-  }
+    cacheReadDiscount: 0.9,
+  },
 };

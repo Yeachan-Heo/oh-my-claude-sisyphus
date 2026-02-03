@@ -56,6 +56,11 @@ interface SecurityPolicy {
   require_approval?: string[];
 }
 
+interface CompiledSecurityPolicy extends SecurityPolicy {
+  _compiled_allowed_patterns?: RegExp[];
+  _compiled_denied_patterns?: RegExp[];
+}
+
 type OutputFormat = "json" | "table" | "diff" | null;
 
 // ─── Cache ───────────────────────────────────────────────────────────────────
@@ -108,10 +113,42 @@ export function clearCache(): void {
 
 // ─── Security ────────────────────────────────────────────────────────────────
 
-let cachedPolicy: SecurityPolicy | null = null;
+let cachedPolicy: CompiledSecurityPolicy | null = null;
 let policyLoadedFrom: string | null = null;
 
-function loadSecurityPolicy(): SecurityPolicy {
+function compileSecurityPolicy(policy: SecurityPolicy): CompiledSecurityPolicy {
+  const compiled = policy as CompiledSecurityPolicy;
+
+  // Pre-compile allowed patterns
+  if (policy.allowed_patterns && policy.allowed_patterns.length > 0) {
+    compiled._compiled_allowed_patterns = policy.allowed_patterns
+      .map((pat) => {
+        try {
+          return new RegExp(pat);
+        } catch {
+          return null;
+        }
+      })
+      .filter((r): r is RegExp => r !== null);
+  }
+
+  // Pre-compile denied patterns
+  if (policy.denied_patterns && policy.denied_patterns.length > 0) {
+    compiled._compiled_denied_patterns = policy.denied_patterns
+      .map((pat) => {
+        try {
+          return new RegExp(pat);
+        } catch {
+          return null;
+        }
+      })
+      .filter((r): r is RegExp => r !== null);
+  }
+
+  return compiled;
+}
+
+function loadSecurityPolicy(): CompiledSecurityPolicy {
   const policyPaths = [
     join(process.cwd(), ".omc", "config", "live-data-policy.json"),
     join(process.cwd(), ".claude", "live-data-policy.json"),
@@ -121,7 +158,10 @@ function loadSecurityPolicy(): SecurityPolicy {
     if (p === policyLoadedFrom && cachedPolicy) return cachedPolicy;
     if (existsSync(p)) {
       try {
-        cachedPolicy = JSON.parse(readFileSync(p, "utf-8")) as SecurityPolicy;
+        const rawPolicy = JSON.parse(
+          readFileSync(p, "utf-8"),
+        ) as SecurityPolicy;
+        cachedPolicy = compileSecurityPolicy(rawPolicy);
         policyLoadedFrom = p;
         return cachedPolicy;
       } catch {
@@ -141,15 +181,11 @@ export function resetSecurityPolicy(): void {
 function checkSecurity(command: string): { allowed: boolean; reason?: string } {
   const policy = loadSecurityPolicy();
 
-  // Check denied patterns first
-  if (policy.denied_patterns) {
-    for (const pat of policy.denied_patterns) {
-      try {
-        if (new RegExp(pat).test(command)) {
-          return { allowed: false, reason: `denied by pattern: ${pat}` };
-        }
-      } catch {
-        // skip invalid regex
+  // Check denied patterns first (using pre-compiled regexes)
+  if (policy._compiled_denied_patterns) {
+    for (const regex of policy._compiled_denied_patterns) {
+      if (regex.test(command)) {
+        return { allowed: false, reason: `denied by pattern: ${regex.source}` };
       }
     }
   }
@@ -166,15 +202,11 @@ function checkSecurity(command: string): { allowed: boolean; reason?: string } {
     const baseAllowed = policy.allowed_commands.includes(cmdBase);
     let patternAllowed = false;
 
-    if (policy.allowed_patterns) {
-      for (const pat of policy.allowed_patterns) {
-        try {
-          if (new RegExp(pat).test(command)) {
-            patternAllowed = true;
-            break;
-          }
-        } catch {
-          // skip invalid regex
+    if (policy._compiled_allowed_patterns) {
+      for (const regex of policy._compiled_allowed_patterns) {
+        if (regex.test(command)) {
+          patternAllowed = true;
+          break;
         }
       }
     }

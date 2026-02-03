@@ -1,5 +1,10 @@
-import { createHash } from 'crypto';
-import type { TokenUsage, TranscriptEntry } from './types.js';
+import { createHash } from "crypto";
+import type {
+  TokenUsage,
+  TranscriptEntry,
+  TranscriptContentBlock,
+  TranscriptUsage,
+} from "./types.js";
 
 /**
  * Extracted usage with metadata
@@ -24,12 +29,12 @@ export interface TaskSpawnInfo {
 function normalizeModelName(model: string): string {
   const lower = model.toLowerCase();
 
-  if (lower.includes('opus')) {
-    return 'claude-opus-4.5';
-  } else if (lower.includes('sonnet')) {
-    return 'claude-sonnet-4.5';
-  } else if (lower.includes('haiku')) {
-    return 'claude-haiku-4';
+  if (lower.includes("opus")) {
+    return "claude-opus-4.5";
+  } else if (lower.includes("sonnet")) {
+    return "claude-sonnet-4.5";
+  } else if (lower.includes("haiku")) {
+    return "claude-haiku-4";
   }
 
   // Fallback to original if no match
@@ -46,18 +51,19 @@ function normalizeModelName(model: string): string {
 export function extractTaskSpawns(entry: TranscriptEntry): TaskSpawnInfo[] {
   const spawns: TaskSpawnInfo[] = [];
 
-  if (entry.type !== 'assistant' || !entry.message?.content) {
+  if (entry.type !== "assistant" || !entry.message?.content) {
     return spawns;
   }
 
   for (const block of entry.message.content) {
-    if (block.type === 'tool_use' && block.name === 'Task') {
-      const toolUseId = (block as any).id;
-      const input = block.input as { subagent_type?: string } | undefined;
-      if (toolUseId && input?.subagent_type) {
+    if (block.type === "tool_use" && block.name === "Task") {
+      const typedBlock = block as TranscriptContentBlock;
+      const toolUseId = typedBlock.id;
+      const subagentType = typedBlock.input?.subagent_type;
+      if (toolUseId && subagentType) {
         spawns.push({
           toolUseId,
-          agentType: input.subagent_type
+          agentType: subagentType,
         });
       }
     }
@@ -77,16 +83,16 @@ export function extractTaskSpawns(entry: TranscriptEntry): TaskSpawnInfo[] {
  */
 function detectAgentName(
   entry: TranscriptEntry,
-  agentLookup?: Map<string, string>
+  agentLookup?: Map<string, string>,
 ): string | undefined {
   // For progress entries, look up agent from parentToolUseID
-  if (entry.type === 'progress') {
-    const parentToolUseID = (entry as any).parentToolUseID;
+  if (entry.type === "progress") {
+    const parentToolUseID = entry.parentToolUseID;
     if (parentToolUseID && agentLookup) {
       return agentLookup.get(parentToolUseID);
     }
     // Fallback to agentId if it looks like an agent type
-    if (entry.agentId && entry.agentId.includes(':')) {
+    if (entry.agentId && entry.agentId.includes(":")) {
       return entry.agentId;
     }
     return undefined;
@@ -101,10 +107,14 @@ function detectAgentName(
 /**
  * Generate unique entry ID for deduplication
  */
-function generateEntryId(sessionId: string, timestamp: string, model: string): string {
-  const hash = createHash('sha256');
+function generateEntryId(
+  sessionId: string,
+  timestamp: string,
+  model: string,
+): string {
+  const hash = createHash("sha256");
   hash.update(`${sessionId}:${timestamp}:${model}`);
-  return hash.digest('hex');
+  return hash.digest("hex");
 }
 
 /**
@@ -120,18 +130,18 @@ export function extractTokenUsage(
   entry: TranscriptEntry,
   sessionId: string,
   sourceFile: string,
-  agentLookup?: Map<string, string>
+  agentLookup?: Map<string, string>,
 ): ExtractedUsage | null {
-  let usage: any;
+  let usage: TranscriptUsage | undefined;
   let model: string | undefined;
 
   // Handle assistant entries
-  if (entry.type === 'assistant' && entry.message?.usage) {
+  if (entry.type === "assistant" && entry.message?.usage) {
     usage = entry.message.usage;
     model = entry.message.model;
   }
   // Handle progress entries from agent responses
-  else if (entry.type === 'progress' && entry.data?.message?.message?.usage) {
+  else if (entry.type === "progress" && entry.data?.message?.message?.usage) {
     usage = entry.data.message.message.usage;
     model = entry.data.message.message.model;
   }
@@ -145,7 +155,7 @@ export function extractTokenUsage(
   }
 
   // Skip synthetic model entries
-  if (model === '<synthetic>') {
+  if (model === "<synthetic>") {
     return null;
   }
 
@@ -165,18 +175,18 @@ export function extractTokenUsage(
     inputTokens,
     outputTokens,
     cacheCreationTokens,
-    cacheReadTokens
+    cacheReadTokens,
   };
 
   const entryId = generateEntryId(
     tokenUsage.sessionId,
     tokenUsage.timestamp,
-    tokenUsage.modelName
+    tokenUsage.modelName,
   );
 
   return {
     usage: tokenUsage,
     entryId,
-    sourceFile
+    sourceFile,
   };
 }

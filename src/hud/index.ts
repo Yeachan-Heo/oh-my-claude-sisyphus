@@ -26,6 +26,8 @@ import type {
   HudRenderContext,
   SessionHealth,
   StatuslineStdin,
+  TranscriptData,
+  ActiveAgent,
 } from "./types.js";
 import {
   extractTokens,
@@ -43,8 +45,8 @@ let previousSnapshot: TokenSnapshot | null = null;
  * Silent failure - doesn't break HUD rendering.
  */
 async function recordTokenUsage(
-  stdin: any,
-  transcriptData: any,
+  stdin: StatuslineStdin,
+  transcriptData: TranscriptData,
 ): Promise<void> {
   try {
     // Debug: Log stdin.context_window data
@@ -59,10 +61,10 @@ async function recordTokenUsage(
     const modelName = getModelName(stdin);
 
     // Get running agents from transcript
-    const runningAgents =
-      transcriptData.agents?.filter((a: any) => a.status === "running") ?? [];
+    const runningAgents: ActiveAgent[] =
+      transcriptData.agents?.filter((a) => a.status === "running") ?? [];
     const agentName =
-      runningAgents.length > 0 ? runningAgents[0].name : undefined;
+      runningAgents.length > 0 ? runningAgents[0].type : undefined;
 
     if (process.env.OMC_DEBUG) {
       console.error("[TokenRecording] agentName determined:", agentName);

@@ -18544,7 +18544,8 @@ function runTscDiagnostics(directory) {
       warningCount: 0
     };
   } catch (error2) {
-    const output = error2.stdout || error2.stderr || "";
+    const execError = error2;
+    const output = execError.stdout || execError.stderr || "";
     return parseTscOutput(output);
   }
 }
@@ -18563,7 +18564,9 @@ function parseTscOutput(output) {
     });
   }
   const errorCount = diagnostics.filter((d) => d.severity === "error").length;
-  const warningCount = diagnostics.filter((d) => d.severity === "warning").length;
+  const warningCount = diagnostics.filter(
+    (d) => d.severity === "warning"
+  ).length;
   return {
     success: errorCount === 0,
     diagnostics,
@@ -19831,9 +19834,13 @@ async function isProcessAlive2(pid, recordedStartTime) {
     return true;
   } else if (process.platform === "darwin") {
     try {
-      const { stdout } = await execFileAsync2("ps", ["-p", String(pid), "-o", "pid="], {
-        env: { ...process.env, LC_ALL: "C" }
-      });
+      const { stdout } = await execFileAsync2(
+        "ps",
+        ["-p", String(pid), "-o", "pid="],
+        {
+          env: { ...process.env, LC_ALL: "C" }
+        }
+      );
       if (stdout.trim() === "") return false;
       if (recordedStartTime !== void 0) {
         const currentStartTime = await getProcessStartTime(pid);
@@ -19873,7 +19880,8 @@ async function openNoFollow(filePath, flags, mode) {
   try {
     return await fs3.open(filePath, flagsWithNoFollow, mode);
   } catch (err) {
-    if (err.code === "ELOOP") {
+    const nodeErr = err;
+    if (nodeErr.code === "ELOOP") {
       throw new LockError(`Lock file is a symlink: ${filePath}`);
     }
     throw err;
@@ -19886,7 +19894,11 @@ async function readFileNoFollow(filePath) {
       throw new LockError(`Lock file is a symlink: ${filePath}`);
     }
   } catch (err) {
-    if (err.code === "ENOENT") {
+    const nodeErr = err;
+    if (nodeErr.code === "ENOENT") {
+      throw err;
+    }
+    if (err instanceof LockError) {
       throw err;
     }
     if (err instanceof LockError) {
@@ -19988,13 +20000,16 @@ var SessionLock = class {
         const flags = fsSync2.constants.O_WRONLY | fsSync2.constants.O_CREAT | fsSync2.constants.O_EXCL;
         const lockFile = await openNoFollow(this.lockPath, flags, 420);
         try {
-          await lockFile.writeFile(JSON.stringify(newLockInfo, null, 2), { encoding: "utf8" });
+          await lockFile.writeFile(JSON.stringify(newLockInfo, null, 2), {
+            encoding: "utf8"
+          });
           await lockFile.sync();
         } finally {
           await lockFile.close();
         }
       } catch (err) {
-        if (err.code === "EEXIST") {
+        const nodeErr = err;
+        if (nodeErr.code === "EEXIST") {
           return {
             acquired: false,
             reason: "held_by_other"
@@ -20015,7 +20030,7 @@ var SessionLock = class {
         acquired: true,
         reason: existingLock ? "stale_broken" : "success"
       };
-    } catch (err) {
+    } catch {
       return {
         acquired: false,
         reason: "error"
@@ -20050,7 +20065,8 @@ var SessionLock = class {
     try {
       await fs3.unlink(this.lockPath);
     } catch (err) {
-      if (err.code !== "ENOENT") {
+      const nodeErr = err;
+      if (nodeErr.code !== "ENOENT") {
         throw err;
       }
     }

@@ -1,11 +1,47 @@
 // Smart skill matcher with fuzzy matching, pattern detection, and confidence scoring
 // No external dependencies - uses built-in only
 
+// ============================================================================
+// PRE-COMPILED REGEX PATTERNS (Module-level for performance optimization)
+// ============================================================================
+// These regexes are compiled once at module load time, not on every function call.
+// This avoids O(n) regex compilation overhead in hot paths.
+
+// Pattern matching regexes
+const GLOB_PATTERN_REGEX = /\*/g; // Matches glob wildcards
+const REGEX_LITERAL_PATTERN = /^\/(.+)\/([gimsuy]*)$/; // Matches /pattern/flags format
+
+// Error detection regexes
+const ERROR_KEYWORD_REGEX = /\b(error|exception|failed|failure|crash|bug)\b/gi;
+const ERROR_CLASS_REGEX = /\b([A-Z][a-z]+Error)\b/g; // TypeError, ReferenceError, etc.
+const ERROR_CODE_REGEX = /\b(ENOENT|EACCES|ECONNREFUSED)\b/g; // Node.js error codes
+const STACK_TRACE_REGEX = /at\s+.*\(.*:\d+:\d+\)/g; // Stack trace lines
+
+// File detection regexes
+const RELATIVE_PATH_REGEX =
+  /\b([a-zA-Z0-9_-]+\/)*[a-zA-Z0-9_-]+\.[a-z]{2,4}\b/g; // Relative paths
+const ABSOLUTE_PATH_REGEX = /\b\/[a-zA-Z0-9_\/-]+\.[a-z]{2,4}\b/g; // Absolute paths
+const SRC_PATH_REGEX = /\bsrc\/[a-zA-Z0-9_\/-]+/g; // src/ paths
+
+// Code pattern detection regexes
+const ASYNC_AWAIT_REGEX = /\basync\b.*\bawait\b/gi;
+const PROMISE_REGEX = /\bpromise\b/gi;
+const CALLBACK_REGEX = /\bcallback\b/gi;
+const REGEX_KEYWORD_REGEX = /\bregex\b|\bregular expression\b/gi;
+const API_REGEX = /\bapi\b/gi;
+const TESTING_REGEX = /\btest\b.*\b(unit|integration|e2e)\b/gi;
+const TYPESCRIPT_REGEX = /\b(typescript|ts)\b/gi;
+const JAVASCRIPT_REGEX = /\b(javascript|js)\b/gi;
+const REACT_REGEX = /\breact\b/gi;
+const GIT_REGEX = /\bgit\b/gi;
+
+// ============================================================================
+
 export interface MatchResult {
   skillId: string;
   confidence: number; // 0-100
   matchedTriggers: string[];
-  matchType: 'exact' | 'fuzzy' | 'pattern' | 'semantic';
+  matchType: "exact" | "fuzzy" | "pattern" | "semantic";
   context: MatchContext;
 }
 
@@ -32,7 +68,7 @@ interface MatchOptions {
 export function matchSkills(
   prompt: string,
   skills: SkillInput[],
-  options: MatchOptions = {}
+  options: MatchOptions = {},
 ): MatchResult[] {
   const { threshold = 30, maxResults = 10 } = options;
   const trimmedPrompt = prompt.trim();
@@ -51,7 +87,7 @@ export function matchSkills(
     const matches: Array<{
       trigger: string;
       score: number;
-      type: MatchResult['matchType'];
+      type: MatchResult["matchType"];
     }> = [];
 
     for (const trigger of allTriggers) {
@@ -59,21 +95,21 @@ export function matchSkills(
 
       // 1. Exact match (highest confidence)
       if (normalizedPrompt.includes(normalizedTrigger)) {
-        matches.push({ trigger, score: 100, type: 'exact' });
+        matches.push({ trigger, score: 100, type: "exact" });
         continue;
       }
 
       // 2. Pattern match (regex/glob-like patterns)
       const patternScore = patternMatch(normalizedPrompt, normalizedTrigger);
       if (patternScore > 0) {
-        matches.push({ trigger, score: patternScore, type: 'pattern' });
+        matches.push({ trigger, score: patternScore, type: "pattern" });
         continue;
       }
 
       // 3. Fuzzy match (Levenshtein distance)
       const fuzzyScore = fuzzyMatch(normalizedPrompt, normalizedTrigger);
       if (fuzzyScore >= 60) {
-        matches.push({ trigger, score: fuzzyScore, type: 'fuzzy' });
+        matches.push({ trigger, score: fuzzyScore, type: "fuzzy" });
       }
     }
 
@@ -110,11 +146,14 @@ export function fuzzyMatch(text: string, pattern: string): number {
   if (!text.trim() || !pattern.trim()) return 0;
 
   // Check if pattern is a substring first (partial match bonus)
-  const words = text.split(/\s+/).filter(w => w.length > 0);
+  const words = text.split(/\s+/).filter((w) => w.length > 0);
   for (const word of words) {
     if (word === pattern) return 100;
-    if (word.length > 0 && pattern.length > 0 &&
-        (word.includes(pattern) || pattern.includes(word))) {
+    if (
+      word.length > 0 &&
+      pattern.length > 0 &&
+      (word.includes(pattern) || pattern.includes(word))
+    ) {
       return 80;
     }
   }
@@ -158,7 +197,7 @@ function levenshteinDistance(str1: string, str2: string): number {
           Math.min(
             dp[i - 1][j], // deletion
             dp[i][j - 1], // insertion
-            dp[i - 1][j - 1] // substitution
+            dp[i - 1][j - 1], // substitution
           );
       }
     }
@@ -173,10 +212,10 @@ function levenshteinDistance(str1: string, str2: string): number {
  */
 function patternMatch(text: string, pattern: string): number {
   // Check for glob-like patterns
-  if (pattern.includes('*')) {
-    const regexPattern = pattern.replace(/\*/g, '.*');
+  if (pattern.includes("*")) {
+    const regexPattern = pattern.replace(GLOB_PATTERN_REGEX, ".*");
     try {
-      const regex = new RegExp(regexPattern, 'i');
+      const regex = new RegExp(regexPattern, "i");
       if (regex.test(text)) {
         return 85; // High confidence for pattern match
       }
@@ -187,11 +226,11 @@ function patternMatch(text: string, pattern: string): number {
 
   // Check for regex-like patterns (starts with / and has / somewhere after, with optional flags)
   // Supports: /pattern/ or /pattern/flags (e.g., /error/i)
-  const regexMatch = pattern.match(/^\/(.+)\/([gimsuy]*)$/);
+  const regexMatch = pattern.match(REGEX_LITERAL_PATTERN);
   if (regexMatch) {
     try {
       const [, regexPattern, flags] = regexMatch;
-      const regex = new RegExp(regexPattern, flags || 'i');
+      const regex = new RegExp(regexPattern, flags || "i");
       if (regex.test(text)) {
         return 90; // Very high confidence for explicit regex match
       }
@@ -211,54 +250,56 @@ export function extractContext(prompt: string): MatchContext {
   const detectedFiles: string[] = [];
   const detectedPatterns: string[] = [];
 
-  // Error detection
+  // Error detection - use pre-compiled regexes
   const errorPatterns = [
-    /\b(error|exception|failed|failure|crash|bug)\b/gi,
-    /\b([A-Z][a-z]+Error)\b/g, // TypeError, ReferenceError, etc.
-    /\b(ENOENT|EACCES|ECONNREFUSED)\b/g, // Node.js error codes
-    /at\s+.*\(.*:\d+:\d+\)/g, // Stack trace lines
+    ERROR_KEYWORD_REGEX,
+    ERROR_CLASS_REGEX,
+    ERROR_CODE_REGEX,
+    STACK_TRACE_REGEX,
   ];
 
   for (const pattern of errorPatterns) {
     const matches = prompt.match(pattern);
     if (matches) {
       detectedErrors.push(
-        ...matches.map((m) => m.trim()).filter((m) => m.length > 0)
+        ...matches.map((m) => m.trim()).filter((m) => m.length > 0),
       );
     }
   }
 
-  // File detection
+  // File detection - use pre-compiled regexes
   const filePatterns = [
-    /\b([a-zA-Z0-9_-]+\/)*[a-zA-Z0-9_-]+\.[a-z]{2,4}\b/g, // Relative paths
-    /\b\/[a-zA-Z0-9_\/-]+\.[a-z]{2,4}\b/g, // Absolute paths
-    /\bsrc\/[a-zA-Z0-9_\/-]+/g, // src/ paths
+    RELATIVE_PATH_REGEX,
+    ABSOLUTE_PATH_REGEX,
+    SRC_PATH_REGEX,
   ];
 
   for (const pattern of filePatterns) {
     const matches = prompt.match(pattern);
     if (matches) {
       detectedFiles.push(
-        ...matches.map((m) => m.trim()).filter((m) => m.length > 0)
+        ...matches.map((m) => m.trim()).filter((m) => m.length > 0),
       );
     }
   }
 
-  // Pattern detection
+  // Pattern detection - use pre-compiled regexes
   const codePatterns = [
-    { pattern: /\basync\b.*\bawait\b/gi, name: 'async/await' },
-    { pattern: /\bpromise\b/gi, name: 'promise' },
-    { pattern: /\bcallback\b/gi, name: 'callback' },
-    { pattern: /\bregex\b|\bregular expression\b/gi, name: 'regex' },
-    { pattern: /\bapi\b/gi, name: 'api' },
-    { pattern: /\btest\b.*\b(unit|integration|e2e)\b/gi, name: 'testing' },
-    { pattern: /\b(typescript|ts)\b/gi, name: 'typescript' },
-    { pattern: /\b(javascript|js)\b/gi, name: 'javascript' },
-    { pattern: /\breact\b/gi, name: 'react' },
-    { pattern: /\bgit\b/gi, name: 'git' },
+    { pattern: ASYNC_AWAIT_REGEX, name: "async/await" },
+    { pattern: PROMISE_REGEX, name: "promise" },
+    { pattern: CALLBACK_REGEX, name: "callback" },
+    { pattern: REGEX_KEYWORD_REGEX, name: "regex" },
+    { pattern: API_REGEX, name: "api" },
+    { pattern: TESTING_REGEX, name: "testing" },
+    { pattern: TYPESCRIPT_REGEX, name: "typescript" },
+    { pattern: JAVASCRIPT_REGEX, name: "javascript" },
+    { pattern: REACT_REGEX, name: "react" },
+    { pattern: GIT_REGEX, name: "git" },
   ];
 
   for (const { pattern, name } of codePatterns) {
+    // Reset lastIndex for global regexes to avoid stateful test() issues
+    pattern.lastIndex = 0;
     if (pattern.test(prompt)) {
       detectedPatterns.push(name);
     }
@@ -278,7 +319,7 @@ export function extractContext(prompt: string): MatchContext {
 export function calculateConfidence(
   matches: number,
   total: number,
-  matchType: string
+  matchType: string,
 ): number {
   if (total === 0) return 0;
 

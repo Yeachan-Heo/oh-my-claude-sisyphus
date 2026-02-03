@@ -55,6 +55,27 @@ export interface CompactCheckpoint {
   wisdom_exported: boolean;
 }
 
+interface ModeState {
+  active?: boolean;
+  phase?: string;
+  originalIdea?: string;
+  iteration?: number;
+  originalPrompt?: string;
+  prompt?: string;
+  original_prompt?: string;
+  session_id?: string;
+  task_count?: number;
+  worker_count?: number;
+  preset?: string;
+  current_stage?: number;
+  cycle?: number;
+}
+
+interface TodoEntry {
+  status: "pending" | "in_progress" | "completed";
+  content?: string;
+}
+
 export interface HookOutput {
   continue: boolean;
   /** System message for context injection (Claude Code compatible) */
@@ -149,7 +170,7 @@ export async function saveModeSummary(
     {
       file: "autopilot-state.json",
       key: "autopilot",
-      extract: (s: any) =>
+      extract: (s: ModeState) =>
         s.active
           ? { phase: s.phase || "unknown", originalIdea: s.originalIdea || "" }
           : null,
@@ -157,7 +178,7 @@ export async function saveModeSummary(
     {
       file: "ralph-state.json",
       key: "ralph",
-      extract: (s: any) =>
+      extract: (s: ModeState) =>
         s.active
           ? {
               iteration: s.iteration || 0,
@@ -168,7 +189,7 @@ export async function saveModeSummary(
     {
       file: "ultrawork-state.json",
       key: "ultrawork",
-      extract: (s: any) =>
+      extract: (s: ModeState) =>
         s.active
           ? { original_prompt: s.original_prompt || s.prompt || "" }
           : null,
@@ -176,7 +197,7 @@ export async function saveModeSummary(
     {
       file: "swarm-summary.json",
       key: "swarm",
-      extract: (s: any) =>
+      extract: (s: ModeState) =>
         s.active
           ? {
               session_id: s.session_id || "active",
@@ -187,7 +208,7 @@ export async function saveModeSummary(
     {
       file: "ultrapilot-state.json",
       key: "ultrapilot",
-      extract: (s: any) =>
+      extract: (s: ModeState) =>
         s.active
           ? {
               session_id: s.session_id || "",
@@ -198,7 +219,7 @@ export async function saveModeSummary(
     {
       file: "ecomode-state.json",
       key: "ecomode",
-      extract: (s: any) =>
+      extract: (s: ModeState) =>
         s.active
           ? { original_prompt: s.original_prompt || s.prompt || "" }
           : null,
@@ -206,7 +227,7 @@ export async function saveModeSummary(
     {
       file: "pipeline-state.json",
       key: "pipeline",
-      extract: (s: any) =>
+      extract: (s: ModeState) =>
         s.active
           ? {
               preset: s.preset || "custom",
@@ -217,7 +238,7 @@ export async function saveModeSummary(
     {
       file: "ultraqa-state.json",
       key: "ultraqa",
-      extract: (s: any) =>
+      extract: (s: ModeState) =>
         s.active
           ? { cycle: s.cycle || 0, prompt: s.original_prompt || s.prompt || "" }
           : null,
@@ -271,11 +292,12 @@ function readTodoSummary(directory: string): {
         const todos = JSON.parse(content);
 
         if (Array.isArray(todos)) {
+          const typedTodos = todos as TodoEntry[];
           return {
-            pending: todos.filter((t: any) => t.status === "pending").length,
-            in_progress: todos.filter((t: any) => t.status === "in_progress")
+            pending: typedTodos.filter((t) => t.status === "pending").length,
+            in_progress: typedTodos.filter((t) => t.status === "in_progress")
               .length,
-            completed: todos.filter((t: any) => t.status === "completed")
+            completed: typedTodos.filter((t) => t.status === "completed")
               .length,
           };
         }

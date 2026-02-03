@@ -3,11 +3,12 @@
 
 # hooks
 
-31 event-driven hooks that power execution modes and behaviors.
+32 event-driven hooks that power execution modes and behaviors.
 
 ## Purpose
 
 Hooks intercept Claude Code events to enable:
+
 - **Execution modes**: autopilot, ultrawork, ralph, ultrapilot, swarm, pipeline (ecomode via mode-registry)
 - **Validation**: thinking blocks, empty messages, comments
 - **Recovery**: edit errors, session recovery, context window
@@ -16,78 +17,79 @@ Hooks intercept Claude Code events to enable:
 
 ## Key Files
 
-| File | Description |
-|------|-------------|
-| `index.ts` | Re-exports all hooks |
+| File        | Description                                                          |
+| ----------- | -------------------------------------------------------------------- |
+| `index.ts`  | Re-exports all hooks                                                 |
 | `bridge.ts` | Shell script entry point - `processHook()` routes events to handlers |
 
 ## Subdirectories
 
 ### Execution Mode Hooks
 
-| Directory | Purpose | Trigger |
-|-----------|---------|---------|
-| `autopilot/` | Full autonomous execution | "autopilot", "build me" |
-| `ultrawork/` | Maximum parallel execution | "ulw", "ultrawork" |
-| `ralph/` | Persistence until verified | "ralph", "don't stop" |
-| `ultrapilot/` | Parallel autopilot with file ownership | "ultrapilot" |
-| `swarm/` | N coordinated agents with task claiming | "swarm N agents" |
-| `ultraqa/` | QA cycling until goal met | test failures |
-| `mode-registry/` | Tracks active execution mode (incl. ecomode) | internal |
-| `persistent-mode/` | Maintains mode state across sessions | internal |
+| Directory          | Purpose                                      | Trigger                 |
+| ------------------ | -------------------------------------------- | ----------------------- |
+| `autopilot/`       | Full autonomous execution                    | "autopilot", "build me" |
+| `ultrawork/`       | Maximum parallel execution                   | "ulw", "ultrawork"      |
+| `ralph/`           | Persistence until verified                   | "ralph", "don't stop"   |
+| `ultrapilot/`      | Parallel autopilot with file ownership       | "ultrapilot"            |
+| `swarm/`           | N coordinated agents with task claiming      | "swarm N agents"        |
+| `ultraqa/`         | QA cycling until goal met                    | test failures           |
+| `mode-registry/`   | Tracks active execution mode (incl. ecomode) | internal                |
+| `persistent-mode/` | Maintains mode state across sessions         | internal                |
 
 ### Validation Hooks
 
-| Directory | Purpose |
-|-----------|---------|
-| `thinking-block-validator/` | Validates thinking blocks in responses |
-| `empty-message-sanitizer/` | Handles empty/whitespace messages |
-| `comment-checker/` | Checks code comment quality |
-| `permission-handler/` | Handles permission requests and validation |
+| Directory                   | Purpose                                    |
+| --------------------------- | ------------------------------------------ |
+| `thinking-block-validator/` | Validates thinking blocks in responses     |
+| `empty-message-sanitizer/`  | Handles empty/whitespace messages          |
+| `comment-checker/`          | Checks code comment quality                |
+| `permission-handler/`       | Handles permission requests and validation |
 
 ### Recovery Hooks
 
-| Directory | Purpose |
-|-----------|---------|
-| `recovery/` | Edit error recovery, session recovery |
-| `preemptive-compaction/` | Prevents context overflow |
-| `pre-compact/` | Pre-compaction processing |
+| Directory                | Purpose                               |
+| ------------------------ | ------------------------------------- |
+| `recovery/`              | Edit error recovery, session recovery |
+| `preemptive-compaction/` | Prevents context overflow             |
+| `pre-compact/`           | Pre-compaction processing             |
 
 ### Enhancement Hooks
 
-| Directory | Purpose |
-|-----------|---------|
-| `rules-injector/` | Injects matching rule files |
-| `directory-readme-injector/` | Injects directory READMEs |
-| `notepad/` | Persists notes for compaction resilience |
-| `learner/` | Skill extraction from conversations |
-| `agent-usage-reminder/` | Reminds about agent delegation |
+| Directory                    | Purpose                                  |
+| ---------------------------- | ---------------------------------------- |
+| `rules-injector/`            | Injects matching rule files              |
+| `directory-readme-injector/` | Injects directory READMEs                |
+| `notepad/`                   | Persists notes for compaction resilience |
+| `learner/`                   | Skill extraction from conversations      |
+| `agent-usage-reminder/`      | Reminds about agent delegation           |
+| `output-truncator/`          | Dynamic output truncation by context     |
 
 ### Detection Hooks
 
-| Directory | Purpose |
-|-----------|---------|
-| `keyword-detector/` | Magic keyword detection |
-| `think-mode/` | Extended thinking detection |
-| `auto-slash-command/` | Slash command expansion |
+| Directory              | Purpose                               |
+| ---------------------- | ------------------------------------- |
+| `keyword-detector/`    | Magic keyword detection               |
+| `think-mode/`          | Extended thinking detection           |
+| `auto-slash-command/`  | Slash command expansion               |
 | `non-interactive-env/` | Non-interactive environment detection |
-| `plugin-patterns/` | Plugin pattern detection |
+| `plugin-patterns/`     | Plugin pattern detection              |
 
 ### Coordination Hooks
 
-| Directory | Purpose |
-|-----------|---------|
-| `todo-continuation/` | Enforces task completion |
-| `omc-orchestrator/` | Orchestrator behavior |
-| `subagent-tracker/` | Tracks spawned sub-agents |
-| `session-end/` | Session termination handling |
+| Directory                  | Purpose                       |
+| -------------------------- | ----------------------------- |
+| `todo-continuation/`       | Enforces task completion      |
+| `omc-orchestrator/`        | Orchestrator behavior         |
+| `subagent-tracker/`        | Tracks spawned sub-agents     |
+| `session-end/`             | Session termination handling  |
 | `background-notification/` | Background task notifications |
 
 ### Setup Hooks
 
-| Directory | Purpose |
-|-----------|---------|
-| `setup/` | Initial setup and configuration |
+| Directory | Purpose                         |
+| --------- | ------------------------------- |
+| `setup/`  | Initial setup and configuration |
 
 ## For AI Agents
 
@@ -96,6 +98,7 @@ Hooks intercept Claude Code events to enable:
 #### Hook Structure
 
 Each hook follows a standard pattern:
+
 ```
 hook-name/
 ├── index.ts     # Main hook implementation
@@ -123,12 +126,12 @@ export interface HookConfig {
 
 export function createHook(config: HookConfig) {
   return {
-    name: 'hook-name',
-    event: 'UserPromptSubmit',  // or 'Stop', 'PreToolUse', 'PostToolUse'
+    name: "hook-name",
+    event: "UserPromptSubmit", // or 'Stop', 'PreToolUse', 'PostToolUse'
     handler: async (context) => {
       // Hook logic
       return { modified: false };
-    }
+    },
   };
 }
 ```
@@ -136,30 +139,35 @@ export function createHook(config: HookConfig) {
 #### Key Hooks Explained
 
 **autopilot/** - Full autonomous execution:
+
 - Validates goals and creates plans
 - Manages execution state
 - Handles cancellation
 - Enforces completion
 
 **ralph/** - Persistence mechanism:
+
 - Tracks progress via PRD
 - Spawns architect for verification
 - Loops until verified complete
 - Supports structured PRD format
 
 **ultrapilot/** - Parallel autopilot:
+
 - Decomposes tasks into subtasks
 - Assigns file ownership to workers
 - Coordinates parallel execution
 - Integrates results
 
 **swarm/** - Coordinated multi-agent:
+
 - SQLite-based task claiming
 - 5-minute timeout per task
 - Atomic claim/release
 - Clean completion detection
 
 **learner/** - Skill extraction:
+
 - Detects skill patterns in conversation
 - Extracts to local skill files
 - Auto-invokes matching skills
@@ -170,11 +178,11 @@ export function createHook(config: HookConfig) {
 #### State Management
 
 ```typescript
-import { readState, writeState } from '../features/state-manager';
+import { readState, writeState } from "../features/state-manager";
 
-const state = readState('autopilot-state');
-state.phase = 'executing';
-writeState('autopilot-state', state);
+const state = readState("autopilot-state");
+state.phase = "executing";
+writeState("autopilot-state", state);
 ```
 
 #### Event Handling
@@ -196,33 +204,35 @@ writeState('autopilot-state', state);
 ## Dependencies
 
 ### Internal
+
 - `features/state-manager/` for state persistence
 - `features/verification/` for verification protocol
 - `agents/` for spawning sub-agents
 
 ### External
-| Package | Purpose |
-|---------|---------|
+
+| Package          | Purpose                 |
+| ---------------- | ----------------------- |
 | `better-sqlite3` | Swarm task coordination |
-| `fs`, `path` | State file operations |
+| `fs`, `path`     | State file operations   |
 
 ## Hook Events
 
-| Event | When Fired | Common Uses |
-|-------|------------|-------------|
+| Event              | When Fired               | Common Uses                        |
+| ------------------ | ------------------------ | ---------------------------------- |
 | `UserPromptSubmit` | Before prompt processing | Keyword detection, mode activation |
-| `Stop` | Before session ends | Continuation enforcement |
-| `PreToolUse` | Before tool execution | Permission validation |
-| `PostToolUse` | After tool execution | Error recovery, rules injection |
+| `Stop`             | Before session ends      | Continuation enforcement           |
+| `PreToolUse`       | Before tool execution    | Permission validation              |
+| `PostToolUse`      | After tool execution     | Error recovery, rules injection    |
 
 ## State Files
 
-| Hook | State File |
-|------|------------|
-| autopilot | `.omc/state/autopilot-state.json` |
-| ultrapilot | `.omc/state/ultrapilot-state.json` |
-| ralph | `.omc/state/ralph-state.json` |
-| swarm | `.omc/state/swarm-tasks.db` (SQLite) |
-| learner | `~/.claude/local-skills/` |
+| Hook       | State File                           |
+| ---------- | ------------------------------------ |
+| autopilot  | `.omc/state/autopilot-state.json`    |
+| ultrapilot | `.omc/state/ultrapilot-state.json`   |
+| ralph      | `.omc/state/ralph-state.json`        |
+| swarm      | `.omc/state/swarm-tasks.db` (SQLite) |
+| learner    | `~/.claude/local-skills/`            |
 
 <!-- MANUAL: -->

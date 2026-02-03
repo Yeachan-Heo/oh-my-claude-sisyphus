@@ -1,13 +1,13 @@
-import * as fs from 'fs';
-import * as path from 'path';
+import * as fs from "fs";
+import * as path from "path";
 
 export interface SessionEndInput {
   session_id: string;
   transcript_path: string;
   cwd: string;
   permission_mode: string;
-  hook_event_name: 'SessionEnd';
-  reason: 'clear' | 'logout' | 'prompt_input_exit' | 'other';
+  hook_event_name: "SessionEnd";
+  reason: "clear" | "logout" | "prompt_input_exit" | "other";
 }
 
 export interface SessionMetrics {
@@ -28,19 +28,29 @@ export interface HookOutput {
 /**
  * Read agent tracking to get spawn/completion counts
  */
-function getAgentCounts(directory: string): { spawned: number; completed: number } {
-  const trackingPath = path.join(directory, '.omc', 'state', 'subagent-tracking.json');
+function getAgentCounts(directory: string): {
+  spawned: number;
+  completed: number;
+} {
+  const trackingPath = path.join(
+    directory,
+    ".omc",
+    "state",
+    "subagent-tracking.json",
+  );
 
   if (!fs.existsSync(trackingPath)) {
     return { spawned: 0, completed: 0 };
   }
 
   try {
-    const content = fs.readFileSync(trackingPath, 'utf-8');
+    const content = fs.readFileSync(trackingPath, "utf-8");
     const tracking = JSON.parse(content);
 
     const spawned = tracking.agents?.length || 0;
-    const completed = tracking.agents?.filter((a: any) => a.status === 'completed').length || 0;
+    const agents = tracking.agents as Array<{ status: string }> | undefined;
+    const completed =
+      agents?.filter((a) => a.status === "completed").length || 0;
 
     return { spawned, completed };
   } catch (error) {
@@ -52,7 +62,7 @@ function getAgentCounts(directory: string): { spawned: number; completed: number
  * Detect which modes were used during the session
  */
 function getModesUsed(directory: string): string[] {
-  const stateDir = path.join(directory, '.omc', 'state');
+  const stateDir = path.join(directory, ".omc", "state");
   const modes: string[] = [];
 
   if (!fs.existsSync(stateDir)) {
@@ -60,13 +70,13 @@ function getModesUsed(directory: string): string[] {
   }
 
   const modeStateFiles = [
-    { file: 'autopilot-state.json', mode: 'autopilot' },
-    { file: 'ultrapilot-state.json', mode: 'ultrapilot' },
-    { file: 'ralph-state.json', mode: 'ralph' },
-    { file: 'ultrawork-state.json', mode: 'ultrawork' },
-    { file: 'ecomode-state.json', mode: 'ecomode' },
-    { file: 'swarm-state.json', mode: 'swarm' },
-    { file: 'pipeline-state.json', mode: 'pipeline' },
+    { file: "autopilot-state.json", mode: "autopilot" },
+    { file: "ultrapilot-state.json", mode: "ultrapilot" },
+    { file: "ralph-state.json", mode: "ralph" },
+    { file: "ultrawork-state.json", mode: "ultrawork" },
+    { file: "ecomode-state.json", mode: "ecomode" },
+    { file: "swarm-state.json", mode: "swarm" },
+    { file: "pipeline-state.json", mode: "pipeline" },
   ];
 
   for (const { file, mode } of modeStateFiles) {
@@ -83,18 +93,20 @@ function getModesUsed(directory: string): string[] {
  * Get session start time from state files
  */
 function getSessionStartTime(directory: string): string | undefined {
-  const stateDir = path.join(directory, '.omc', 'state');
+  const stateDir = path.join(directory, ".omc", "state");
 
   if (!fs.existsSync(stateDir)) {
     return undefined;
   }
 
-  const stateFiles = fs.readdirSync(stateDir).filter(f => f.endsWith('.json'));
+  const stateFiles = fs
+    .readdirSync(stateDir)
+    .filter((f) => f.endsWith(".json"));
 
   for (const file of stateFiles) {
     try {
       const statePath = path.join(stateDir, file);
-      const content = fs.readFileSync(statePath, 'utf-8');
+      const content = fs.readFileSync(statePath, "utf-8");
       const state = JSON.parse(content);
 
       if (state.started_at) {
@@ -111,7 +123,10 @@ function getSessionStartTime(directory: string): string | undefined {
 /**
  * Record session metrics
  */
-export function recordSessionMetrics(directory: string, input: SessionEndInput): SessionMetrics {
+export function recordSessionMetrics(
+  directory: string,
+  input: SessionEndInput,
+): SessionMetrics {
   const endedAt = new Date().toISOString();
   const startedAt = getSessionStartTime(directory);
   const { spawned, completed } = getAgentCounts(directory);
@@ -146,14 +161,14 @@ export function recordSessionMetrics(directory: string, input: SessionEndInput):
  */
 export function cleanupTransientState(directory: string): number {
   let filesRemoved = 0;
-  const omcDir = path.join(directory, '.omc');
+  const omcDir = path.join(directory, ".omc");
 
   if (!fs.existsSync(omcDir)) {
     return filesRemoved;
   }
 
   // Remove transient agent tracking
-  const trackingPath = path.join(omcDir, 'state', 'subagent-tracking.json');
+  const trackingPath = path.join(omcDir, "state", "subagent-tracking.json");
   if (fs.existsSync(trackingPath)) {
     try {
       fs.unlinkSync(trackingPath);
@@ -164,7 +179,7 @@ export function cleanupTransientState(directory: string): number {
   }
 
   // Clean stale checkpoints (older than 24 hours)
-  const checkpointsDir = path.join(omcDir, 'checkpoints');
+  const checkpointsDir = path.join(omcDir, "checkpoints");
   if (fs.existsSync(checkpointsDir)) {
     const now = Date.now();
     const oneDayAgo = now - 24 * 60 * 60 * 1000;
@@ -195,7 +210,7 @@ export function cleanupTransientState(directory: string): number {
 
         if (entry.isDirectory()) {
           removeTmpFiles(fullPath);
-        } else if (entry.name.endsWith('.tmp')) {
+        } else if (entry.name.endsWith(".tmp")) {
           fs.unlinkSync(fullPath);
           filesRemoved++;
         }
@@ -215,16 +230,16 @@ export function cleanupTransientState(directory: string): number {
  * These files track active execution modes that should not persist across sessions.
  */
 const MODE_STATE_FILES = [
-  { file: 'autopilot-state.json', mode: 'autopilot' },
-  { file: 'ultrapilot-state.json', mode: 'ultrapilot' },
-  { file: 'ralph-state.json', mode: 'ralph' },
-  { file: 'ultrawork-state.json', mode: 'ultrawork' },
-  { file: 'ecomode-state.json', mode: 'ecomode' },
-  { file: 'ultraqa-state.json', mode: 'ultraqa' },
-  { file: 'pipeline-state.json', mode: 'pipeline' },
+  { file: "autopilot-state.json", mode: "autopilot" },
+  { file: "ultrapilot-state.json", mode: "ultrapilot" },
+  { file: "ralph-state.json", mode: "ralph" },
+  { file: "ultrawork-state.json", mode: "ultrawork" },
+  { file: "ecomode-state.json", mode: "ecomode" },
+  { file: "ultraqa-state.json", mode: "ultraqa" },
+  { file: "pipeline-state.json", mode: "pipeline" },
   // Swarm uses marker file + SQLite
-  { file: 'swarm-active.marker', mode: 'swarm' },
-  { file: 'swarm-summary.json', mode: 'swarm' },
+  { file: "swarm-active.marker", mode: "swarm" },
+  { file: "swarm-summary.json", mode: "swarm" },
 ];
 
 /**
@@ -238,10 +253,13 @@ const MODE_STATE_FILES = [
  * @param sessionId - Optional session ID to match. Only cleans states belonging to this session.
  * @returns Object with counts of files removed and modes cleaned
  */
-export function cleanupModeStates(directory: string, sessionId?: string): { filesRemoved: number; modesCleaned: string[] } {
+export function cleanupModeStates(
+  directory: string,
+  sessionId?: string,
+): { filesRemoved: number; modesCleaned: string[] } {
   let filesRemoved = 0;
   const modesCleaned: string[] = [];
-  const stateDir = path.join(directory, '.omc', 'state');
+  const stateDir = path.join(directory, ".omc", "state");
 
   if (!fs.existsSync(stateDir)) {
     return { filesRemoved, modesCleaned };
@@ -254,8 +272,8 @@ export function cleanupModeStates(directory: string, sessionId?: string): { file
     if (fs.existsSync(localPath)) {
       try {
         // For JSON files, check if active before removing
-        if (file.endsWith('.json')) {
-          const content = fs.readFileSync(localPath, 'utf-8');
+        if (file.endsWith(".json")) {
+          const content = fs.readFileSync(localPath, "utf-8");
           const state = JSON.parse(content);
 
           // Only clean if marked as active AND belongs to this session
@@ -293,8 +311,11 @@ export function cleanupModeStates(directory: string, sessionId?: string): { file
 /**
  * Export session summary to .omc/sessions/
  */
-export function exportSessionSummary(directory: string, metrics: SessionMetrics): void {
-  const sessionsDir = path.join(directory, '.omc', 'sessions');
+export function exportSessionSummary(
+  directory: string,
+  metrics: SessionMetrics,
+): void {
+  const sessionsDir = path.join(directory, ".omc", "sessions");
 
   // Create sessions directory if it doesn't exist
   if (!fs.existsSync(sessionsDir)) {
@@ -305,7 +326,7 @@ export function exportSessionSummary(directory: string, metrics: SessionMetrics)
   const sessionFile = path.join(sessionsDir, `${metrics.session_id}.json`);
 
   try {
-    fs.writeFileSync(sessionFile, JSON.stringify(metrics, null, 2), 'utf-8');
+    fs.writeFileSync(sessionFile, JSON.stringify(metrics, null, 2), "utf-8");
   } catch (error) {
     // Ignore write errors
   }
@@ -334,6 +355,8 @@ export function processSessionEnd(input: SessionEndInput): HookOutput {
 /**
  * Main hook entry point
  */
-export async function handleSessionEnd(input: SessionEndInput): Promise<HookOutput> {
+export async function handleSessionEnd(
+  input: SessionEndInput,
+): Promise<HookOutput> {
   return processSessionEnd(input);
 }

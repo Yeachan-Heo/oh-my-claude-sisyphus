@@ -8,17 +8,17 @@
  * - Request queuing with timeout
  */
 
-import * as fs from 'fs/promises';
-import * as fsSync from 'fs';
-import * as path from 'path';
-import * as os from 'os';
-import * as crypto from 'crypto';
-import { execFile } from 'child_process';
-import { promisify } from 'util';
-import { LockInfo } from './types.js';
-import { ensureDirSync } from '../../lib/atomic-write.js';
-import { getSessionLockPath } from './paths.js';
-import { getProcessStartTime } from '../../platform/index.js';
+import * as fs from "fs/promises";
+import * as fsSync from "fs";
+import * as path from "path";
+import * as os from "os";
+import * as crypto from "crypto";
+import { execFile } from "child_process";
+import { promisify } from "util";
+import { LockInfo } from "./types.js";
+import { ensureDirSync } from "../../lib/atomic-write.js";
+import { getSessionLockPath } from "./paths.js";
+import { getProcessStartTime } from "../../platform/index.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -39,23 +39,23 @@ export class LockTimeoutError extends Error {
   constructor(
     public readonly lockPath: string,
     public readonly timeout: number,
-    public readonly lastHolder?: LockInfo
+    public readonly lastHolder?: LockInfo,
   ) {
     super(
       `Failed to acquire lock within ${timeout}ms. ` +
         (lastHolder
           ? `Held by PID ${lastHolder.pid} on ${lastHolder.hostname} since ${lastHolder.acquiredAt}`
-          : 'Unknown holder') +
-        `. Lock path: ${lockPath}`
+          : "Unknown holder") +
+        `. Lock path: ${lockPath}`,
     );
-    this.name = 'LockTimeoutError';
+    this.name = "LockTimeoutError";
   }
 }
 
 export class LockError extends Error {
   constructor(message: string) {
     super(message);
-    this.name = 'LockError';
+    this.name = "LockError";
   }
 }
 
@@ -65,7 +65,7 @@ export class LockError extends Error {
 
 export interface LockResult {
   acquired: boolean;
-  reason?: 'success' | 'held_by_other' | 'stale_broken' | 'error';
+  reason?: "success" | "held_by_other" | "stale_broken" | "error";
   holder?: LockInfo;
 }
 
@@ -78,7 +78,7 @@ export interface LockResult {
  * Defense in depth against command injection via poisoned lock files.
  */
 function isValidPid(pid: unknown): pid is number {
-  return typeof pid === 'number' && Number.isInteger(pid) && pid > 0;
+  return typeof pid === "number" && Number.isInteger(pid) && pid > 0;
 }
 
 // =============================================================================
@@ -89,7 +89,9 @@ function isValidPid(pid: unknown): pid is number {
  * Get the start time of the current process.
  * Used when creating lock files to enable PID reuse detection.
  */
-export async function getCurrentProcessStartTime(): Promise<number | undefined> {
+export async function getCurrentProcessStartTime(): Promise<
+  number | undefined
+> {
   return getProcessStartTime(process.pid);
 }
 
@@ -104,26 +106,36 @@ export async function getCurrentProcessStartTime(): Promise<number | undefined> 
  * @param recordedStartTime - Start time recorded when lock was acquired
  * @returns true if process is alive AND start time matches (or wasn't recorded)
  */
-export async function isProcessAlive(pid: number, recordedStartTime?: number): Promise<boolean> {
+export async function isProcessAlive(
+  pid: number,
+  recordedStartTime?: number,
+): Promise<boolean> {
   if (!isValidPid(pid)) return false;
 
-  if (process.platform === 'linux') {
+  if (process.platform === "linux") {
     const currentStartTime = await getProcessStartTime(pid);
     if (currentStartTime === undefined) return false;
 
     // If we have a recorded start time, verify it matches
-    if (recordedStartTime !== undefined && currentStartTime !== recordedStartTime) {
+    if (
+      recordedStartTime !== undefined &&
+      currentStartTime !== recordedStartTime
+    ) {
       return false; // PID reuse detected
     }
 
     return true;
-  } else if (process.platform === 'darwin') {
+  } else if (process.platform === "darwin") {
     try {
       // First check if process exists
-      const { stdout } = await execFileAsync('ps', ['-p', String(pid), '-o', 'pid='], {
-        env: { ...process.env, LC_ALL: 'C' },
-      });
-      if (stdout.trim() === '') return false;
+      const { stdout } = await execFileAsync(
+        "ps",
+        ["-p", String(pid), "-o", "pid="],
+        {
+          env: { ...process.env, LC_ALL: "C" },
+        },
+      );
+      if (stdout.trim() === "") return false;
 
       // If we have a recorded start time, verify it matches
       if (recordedStartTime !== undefined) {
@@ -142,7 +154,7 @@ export async function isProcessAlive(pid: number, recordedStartTime?: number): P
     } catch {
       return false;
     }
-  } else if (process.platform === 'win32') {
+  } else if (process.platform === "win32") {
     // On Windows, check if process exists and optionally verify start time
     try {
       process.kill(pid, 0);
@@ -178,7 +190,7 @@ export async function isProcessAlive(pid: number, recordedStartTime?: number): P
 async function openNoFollow(
   filePath: string,
   flags: number,
-  mode: number
+  mode: number,
 ): Promise<fs.FileHandle> {
   // Add O_NOFOLLOW if available (Linux, macOS)
   // O_NOFOLLOW doesn't exist on Windows. Use 0 to disable the flag.
@@ -187,9 +199,10 @@ async function openNoFollow(
 
   try {
     return await fs.open(filePath, flagsWithNoFollow, mode);
-  } catch (err: any) {
+  } catch (err: unknown) {
     // ELOOP means it's a symlink - reject it
-    if (err.code === 'ELOOP') {
+    const nodeErr = err as NodeJS.ErrnoException;
+    if (nodeErr.code === "ELOOP") {
       throw new LockError(`Lock file is a symlink: ${filePath}`);
     }
     throw err;
@@ -206,9 +219,13 @@ async function readFileNoFollow(filePath: string): Promise<string> {
     if (stat.isSymbolicLink()) {
       throw new LockError(`Lock file is a symlink: ${filePath}`);
     }
-  } catch (err: any) {
-    if (err.code === 'ENOENT') {
+  } catch (err: unknown) {
+    const nodeErr = err as NodeJS.ErrnoException;
+    if (nodeErr.code === "ENOENT") {
       throw err; // File doesn't exist - propagate
+    }
+    if (err instanceof LockError) {
+      throw err;
     }
     if (err instanceof LockError) {
       throw err;
@@ -216,7 +233,7 @@ async function readFileNoFollow(filePath: string): Promise<string> {
     // Other errors - let readFile handle them
   }
 
-  return fs.readFile(filePath, 'utf8');
+  return fs.readFile(filePath, "utf8");
 }
 
 // =============================================================================
@@ -322,7 +339,7 @@ export class SessionLock {
    */
   async acquire(timeout: number = DEFAULT_ACQUIRE_TIMEOUT_MS): Promise<void> {
     if (this.held) {
-      throw new LockError('Lock already held by this instance');
+      throw new LockError("Lock already held by this instance");
     }
 
     const startTime = Date.now();
@@ -365,7 +382,7 @@ export class SessionLock {
         } else {
           return {
             acquired: false,
-            reason: 'held_by_other',
+            reason: "held_by_other",
             holder: existingLock,
           };
         }
@@ -380,21 +397,26 @@ export class SessionLock {
 
         // Atomic exclusive create with O_NOFOLLOW
         const flags =
-          fsSync.constants.O_WRONLY | fsSync.constants.O_CREAT | fsSync.constants.O_EXCL;
+          fsSync.constants.O_WRONLY |
+          fsSync.constants.O_CREAT |
+          fsSync.constants.O_EXCL;
 
         const lockFile = await openNoFollow(this.lockPath, flags, 0o644);
         try {
-          await lockFile.writeFile(JSON.stringify(newLockInfo, null, 2), { encoding: 'utf8' });
+          await lockFile.writeFile(JSON.stringify(newLockInfo, null, 2), {
+            encoding: "utf8",
+          });
           await lockFile.sync();
         } finally {
           await lockFile.close();
         }
-      } catch (err: any) {
-        if (err.code === 'EEXIST') {
+      } catch (err: unknown) {
+        const nodeErr = err as NodeJS.ErrnoException;
+        if (nodeErr.code === "EEXIST") {
           // Another process created the lock file first
           return {
             acquired: false,
-            reason: 'held_by_other',
+            reason: "held_by_other",
           };
         }
         throw err;
@@ -405,7 +427,7 @@ export class SessionLock {
       if (!verifyLock || verifyLock.lockId !== this.lockId) {
         return {
           acquired: false,
-          reason: 'error',
+          reason: "error",
         };
       }
 
@@ -414,12 +436,12 @@ export class SessionLock {
 
       return {
         acquired: true,
-        reason: existingLock ? 'stale_broken' : 'success',
+        reason: existingLock ? "stale_broken" : "success",
       };
-    } catch (err: any) {
+    } catch {
       return {
         acquired: false,
-        reason: 'error',
+        reason: "error",
       };
     }
   }
@@ -456,8 +478,9 @@ export class SessionLock {
   async forceBreak(): Promise<void> {
     try {
       await fs.unlink(this.lockPath);
-    } catch (err: any) {
-      if (err.code !== 'ENOENT') {
+    } catch (err: unknown) {
+      const nodeErr = err as NodeJS.ErrnoException;
+      if (nodeErr.code !== "ENOENT") {
         throw err;
       }
     }
@@ -506,7 +529,7 @@ function sleep(ms: number): Promise<void> {
 export async function withLock<T>(
   sessionId: string,
   fn: () => Promise<T>,
-  timeout: number = DEFAULT_ACQUIRE_TIMEOUT_MS
+  timeout: number = DEFAULT_ACQUIRE_TIMEOUT_MS,
 ): Promise<T> {
   const lock = new SessionLock(sessionId);
   await lock.acquire(timeout);
@@ -539,7 +562,8 @@ export async function getLockStatus(sessionId: string): Promise<{
   }
 
   const canBreakResult = await canBreakLock(lockInfo);
-  const ownedByUs = lockInfo.pid === process.pid && lockInfo.hostname === os.hostname();
+  const ownedByUs =
+    lockInfo.pid === process.pid && lockInfo.hostname === os.hostname();
 
   return {
     locked: true,
