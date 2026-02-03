@@ -397,7 +397,9 @@ async function main(): Promise<void> {
     if (isInstallError) {
       console.log("[OMC] run /omc-setup to install properly");
     } else {
-      // Log actual runtime errors for debugging
+      // Output fallback message to stdout for status line visibility
+      console.log("[OMC] HUD error - check stderr");
+      // Log actual runtime errors to stderr for debugging
       console.error(
         "[OMC HUD Error]",
         error instanceof Error ? error.message : error,

@@ -6,7 +6,8 @@
  * All state is stored in .omc/state/swarm.db
  */
 
-import { existsSync, mkdirSync, unlinkSync, writeFileSync } from "fs";
+import { existsSync, mkdirSync, unlinkSync } from "fs";
+import { atomicWriteJsonSync } from "../../lib/atomic-write.js";
 import { join } from "path";
 import type BetterSqlite3 from "better-sqlite3";
 import type {
@@ -66,10 +67,15 @@ export async function initDb(cwd: string): Promise<boolean> {
       try {
         const betterSqlite3 = await import("better-sqlite3");
         Database = betterSqlite3.default;
-      } catch (importError) {
+      } catch (importError: unknown) {
+        const errorMessage =
+          importError instanceof Error
+            ? importError.message
+            : String(importError);
         console.error(
           "[Swarm] Failed to load better-sqlite3. Swarm mode requires this dependency.",
         );
+        console.error("[Swarm] Import error:", errorMessage);
         console.error("[Swarm] Install with: npm install better-sqlite3");
         return false;
       }
@@ -691,11 +697,8 @@ export function writeSwarmSummary(cwd: string): boolean {
       project_path: cwd,
     };
 
-    const stateDir = join(cwd, ".omc", "state");
-    mkdirSync(stateDir, { recursive: true });
-
-    const summaryPath = join(stateDir, "swarm-summary.json");
-    writeFileSync(summaryPath, JSON.stringify(summary, null, 2), "utf-8");
+    const summaryPath = join(cwd, ".omc", "state", "swarm-summary.json");
+    atomicWriteJsonSync(summaryPath, summary);
 
     return true;
   } catch (error) {

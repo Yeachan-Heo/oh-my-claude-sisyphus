@@ -23,16 +23,9 @@
  * ```
  */
 
-import {
-  existsSync,
-  readFileSync,
-  writeFileSync,
-  mkdirSync,
-  renameSync,
-  unlinkSync,
-} from "fs";
-import { join, dirname, basename } from "path";
-import * as crypto from "crypto";
+import { existsSync, readFileSync, mkdirSync } from "fs";
+import { join } from "path";
+import { atomicWriteFileSync } from "../../lib/atomic-write.js";
 
 // ============================================================================
 // Types
@@ -89,34 +82,6 @@ export const DEFAULT_CONFIG: NotepadConfig = {
 export const PRIORITY_HEADER = "## Priority Context";
 export const WORKING_MEMORY_HEADER = "## Working Memory";
 export const MANUAL_HEADER = "## MANUAL";
-
-// ============================================================================
-// Atomic File Operations
-// ============================================================================
-
-/**
- * Write content to file atomically using temp file + rename pattern.
- * Prevents file corruption if the process crashes during write.
- */
-function atomicWriteFileSync(filePath: string, content: string): void {
-  const dir = dirname(filePath);
-  const tempPath = join(
-    dir,
-    `.${basename(filePath)}.tmp.${crypto.randomUUID()}`,
-  );
-
-  try {
-    writeFileSync(tempPath, content, { encoding: "utf-8", mode: 0o600 });
-    renameSync(tempPath, filePath);
-  } catch (error) {
-    try {
-      unlinkSync(tempPath);
-    } catch {
-      // Ignore cleanup errors
-    }
-    throw error;
-  }
-}
 
 // ============================================================================
 // File Operations

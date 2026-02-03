@@ -15,7 +15,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
-import * as crypto from "crypto";
+import { atomicWriteJsonSync } from "../../lib/atomic-write.js";
 import {
   StateLocation,
   StateConfig,
@@ -79,30 +79,6 @@ export function ensureStateDir(location: StateLocation): void {
     location === StateLocation.LOCAL ? LOCAL_STATE_DIR : GLOBAL_STATE_DIR;
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
-  }
-}
-
-/**
- * Write content to file atomically using temp file + rename pattern.
- * This prevents file corruption if the process crashes during write.
- */
-function atomicWriteFileSync(filePath: string, content: string): void {
-  const dir = path.dirname(filePath);
-  const tempPath = path.join(
-    dir,
-    `.${path.basename(filePath)}.tmp.${crypto.randomUUID()}`,
-  );
-
-  try {
-    fs.writeFileSync(tempPath, content, { encoding: "utf-8", mode: 0o600 });
-    fs.renameSync(tempPath, filePath);
-  } catch (error) {
-    try {
-      fs.unlinkSync(tempPath);
-    } catch {
-      // Ignore cleanup errors
-    }
-    throw error;
   }
 }
 
@@ -193,8 +169,7 @@ export function writeState<T = StateData>(
       ensureStateDir(location);
     }
 
-    const content = JSON.stringify(data, null, 2);
-    atomicWriteFileSync(statePath, content);
+    atomicWriteJsonSync(statePath, data);
 
     return {
       success: true,
