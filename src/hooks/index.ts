@@ -811,3 +811,93 @@ export {
   type HookOutput as SessionEndHookOutput
 } from './session-end/index.js';
 
+// Codex Adapter (Unified Hooks Interface)
+export {
+  // Platform Detection
+  detectPlatform,
+  isCodex,
+  isClaudeCode,
+  getPlatformCapabilities,
+  formatCapabilities,
+  resetPlatformCache,
+
+  // Event Mapping
+  fromClaudeCodeEvent,
+  toClaudeCodeEvent,
+  fromCodexEvent,
+  toCodexEvent,
+  getClaudeCodeEvents,
+  getCodexEvents,
+  getUnsupportedCodexEvents,
+  isCrossPlatformEvent,
+  getCrossPlatformEvents,
+
+  // Codex Config
+  getCodexConfigDir,
+  getProjectCodexDir,
+  parseSimpleToml,
+  readCodexConfigToml,
+  readNotifyConfig,
+  readStatusLineConfig,
+  readHooksJson,
+  readCodexHooksConfig,
+  ensureCodexConfigDir,
+  ensureProjectCodexDir,
+  writeHooksJson,
+  addHookToConfig,
+  removeHookFromConfig,
+  getOmcDispatcherCommand,
+  isOmcDispatcherConfigured,
+  configureOmcDispatcher,
+
+  // Adapters
+  ClaudeCodeAdapter,
+  getClaudeCodeAdapter,
+  getSupportedClaudeCodeEvents,
+  createClaudeCodeHookConfig,
+  CodexAdapter,
+  getCodexAdapter,
+  parseCodexNotifyStdin,
+  createCodexNotifyResponse,
+  extractCodexTurnContext,
+  wrapWithCodexDegradation,
+
+  // Dispatcher
+  registerHook,
+  unregisterHook,
+  getHook,
+  getAllHooks,
+  clearHooks,
+  getAdapter,
+  dispatch,
+  dispatchAndFormat,
+  on,
+  onTool,
+  onSession,
+  onTurn,
+  processCliHook,
+
+  // Types
+  type Platform,
+  type PlatformCapabilities,
+  type UnifiedHookEvent,
+  type ClaudeCodeHookEvent,
+  type CodexHookEvent,
+  type UnifiedHookInput,
+  type UnifiedHookOutput,
+  type ClaudeCodeHookInput,
+  type ClaudeCodeHookOutput,
+  type CodexNotifyPayload,
+  type CodexHooksConfig,
+  type CodexHookDefinition,
+  type CodexNotifyConfig,
+  type CodexStatusLineConfig,
+  type HookRegistration,
+  type UnifiedHookHandler,
+  type PlatformAdapter,
+
+  // Constants
+  CODEX_CONFIG_PATHS,
+  CLAUDE_CODE_CONFIG_PATHS,
+} from './codex-adapter/index.js';
+
