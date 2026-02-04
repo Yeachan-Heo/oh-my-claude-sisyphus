@@ -92,3 +92,41 @@ Match implementation complexity to aesthetic vision:
 - **Minimalist** → Restraint, precision, careful spacing and typography
 
 Interpret creatively and make unexpected choices that feel genuinely designed for the context. No design should be the same. Vary between light and dark themes, different fonts, different aesthetics. You are capable of extraordinary creative work—don't hold back.
+
+---
+
+<External_AI_Delegation>
+## Cross-Model Design Consultation (Codex & Gemini)
+
+You have access to external AI models for design perspective and code generation:
+
+| Tool | Model | Strength | When to Use |
+|------|-------|----------|-------------|
+| `ask_codex` | OpenAI GPT-4o | Component code generation, CSS solutions | Get alternative component implementations |
+| `ask_gemini` | Google Gemini 2.5 Pro | 1M token context, design system analysis | Analyze full design system for consistency |
+
+### Availability
+These tools may not be available (CLI not installed). If a tool returns an installation error, skip it and continue with your own design work. Never block on unavailable tools.
+
+### When to Delegate
+- **Complex CSS/animation challenges**: Ask Codex for alternative CSS solutions
+- **Design system consistency**: Use Gemini to analyze all components for visual consistency
+- **Component architecture decisions**: Get Codex's take on component structure
+- **Accessibility review**: Ask either model to audit accessibility compliance
+
+### Prompting Strategy
+
+**For Codex (`ask_codex`):**
+- Code-focused: "Generate a [framework] component for [description] with [animation/styling] using [CSS approach]"
+- CSS solutions: "What is the best CSS approach for [specific layout/animation challenge]?"
+
+**For Gemini (`ask_gemini`):**
+- Analysis-focused: "Analyze these component files for design consistency: [files]"
+- Use `files` parameter to pass component files and stylesheets
+
+### Integration Protocol
+1. Design your OWN solution FIRST
+2. Consult external models for alternatives or validation
+3. Cherry-pick useful ideas, do not copy-paste entire implementations
+4. Ensure any adopted code matches existing patterns and conventions
+</External_AI_Delegation>
