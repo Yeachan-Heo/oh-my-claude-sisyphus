@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { extractTokenUsage } from '../../analytics/transcript-token-extractor.js';
+import { extractTokenUsage, extractAgentIdMapping } from '../../analytics/transcript-token-extractor.js';
 import type { TranscriptEntry } from '../../analytics/types.js';
 
 describe('extractTokenUsage', () => {
@@ -178,6 +178,32 @@ describe('extractTokenUsage', () => {
     expect(result1?.entryId).toBe(result2?.entryId);
   });
 
+  it('should use overrideAgentName when provided', () => {
+    const entry: TranscriptEntry = {
+      type: 'assistant',
+      timestamp: '2026-01-24T05:07:46.325Z',
+      sessionId: 'test-session-123',
+      message: {
+        model: 'claude-sonnet-4-5-20250929',
+        usage: {
+          input_tokens: 1000,
+          output_tokens: 500,
+        }
+      }
+    };
+
+    const result = extractTokenUsage(
+      entry,
+      'test-session-123',
+      'test.jsonl',
+      undefined,
+      'oh-my-claudecode:executor'
+    );
+
+    expect(result).not.toBeNull();
+    expect(result?.usage.agentName).toBe('oh-my-claudecode:executor');
+  });
+
   it('should handle missing cache tokens gracefully', () => {
     const entry: TranscriptEntry = {
       type: 'assistant',
@@ -198,5 +224,80 @@ describe('extractTokenUsage', () => {
     expect(result).not.toBeNull();
     expect(result?.usage.cacheCreationTokens).toBe(0);
     expect(result?.usage.cacheReadTokens).toBe(0);
+  });
+});
+
+describe('extractAgentIdMapping', () => {
+  it('should extract agentId mapping from progress entry with matching parent', () => {
+    const agentLookup = new Map<string, string>();
+    agentLookup.set('toolu_01G11cC7iJ7qqSeYJJBkgHM6', 'oh-my-claudecode:executor');
+
+    const entry = {
+      type: 'progress',
+      timestamp: '2026-01-24T05:07:46.325Z',
+      sessionId: 'test-session-123',
+      parentToolUseID: 'toolu_01G11cC7iJ7qqSeYJJBkgHM6',
+      data: {
+        type: 'agent_progress',
+        agentId: 'a031f6d',
+      },
+    } as unknown as TranscriptEntry;
+
+    const result = extractAgentIdMapping(entry, agentLookup);
+
+    expect(result).not.toBeNull();
+    expect(result?.agentId).toBe('a031f6d');
+    expect(result?.agentType).toBe('oh-my-claudecode:executor');
+  });
+
+  it('should return null for non-progress entries', () => {
+    const agentLookup = new Map<string, string>();
+    agentLookup.set('toolu_123', 'oh-my-claudecode:executor');
+
+    const entry: TranscriptEntry = {
+      type: 'assistant',
+      timestamp: '2026-01-24T05:07:46.325Z',
+      sessionId: 'test-session-123',
+    };
+
+    const result = extractAgentIdMapping(entry, agentLookup);
+    expect(result).toBeNull();
+  });
+
+  it('should return null when parentToolUseID has no matching Task call', () => {
+    const agentLookup = new Map<string, string>();
+    // No matching entry in agentLookup
+
+    const entry = {
+      type: 'progress',
+      timestamp: '2026-01-24T05:07:46.325Z',
+      sessionId: 'test-session-123',
+      parentToolUseID: 'toolu_unknown',
+      data: {
+        type: 'agent_progress',
+        agentId: 'a031f6d',
+      },
+    } as unknown as TranscriptEntry;
+
+    const result = extractAgentIdMapping(entry, agentLookup);
+    expect(result).toBeNull();
+  });
+
+  it('should return null when progress entry has no agentId', () => {
+    const agentLookup = new Map<string, string>();
+    agentLookup.set('toolu_123', 'oh-my-claudecode:executor');
+
+    const entry = {
+      type: 'progress',
+      timestamp: '2026-01-24T05:07:46.325Z',
+      sessionId: 'test-session-123',
+      parentToolUseID: 'toolu_123',
+      data: {
+        type: 'hook_progress', // No agentId for hook progress
+      },
+    } as unknown as TranscriptEntry;
+
+    const result = extractAgentIdMapping(entry, agentLookup);
+    expect(result).toBeNull();
   });
 });

@@ -30,6 +30,8 @@ export interface TranscriptFile {
   filePath: string;           // Full path to .jsonl
   fileSize: number;           // Bytes
   modifiedTime: Date;
+  isSubagent?: boolean;       // True if this is a subagent log file
+  agentId?: string;           // Agent ID from filename (e.g., "a394720")
 }
 
 /**
@@ -300,9 +302,54 @@ export async function scanTranscripts(options: ScanOptions = {}): Promise<ScanRe
       const fullProjectPath = join(projectsDir, projectDir);
 
       // Read all files in this project directory
-      const projectFiles = await readdir(fullProjectPath);
+      const projectFiles = await readdir(fullProjectPath, { withFileTypes: true });
 
-      for (const fileName of projectFiles) {
+      for (const fileEntry of projectFiles) {
+        const fileName = fileEntry.name;
+
+        // Handle session directories that may contain subagent logs
+        if (fileEntry.isDirectory() && UUID_REGEX.test(fileName)) {
+          const sessionDirPath = join(fullProjectPath, fileName);
+          const subagentsDir = join(sessionDirPath, 'subagents');
+
+          // Check if subagents directory exists
+          try {
+            const subagentFiles = await readdir(subagentsDir);
+            for (const subagentFile of subagentFiles) {
+              if (!subagentFile.endsWith('.jsonl')) continue;
+
+              // Extract agent ID from filename (e.g., "agent-a394720.jsonl" -> "a394720")
+              const agentMatch = subagentFile.match(/^agent-([a-f0-9]+)\.jsonl$/);
+              if (!agentMatch) continue;
+
+              const agentId = agentMatch[1];
+              const subagentFilePath = join(subagentsDir, subagentFile);
+              const subagentStats = await stat(subagentFilePath);
+
+              // Apply date filter if specified
+              if (options.minDate && subagentStats.mtime < options.minDate) {
+                continue;
+              }
+
+              transcripts.push({
+                projectPath,
+                projectDir,
+                sessionId: fileName, // The parent session ID
+                filePath: subagentFilePath,
+                fileSize: subagentStats.size,
+                modifiedTime: subagentStats.mtime,
+                isSubagent: true,
+                agentId
+              });
+
+              projectDirs.add(projectDir);
+            }
+          } catch {
+            // Subagents directory doesn't exist, skip
+          }
+          continue;
+        }
+
         // Skip sessions-index.json and any non-.jsonl files
         if (fileName === 'sessions-index.json' || !fileName.endsWith('.jsonl')) {
           continue;
@@ -330,7 +377,8 @@ export async function scanTranscripts(options: ScanOptions = {}): Promise<ScanRe
           sessionId,
           filePath,
           fileSize: fileStats.size,
-          modifiedTime: fileStats.mtime
+          modifiedTime: fileStats.mtime,
+          isSubagent: false
         });
 
         projectDirs.add(projectDir);

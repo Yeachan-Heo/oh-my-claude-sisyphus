@@ -45,6 +45,17 @@ function expectedDecodedPath(absolutePath: string): string {
 vi.mock('fs/promises');
 vi.mock('os');
 
+/**
+ * Helper to create mock Dirent objects for file entries in project directories.
+ * The scanner now uses readdir with { withFileTypes: true } for project contents.
+ */
+function fileDirent(name: string): Dirent {
+  return { name, isDirectory: () => false } as Dirent;
+}
+function dirDirent(name: string): Dirent {
+  return { name, isDirectory: () => true } as Dirent;
+}
+
 describe('transcript-scanner', () => {
   const mockHomedir = '/home/testuser';
   const projectsDir = join(mockHomedir, '.claude', 'projects');
@@ -60,18 +71,18 @@ describe('transcript-scanner', () => {
   describe('scanTranscripts()', () => {
     it('discovers .jsonl files in project directories', async () => {
       const mockEntries: Partial<Dirent>[] = [
-        { name: '-home-testuser-project1', isDirectory: () => true } as Dirent,
-        { name: '-home-testuser-project2', isDirectory: () => true } as Dirent,
+        dirDirent('-home-testuser-project1'),
+        dirDirent('-home-testuser-project2'),
       ];
 
-      const mockProjectFiles1 = [
-        'a1b2c3d4-e5f6-7890-abcd-ef1234567890.jsonl',
-        'b2c3d4e5-f6a7-8901-bcde-f12345678901.jsonl',
-        'sessions-index.json',
+      const mockProjectFiles1: Dirent[] = [
+        fileDirent('a1b2c3d4-e5f6-7890-abcd-ef1234567890.jsonl'),
+        fileDirent('b2c3d4e5-f6a7-8901-bcde-f12345678901.jsonl'),
+        fileDirent('sessions-index.json'),
       ];
 
-      const mockProjectFiles2 = [
-        'c3d4e5f6-a7b8-9012-cdef-123456789012.jsonl',
+      const mockProjectFiles2: Dirent[] = [
+        fileDirent('c3d4e5f6-a7b8-9012-cdef-123456789012.jsonl'),
       ];
 
       vi.mocked(fs.readdir)
@@ -103,13 +114,13 @@ describe('transcript-scanner', () => {
 
     it('filters by project pattern', async () => {
       const mockEntries: Partial<Dirent>[] = [
-        { name: '-home-testuser-workspace-foo', isDirectory: () => true } as Dirent,
-        { name: '-home-testuser-workspace-bar', isDirectory: () => true } as Dirent,
-        { name: '-home-testuser-other-baz', isDirectory: () => true } as Dirent,
+        dirDirent('-home-testuser-workspace-foo'),
+        dirDirent('-home-testuser-workspace-bar'),
+        dirDirent('-home-testuser-other-baz'),
       ];
 
-      const mockProjectFiles = [
-        'a1b2c3d4-e5f6-7890-abcd-ef1234567890.jsonl',
+      const mockProjectFiles: Dirent[] = [
+        fileDirent('a1b2c3d4-e5f6-7890-abcd-ef1234567890.jsonl'),
       ];
 
       vi.mocked(fs.readdir)
@@ -132,13 +143,13 @@ describe('transcript-scanner', () => {
 
     it('filters by date', async () => {
       const mockEntries: Partial<Dirent>[] = [
-        { name: '-home-testuser-project', isDirectory: () => true } as Dirent,
+        dirDirent('-home-testuser-project'),
       ];
 
-      const mockProjectFiles = [
-        'a1b2c3d4-e5f6-7890-abcd-ef1234567890.jsonl',
-        'b2c3d4e5-f6a7-8901-bcde-f12345678901.jsonl',
-        'c3d4e5f6-a7b8-9012-cdef-123456789012.jsonl',
+      const mockProjectFiles: Dirent[] = [
+        fileDirent('a1b2c3d4-e5f6-7890-abcd-ef1234567890.jsonl'),
+        fileDirent('b2c3d4e5-f6a7-8901-bcde-f12345678901.jsonl'),
+        fileDirent('c3d4e5f6-a7b8-9012-cdef-123456789012.jsonl'),
       ];
 
       vi.mocked(fs.readdir)
@@ -170,15 +181,15 @@ describe('transcript-scanner', () => {
 
     it('excludes non-UUID filenames', async () => {
       const mockEntries: Partial<Dirent>[] = [
-        { name: '-home-testuser-project', isDirectory: () => true } as Dirent,
+        dirDirent('-home-testuser-project'),
       ];
 
-      const mockProjectFiles = [
-        'a1b2c3d4-e5f6-7890-abcd-ef1234567890.jsonl', // Valid UUID
-        'invalid-session-id.jsonl',                    // Invalid
-        'not-a-uuid.jsonl',                            // Invalid
-        'sessions-index.json',                         // Excluded anyway
-        'readme.txt',                                  // Not .jsonl
+      const mockProjectFiles: Dirent[] = [
+        fileDirent('a1b2c3d4-e5f6-7890-abcd-ef1234567890.jsonl'), // Valid UUID
+        fileDirent('invalid-session-id.jsonl'),                    // Invalid
+        fileDirent('not-a-uuid.jsonl'),                            // Invalid
+        fileDirent('sessions-index.json'),                         // Excluded anyway
+        fileDirent('readme.txt'),                                  // Not .jsonl
       ];
 
       vi.mocked(fs.readdir)
@@ -220,12 +231,12 @@ describe('transcript-scanner', () => {
 
     it('skips non-directory entries', async () => {
       const mockEntries: Partial<Dirent>[] = [
-        { name: '-home-testuser-project', isDirectory: () => true } as Dirent,
+        dirDirent('-home-testuser-project'),
         { name: 'some-file.txt', isDirectory: () => false } as Dirent,
       ];
 
-      const mockProjectFiles = [
-        'a1b2c3d4-e5f6-7890-abcd-ef1234567890.jsonl',
+      const mockProjectFiles: Dirent[] = [
+        fileDirent('a1b2c3d4-e5f6-7890-abcd-ef1234567890.jsonl'),
       ];
 
       vi.mocked(fs.readdir)
@@ -243,14 +254,87 @@ describe('transcript-scanner', () => {
       expect(result.projectCount).toBe(1);
     });
 
-    it('calculates total size correctly', async () => {
+    it('discovers subagent log files in session directories', async () => {
       const mockEntries: Partial<Dirent>[] = [
-        { name: '-home-testuser-project', isDirectory: () => true } as Dirent,
+        dirDirent('-home-testuser-project'),
       ];
 
-      const mockProjectFiles = [
-        'a1b2c3d4-e5f6-7890-abcd-ef1234567890.jsonl',
-        'b2c3d4e5-f6a7-8901-bcde-f12345678901.jsonl',
+      // Session directory (UUID) contains subagents folder
+      const mockProjectFiles: Dirent[] = [
+        fileDirent('a1b2c3d4-e5f6-7890-abcd-ef1234567890.jsonl'),
+        dirDirent('a1b2c3d4-e5f6-7890-abcd-ef1234567890'), // Session dir
+      ];
+
+      const mockSubagentFiles = [
+        'agent-a031f6d.jsonl',
+        'agent-b142e7e.jsonl',
+      ];
+
+      vi.mocked(fs.readdir)
+        .mockResolvedValueOnce(mockEntries as any) // Project dirs
+        .mockResolvedValueOnce(mockProjectFiles as any) // Project files
+        .mockResolvedValueOnce(mockSubagentFiles as any); // Subagent files
+
+      vi.mocked(fs.stat).mockResolvedValue({
+        size: 512,
+        mtime: new Date('2026-01-24T00:00:00.000Z'),
+      } as Stats);
+
+      const result = await scanTranscripts();
+
+      // Should find 1 main session + 2 subagent files
+      expect(result.transcripts).toHaveLength(3);
+
+      // Main session file
+      const mainSession = result.transcripts.find(t => !t.isSubagent);
+      expect(mainSession).toBeDefined();
+      expect(mainSession?.sessionId).toBe('a1b2c3d4-e5f6-7890-abcd-ef1234567890');
+      expect(mainSession?.isSubagent).toBe(false);
+
+      // Subagent files
+      const subagents = result.transcripts.filter(t => t.isSubagent);
+      expect(subagents).toHaveLength(2);
+      expect(subagents[0].agentId).toBe('a031f6d');
+      expect(subagents[0].sessionId).toBe('a1b2c3d4-e5f6-7890-abcd-ef1234567890');
+      expect(subagents[0].isSubagent).toBe(true);
+      expect(subagents[1].agentId).toBe('b142e7e');
+    });
+
+    it('handles missing subagents directory gracefully', async () => {
+      const mockEntries: Partial<Dirent>[] = [
+        dirDirent('-home-testuser-project'),
+      ];
+
+      const mockProjectFiles: Dirent[] = [
+        fileDirent('a1b2c3d4-e5f6-7890-abcd-ef1234567890.jsonl'),
+        dirDirent('a1b2c3d4-e5f6-7890-abcd-ef1234567890'),
+      ];
+
+      vi.mocked(fs.readdir)
+        .mockResolvedValueOnce(mockEntries as any)
+        .mockResolvedValueOnce(mockProjectFiles as any)
+        .mockRejectedValueOnce(new Error('ENOENT')); // No subagents dir
+
+      vi.mocked(fs.stat).mockResolvedValue({
+        size: 512,
+        mtime: new Date('2026-01-24T00:00:00.000Z'),
+      } as Stats);
+
+      const result = await scanTranscripts();
+
+      // Should only find the main session file
+      expect(result.transcripts).toHaveLength(1);
+      expect(result.transcripts[0].isSubagent).toBe(false);
+    });
+
+    it('calculates total size correctly', async () => {
+      const mockEntries: Partial<Dirent>[] = [
+        dirDirent('-home-testuser-project'),
+      ];
+
+      const mockProjectFiles: Dirent[] = [
+        fileDirent('a1b2c3d4-e5f6-7890-abcd-ef1234567890.jsonl'),
+        fileDirent('b2c3d4e5-f6a7-8901-bcde-f12345678901.jsonl'),
       ];
 
       vi.mocked(fs.readdir)
@@ -274,7 +358,7 @@ describe('transcript-scanner', () => {
 
     it('handles empty project directories', async () => {
       const mockEntries: Partial<Dirent>[] = [
-        { name: '-home-testuser-empty-project', isDirectory: () => true } as Dirent,
+        dirDirent('-home-testuser-empty-project'),
       ];
 
       vi.mocked(fs.readdir)
@@ -289,12 +373,12 @@ describe('transcript-scanner', () => {
 
     it('combines project and date filters', async () => {
       const mockEntries: Partial<Dirent>[] = [
-        { name: '-home-testuser-workspace-foo', isDirectory: () => true } as Dirent,
-        { name: '-home-testuser-other-bar', isDirectory: () => true } as Dirent,
+        dirDirent('-home-testuser-workspace-foo'),
+        dirDirent('-home-testuser-other-bar'),
       ];
 
-      const mockProjectFiles = [
-        'a1b2c3d4-e5f6-7890-abcd-ef1234567890.jsonl',
+      const mockProjectFiles: Dirent[] = [
+        fileDirent('a1b2c3d4-e5f6-7890-abcd-ef1234567890.jsonl'),
       ];
 
       vi.mocked(fs.readdir)
@@ -326,13 +410,12 @@ describe('transcript-scanner', () => {
 
   describe('decodeProjectPath()', () => {
     it('decodes standard encoded paths', () => {
-      // We need to test this indirectly through scanTranscripts
       const mockEntries: Partial<Dirent>[] = [
-        { name: '-home-user-workspace-project', isDirectory: () => true } as Dirent,
+        dirDirent('-home-user-workspace-project'),
       ];
 
-      const mockProjectFiles = [
-        'a1b2c3d4-e5f6-7890-abcd-ef1234567890.jsonl',
+      const mockProjectFiles: Dirent[] = [
+        fileDirent('a1b2c3d4-e5f6-7890-abcd-ef1234567890.jsonl'),
       ];
 
       vi.mocked(fs.readdir)
@@ -351,11 +434,11 @@ describe('transcript-scanner', () => {
 
     it('handles paths without leading dash', () => {
       const mockEntries: Partial<Dirent>[] = [
-        { name: 'relative-path-project', isDirectory: () => true } as Dirent,
+        dirDirent('relative-path-project'),
       ];
 
-      const mockProjectFiles = [
-        'a1b2c3d4-e5f6-7890-abcd-ef1234567890.jsonl',
+      const mockProjectFiles: Dirent[] = [
+        fileDirent('a1b2c3d4-e5f6-7890-abcd-ef1234567890.jsonl'),
       ];
 
       vi.mocked(fs.readdir)
@@ -375,11 +458,11 @@ describe('transcript-scanner', () => {
 
     it('handles root path', () => {
       const mockEntries: Partial<Dirent>[] = [
-        { name: '-root', isDirectory: () => true } as Dirent,
+        dirDirent('-root'),
       ];
 
-      const mockProjectFiles = [
-        'a1b2c3d4-e5f6-7890-abcd-ef1234567890.jsonl',
+      const mockProjectFiles: Dirent[] = [
+        fileDirent('a1b2c3d4-e5f6-7890-abcd-ef1234567890.jsonl'),
       ];
 
       vi.mocked(fs.readdir)

@@ -108,19 +108,49 @@ function generateEntryId(sessionId: string, timestamp: string, model: string): s
 }
 
 /**
+ * Extract agentId → agentType mapping from a progress entry.
+ *
+ * Progress entries in the main session log contain both:
+ * - parentToolUseID (links to the Task tool call)
+ * - data.agentId (links to the subagent log file)
+ *
+ * This function correlates these to build a mapping from agentId
+ * (used in subagent log filenames) to agentType (from Task tool calls).
+ */
+export function extractAgentIdMapping(
+  entry: TranscriptEntry,
+  agentLookup: Map<string, string>
+): { agentId: string; agentType: string } | null {
+  if (entry.type !== 'progress') return null;
+
+  const data = (entry as any).data;
+  const agentId: string | undefined = data?.agentId;
+  const parentToolUseID: string | undefined = (entry as any).parentToolUseID;
+
+  if (!agentId || !parentToolUseID) return null;
+
+  const agentType = agentLookup.get(parentToolUseID);
+  if (!agentType) return null;
+
+  return { agentId, agentType };
+}
+
+/**
  * Extract token usage from transcript entry
  *
  * @param entry - Transcript entry from JSONL file
  * @param sessionId - Session ID (override if not in entry)
  * @param sourceFile - Source file path for tracking
  * @param agentLookup - Map of toolUseId → agentType for attributing progress entries
+ * @param overrideAgentName - If provided, forces the agentName (used for subagent log files)
  * @returns ExtractedUsage or null if entry has no usage data
  */
 export function extractTokenUsage(
   entry: TranscriptEntry,
   sessionId: string,
   sourceFile: string,
-  agentLookup?: Map<string, string>
+  agentLookup?: Map<string, string>,
+  overrideAgentName?: string
 ): ExtractedUsage | null {
   let usage: any;
   let model: string | undefined;
@@ -160,7 +190,7 @@ export function extractTokenUsage(
   const tokenUsage: TokenUsage = {
     timestamp: entry.timestamp,
     sessionId: sessionId || entry.sessionId,
-    agentName: detectAgentName(entry, agentLookup),
+    agentName: overrideAgentName ?? detectAgentName(entry, agentLookup),
     modelName: normalizeModelName(model),
     inputTokens,
     outputTokens,

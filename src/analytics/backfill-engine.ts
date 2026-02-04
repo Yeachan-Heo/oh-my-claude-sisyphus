@@ -6,7 +6,7 @@ import type { TranscriptEntry, TokenUsage } from './types.js';
 import { BackfillDedup } from './backfill-dedup.js';
 import { TokenTracker, getTokenTracker } from './token-tracker.js';
 import { calculateCost } from './cost-estimator.js';
-import { extractTokenUsage, extractTaskSpawns } from './transcript-token-extractor.js';
+import { extractTokenUsage, extractTaskSpawns, extractAgentIdMapping } from './transcript-token-extractor.js';
 
 export interface BackfillOptions {
   projectFilter?: string;
@@ -89,21 +89,47 @@ export class BackfillEngine extends EventEmitter {
       timeElapsed: 0,
     };
 
+    // Separate main session files from subagent files
+    const mainTranscripts = scanResult.transcripts.filter(t => !t.isSubagent);
+    const subagentTranscripts = scanResult.transcripts.filter(t => t.isSubagent);
     const totalFiles = scanResult.transcripts.length;
 
-    // Process each transcript file
-    for (const transcript of scanResult.transcripts) {
-      if (this.aborted) {
-        break;
-      }
+    // Global mapping of agentId → agentType, built from main session progress entries
+    const agentIdMap = new Map<string, string>();
 
-      // Filter by date range if specified
+    // Phase 1: Process main session files first to build agentId mappings
+    for (const transcript of mainTranscripts) {
+      if (this.aborted) break;
+
       if (options.dateTo && transcript.modifiedTime > options.dateTo) {
         continue;
       }
 
       try {
-        await this.processTranscript(transcript, options, result, totalFiles);
+        await this.processTranscript(transcript, options, result, totalFiles, undefined, agentIdMap);
+      } catch (error) {
+        result.errorsEncountered++;
+        if (options.verbose) {
+          console.error(`Error processing ${transcript.filePath}:`, error);
+        }
+      }
+
+      result.filesProcessed++;
+    }
+
+    // Phase 2: Process subagent files using the agentId → agentType mapping
+    for (const transcript of subagentTranscripts) {
+      if (this.aborted) break;
+
+      if (options.dateTo && transcript.modifiedTime > options.dateTo) {
+        continue;
+      }
+
+      // Look up the agent type for this subagent file
+      const agentType = transcript.agentId ? agentIdMap.get(transcript.agentId) : undefined;
+
+      try {
+        await this.processTranscript(transcript, options, result, totalFiles, agentType);
       } catch (error) {
         result.errorsEncountered++;
         if (options.verbose) {
@@ -125,12 +151,21 @@ export class BackfillEngine extends EventEmitter {
 
   /**
    * Process a single transcript file
+   *
+   * @param transcript - Transcript file metadata
+   * @param options - Backfill options
+   * @param result - Accumulating result object
+   * @param totalFiles - Total number of files being processed
+   * @param overrideAgentName - For subagent files, the known agent type
+   * @param agentIdMap - Map to populate with agentId → agentType (for main sessions)
    */
   private async processTranscript(
     transcript: TranscriptFile,
     options: BackfillOptions,
     result: BackfillResult,
-    totalFiles: number
+    totalFiles: number,
+    overrideAgentName?: string,
+    agentIdMap?: Map<string, string>
   ): Promise<void> {
     const batch: TokenUsage[] = [];
     const BATCH_SIZE = 100;
@@ -169,8 +204,18 @@ export class BackfillEngine extends EventEmitter {
         agentLookup.set(spawn.toolUseId, spawn.agentType);
       }
 
+      // Build agentId → agentType mapping from progress entries
+      // This correlates the agentId (used in subagent log filenames) with
+      // the agentType (from Task tool calls in the main session)
+      if (agentIdMap) {
+        const mapping = extractAgentIdMapping(entry, agentLookup);
+        if (mapping) {
+          agentIdMap.set(mapping.agentId, mapping.agentType);
+        }
+      }
+
       // Extract token usage (passing agentLookup for progress entry attribution)
-      const extracted = extractTokenUsage(entry, transcript.sessionId, transcript.filePath, agentLookup);
+      const extracted = extractTokenUsage(entry, transcript.sessionId, transcript.filePath, agentLookup, overrideAgentName);
 
       if (!extracted) {
         continue; // Skip entries without usage data
