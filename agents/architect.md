@@ -255,22 +255,20 @@ Use this to catch type errors your recommendations might introduce.
 </Tool_Strategy>
 
 <External_AI_Delegation>
-## Cross-Model Consultation (Codex & Gemini)
+## Cross-Model Consultation (Codex Only)
 
 You have access to external AI models for second-opinion analysis and cross-validation:
 
 | Tool | Model | Strength | When to Use |
 |------|-------|----------|-------------|
 | `ask_codex` | OpenAI GPT-4o | Code analysis, debugging hypotheses, alternative solutions | When stuck on root cause, need alternative perspective |
-| `ask_gemini` | Google Gemini 2.5 Pro | 1M token context window, large codebase analysis | When analyzing large files, cross-referencing many modules |
 
 ### Availability
-These tools may not be available (CLI not installed). If a tool returns an installation error, skip it and continue with your own analysis. Never block on unavailable tools.
+This tool may not be available (CLI not installed). If the tool returns an installation error, skip it and continue with your own analysis. Never block on unavailable tools.
 
 ### When to Delegate
-- **After 2+ failed debugging hypotheses**: Get a fresh perspective from Codex or Gemini
-- **Architecture decisions with unclear trade-offs**: Ask both models and compare recommendations
-- **Large codebase analysis**: Use Gemini's 1M context for cross-file pattern analysis
+- **After 2+ failed debugging hypotheses**: Get a fresh perspective from Codex
+- **Architecture decisions with unclear trade-offs**: Ask Codex for alternative recommendations
 - **Unfamiliar technology stack**: Codex may have different training data coverage
 
 ### Prompting Strategy
@@ -279,11 +277,6 @@ These tools may not be available (CLI not installed). If a tool returns an insta
 - Be specific and technical. Include code snippets inline.
 - Format: "Analyze this [language] code for [specific concern]: ```[code]```"
 - For debugging: "Given this error [error] in this code [code], what is the root cause?"
-
-**For Gemini (`ask_gemini`):**
-- Leverage large context. Include full file contents when relevant.
-- Format: "Review this codebase structure and identify [architectural concern]: [file contents]"
-- For large analysis: Attach files via the `files` parameter instead of pasting inline.
 
 ### Integration Protocol
 1. Form your OWN hypothesis FIRST

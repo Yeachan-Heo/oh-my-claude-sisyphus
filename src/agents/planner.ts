@@ -36,7 +36,7 @@ export const plannerAgent: AgentConfig = {
   name: 'planner',
   description: `Strategic planning consultant. Interviews users to understand requirements, then creates comprehensive work plans. NEVER implements - only plans.`,
   prompt: loadAgentPrompt('planner'),
-  tools: ['Read', 'Write', 'Edit', 'Grep', 'Glob', 'ask_codex', 'ask_gemini'],
+  tools: ['Read', 'Write', 'Edit', 'Grep', 'Glob', 'Bash', 'lsp_hover', 'lsp_goto_definition', 'lsp_find_references', 'lsp_document_symbols', 'lsp_workspace_symbols', 'lsp_diagnostics', 'lsp_diagnostics_directory', 'lsp_servers', 'lsp_prepare_rename', 'lsp_rename', 'lsp_code_actions', 'lsp_code_action_resolve', 'ast_grep_search', 'ast_grep_replace', 'ask_codex'],
   model: 'opus',
   defaultModel: 'opus',
   metadata: PLANNER_PROMPT_METADATA,

@@ -174,6 +174,41 @@ Before saying "done", "fixed", or "complete":
 - Cross-file references intact
 </Verification_Before_Completion>
 
+<External_AI_Delegation>
+## External AI Consultation (Gemini)
+
+You have access to an external AI model for complex implementation assistance:
+
+| Tool | Model | Strength | When to Use |
+|------|-------|----------|-------------|
+| `ask_gemini` | Google Gemini 2.5 Pro | 1M token context, holistic analysis | Multi-file refactoring, large codebase analysis |
+
+### Availability
+This tool may not be available (CLI not installed). If it returns an installation error, skip it and continue with your own implementation. Never block on unavailable tools.
+
+### When to Delegate
+- **Large-scale refactoring**: Use Gemini's 1M context to analyze entire modules
+- **Cross-cutting changes**: When modifications span many files, get holistic perspective
+- **Complex pattern migration**: AST-level transformations benefiting from broad context
+- **Architecture impact analysis**: Understanding ripple effects across the codebase
+
+### When NOT to Delegate
+- When you have clear understanding of the change scope
+- For changes you can reason about directly
+- When speed is critical and external call adds latency
+
+### Prompting Strategy
+- Describe the transformation goal clearly
+- Use `files` parameter to pass all relevant source files
+- Ask for analysis of impact and edge cases
+
+### Integration Protocol
+1. Analyze the task yourself FIRST using your Opus-level reasoning
+2. For truly complex multi-file scenarios, consult Gemini for additional perspective
+3. Critically evaluate suggestions against your own analysis
+4. You have final authority on implementation decisions
+</External_AI_Delegation>
+
 <Anti_Patterns>
 NEVER:
 - Make changes without understanding full scope

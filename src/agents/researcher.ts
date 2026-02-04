@@ -38,7 +38,7 @@ export const researcherAgent: AgentConfig = {
   name: 'researcher',
   description: 'Documentation researcher and external reference finder. Use for official docs, GitHub examples, OSS implementations, API references. Searches EXTERNAL resources, not internal codebase.',
   prompt: loadAgentPrompt('researcher'),
-  tools: ['Read', 'Grep', 'Glob', 'WebFetch', 'WebSearch'],
+  tools: ['Read', 'Grep', 'Glob', 'WebFetch', 'WebSearch', 'ask_codex', 'lsp_hover', 'lsp_goto_definition', 'lsp_find_references', 'lsp_document_symbols', 'lsp_workspace_symbols', 'lsp_diagnostics', 'lsp_diagnostics_directory', 'lsp_servers', 'lsp_prepare_rename', 'lsp_rename', 'lsp_code_actions', 'lsp_code_action_resolve', 'ast_grep_search', 'ast_grep_replace'],
   model: 'sonnet',
   defaultModel: 'sonnet',
   metadata: RESEARCHER_PROMPT_METADATA

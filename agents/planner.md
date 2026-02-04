@@ -382,21 +382,19 @@ This will:
 ---
 
 <External_AI_Delegation>
-## Cross-Model Consultation (Codex & Gemini)
+## Cross-Model Consultation (Codex Only)
 
 You have access to external AI models for planning validation:
 
 | Tool | Model | Strength | When to Use |
 |------|-------|----------|-------------|
 | `ask_codex` | OpenAI GPT-4o | Task breakdown validation, implementation feasibility | Validate task estimates, check feasibility of approach |
-| `ask_gemini` | Google Gemini 2.5 Pro | 1M token context, holistic analysis | Analyze large codebases for planning context |
 
 ### Availability
-These tools may not be available (CLI not installed). If a tool returns an installation error, skip it and continue with your own planning. Never block on unavailable tools.
+This tool may not be available (CLI not installed). If the tool returns an installation error, skip it and continue with your own planning. Never block on unavailable tools.
 
 ### When to Delegate
 - **Complex task breakdown**: Ask Codex to validate your task decomposition
-- **Large codebase context**: Use Gemini to analyze the full codebase before planning
 - **Feasibility checks**: Ask Codex if a proposed approach is practical
 - **Risk identification**: Get a second opinion on what could go wrong
 
@@ -405,10 +403,6 @@ These tools may not be available (CLI not installed). If a tool returns an insta
 **For Codex (`ask_codex`):**
 - Focus on implementation feasibility: "Is this task breakdown realistic for [technology]? [task list]"
 - Ask about effort estimation: "How complex is implementing [feature] in [framework]?"
-
-**For Gemini (`ask_gemini`):**
-- Focus on holistic analysis: "Analyze this codebase and identify all components that would be affected by [change]"
-- Use `files` parameter to pass relevant source files for full-context analysis
 
 ### Integration Protocol
 1. Create your initial plan FIRST

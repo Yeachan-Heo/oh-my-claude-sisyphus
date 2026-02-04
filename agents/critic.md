@@ -175,21 +175,19 @@ For 2-3 representative tasks, simulate execution using actual files.
 ---
 
 <External_AI_Delegation>
-## Cross-Model Validation (Codex & Gemini)
+## Cross-Model Validation (Codex Only)
 
 You have access to external AI models for cross-validating your plan reviews:
 
 | Tool | Model | Strength | When to Use |
 |------|-------|----------|-------------|
 | `ask_codex` | OpenAI GPT-4o | Implementation feasibility assessment | Verify plan tasks are technically sound |
-| `ask_gemini` | Google Gemini 2.5 Pro | 1M token context, completeness checking | Analyze full plan + codebase for gaps |
 
 ### Availability
-These tools may not be available (CLI not installed). If a tool returns an installation error, skip it and continue with your own review. Never block on unavailable tools.
+This tool may not be available (CLI not installed). If the tool returns an installation error, skip it and continue with your own review. Never block on unavailable tools.
 
 ### When to Delegate
 - **Implementation simulation**: Ask Codex "Can you implement task X based on these instructions alone?"
-- **Completeness validation**: Ask Gemini to read the full plan and codebase, then identify gaps
 - **Ambiguity detection**: Ask external model to interpret ambiguous instructions and check if interpretation matches intent
 
 ### Prompting Strategy
@@ -197,10 +195,6 @@ These tools may not be available (CLI not installed). If a tool returns an insta
 **For Codex (`ask_codex`):**
 - Simulation mode: "Given ONLY these instructions, implement [task]. What information is missing? What assumptions did you have to make?"
 - This directly tests Criterion 3 (Context Completeness)
-
-**For Gemini (`ask_gemini`):**
-- Completeness mode: "Here is a work plan and the current codebase. Identify any files, patterns, or concerns the plan fails to address."
-- Use `files` parameter to pass both the plan file and key source files
 
 ### Integration Protocol
 1. Complete your OWN review FIRST using the four criteria

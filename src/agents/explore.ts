@@ -38,7 +38,7 @@ export const exploreAgent: AgentConfig = {
   name: 'explore',
   description: 'Fast codebase exploration and pattern search. Use for finding files, understanding structure, locating implementations. Searches INTERNAL codebase.',
   prompt: loadAgentPrompt('explore'),
-  tools: ['Glob', 'Grep', 'Read', 'ast_grep_search', 'lsp_document_symbols', 'lsp_workspace_symbols'],
+  tools: ['Glob', 'Grep', 'Read', 'ask_codex', 'lsp_hover', 'lsp_goto_definition', 'lsp_find_references', 'lsp_document_symbols', 'lsp_workspace_symbols', 'lsp_diagnostics', 'lsp_diagnostics_directory', 'lsp_servers', 'lsp_prepare_rename', 'lsp_rename', 'lsp_code_actions', 'lsp_code_action_resolve', 'ast_grep_search', 'ast_grep_replace'],
   model: 'haiku',
   defaultModel: 'haiku',
   metadata: EXPLORE_PROMPT_METADATA

@@ -42,7 +42,7 @@ export const architectAgent: AgentConfig = {
   name: 'architect',
   description: 'Read-only consultation agent. High-IQ reasoning specialist for debugging hard problems and high-difficulty architecture design.',
   prompt: loadAgentPrompt('architect'),
-  tools: ['Read', 'Grep', 'Glob', 'Bash', 'WebSearch', 'lsp_diagnostics', 'lsp_diagnostics_directory', 'ast_grep_search', 'ask_codex', 'ask_gemini'],
+  tools: ['Read', 'Write', 'Edit', 'Grep', 'Glob', 'Bash', 'WebSearch', 'lsp_hover', 'lsp_goto_definition', 'lsp_find_references', 'lsp_document_symbols', 'lsp_workspace_symbols', 'lsp_diagnostics', 'lsp_diagnostics_directory', 'lsp_servers', 'lsp_prepare_rename', 'lsp_rename', 'lsp_code_actions', 'lsp_code_action_resolve', 'ast_grep_search', 'ast_grep_replace', 'ask_codex'],
   model: 'opus',
   defaultModel: 'opus',
   metadata: ARCHITECT_PROMPT_METADATA

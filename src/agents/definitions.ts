@@ -59,7 +59,7 @@ export const architectMediumAgent: AgentConfig = {
   name: 'architect-medium',
   description: 'Architecture & Debugging Advisor - Medium complexity (Sonnet). Use for moderate analysis.',
   prompt: loadAgentPrompt('architect-medium'),
-  tools: ['Read', 'Glob', 'Grep', 'WebSearch', 'WebFetch', 'lsp_diagnostics', 'lsp_diagnostics_directory', 'ast_grep_search'],
+  tools: ['Read', 'Glob', 'Grep', 'WebSearch', 'WebFetch', 'ask_codex', 'lsp_hover', 'lsp_goto_definition', 'lsp_find_references', 'lsp_document_symbols', 'lsp_workspace_symbols', 'lsp_diagnostics', 'lsp_diagnostics_directory', 'lsp_servers', 'lsp_prepare_rename', 'lsp_rename', 'lsp_code_actions', 'lsp_code_action_resolve', 'ast_grep_search', 'ast_grep_replace'],
   model: 'sonnet',
   defaultModel: 'sonnet'
 };
@@ -71,7 +71,7 @@ export const architectLowAgent: AgentConfig = {
   name: 'architect-low',
   description: 'Quick code questions & simple lookups (Haiku). Use for simple questions that need fast answers.',
   prompt: loadAgentPrompt('architect-low'),
-  tools: ['Read', 'Glob', 'Grep', 'lsp_diagnostics'],
+  tools: ['Read', 'Glob', 'Grep', 'ask_codex', 'lsp_hover', 'lsp_goto_definition', 'lsp_find_references', 'lsp_document_symbols', 'lsp_workspace_symbols', 'lsp_diagnostics', 'lsp_diagnostics_directory', 'lsp_servers', 'lsp_prepare_rename', 'lsp_rename', 'lsp_code_actions', 'lsp_code_action_resolve', 'ast_grep_search', 'ast_grep_replace'],
   model: 'haiku',
   defaultModel: 'haiku'
 };
@@ -83,7 +83,7 @@ export const executorHighAgent: AgentConfig = {
   name: 'executor-high',
   description: 'Complex task executor for multi-file changes (Opus). Use for tasks requiring deep reasoning.',
   prompt: loadAgentPrompt('executor-high'),
-  tools: ['Read', 'Glob', 'Grep', 'Edit', 'Write', 'Bash', 'TodoWrite', 'lsp_diagnostics', 'lsp_diagnostics_directory', 'ast_grep_search', 'ast_grep_replace'],
+  tools: ['Read', 'Glob', 'Grep', 'Edit', 'Write', 'Bash', 'TodoWrite', 'lsp_hover', 'lsp_goto_definition', 'lsp_find_references', 'lsp_document_symbols', 'lsp_workspace_symbols', 'lsp_diagnostics', 'lsp_diagnostics_directory', 'lsp_servers', 'lsp_prepare_rename', 'lsp_rename', 'lsp_code_actions', 'lsp_code_action_resolve', 'ast_grep_search', 'ast_grep_replace', 'ask_gemini'],
   model: 'opus',
   defaultModel: 'opus'
 };
@@ -95,7 +95,7 @@ export const executorLowAgent: AgentConfig = {
   name: 'executor-low',
   description: 'Simple single-file task executor (Haiku). Use for trivial tasks.',
   prompt: loadAgentPrompt('executor-low'),
-  tools: ['Read', 'Glob', 'Grep', 'Edit', 'Write', 'Bash', 'TodoWrite', 'lsp_diagnostics'],
+  tools: ['Read', 'Glob', 'Grep', 'Edit', 'Write', 'Bash', 'TodoWrite', 'lsp_hover', 'lsp_goto_definition', 'lsp_find_references', 'lsp_document_symbols', 'lsp_workspace_symbols', 'lsp_diagnostics', 'lsp_diagnostics_directory', 'lsp_servers', 'lsp_prepare_rename', 'lsp_rename', 'lsp_code_actions', 'lsp_code_action_resolve', 'ast_grep_search', 'ast_grep_replace', 'ask_gemini'],
   model: 'haiku',
   defaultModel: 'haiku'
 };
@@ -107,7 +107,7 @@ export const researcherLowAgent: AgentConfig = {
   name: 'researcher-low',
   description: 'Quick documentation lookups (Haiku). Use for simple documentation queries.',
   prompt: loadAgentPrompt('researcher-low'),
-  tools: ['Read', 'Glob', 'Grep', 'WebSearch', 'WebFetch'],
+  tools: ['Read', 'Glob', 'Grep', 'WebSearch', 'WebFetch', 'ask_codex', 'lsp_hover', 'lsp_goto_definition', 'lsp_find_references', 'lsp_document_symbols', 'lsp_workspace_symbols', 'lsp_diagnostics', 'lsp_diagnostics_directory', 'lsp_servers', 'lsp_prepare_rename', 'lsp_rename', 'lsp_code_actions', 'lsp_code_action_resolve', 'ast_grep_search', 'ast_grep_replace'],
   model: 'haiku',
   defaultModel: 'haiku'
 };
@@ -119,7 +119,7 @@ export const exploreMediumAgent: AgentConfig = {
   name: 'explore-medium',
   description: 'Thorough codebase search with reasoning (Sonnet). Use when search requires more reasoning.',
   prompt: loadAgentPrompt('explore-medium'),
-  tools: ['Read', 'Glob', 'Grep', 'ast_grep_search', 'lsp_document_symbols', 'lsp_workspace_symbols'],
+  tools: ['Read', 'Glob', 'Grep', 'ask_codex', 'lsp_hover', 'lsp_goto_definition', 'lsp_find_references', 'lsp_document_symbols', 'lsp_workspace_symbols', 'lsp_diagnostics', 'lsp_diagnostics_directory', 'lsp_servers', 'lsp_prepare_rename', 'lsp_rename', 'lsp_code_actions', 'lsp_code_action_resolve', 'ast_grep_search', 'ast_grep_replace'],
   model: 'sonnet',
   defaultModel: 'sonnet'
 };
@@ -131,7 +131,7 @@ export const exploreHighAgent: AgentConfig = {
   name: 'explore-high',
   description: 'Complex architectural search for deep system understanding (Opus). Use for architectural mapping and design pattern discovery.',
   prompt: loadAgentPrompt('explore-high'),
-  tools: ['Read', 'Glob', 'Grep', 'ast_grep_search', 'lsp_document_symbols', 'lsp_workspace_symbols', 'lsp_find_references'],
+  tools: ['Read', 'Glob', 'Grep', 'ask_codex', 'lsp_hover', 'lsp_goto_definition', 'lsp_find_references', 'lsp_document_symbols', 'lsp_workspace_symbols', 'lsp_diagnostics', 'lsp_diagnostics_directory', 'lsp_servers', 'lsp_prepare_rename', 'lsp_rename', 'lsp_code_actions', 'lsp_code_action_resolve', 'ast_grep_search', 'ast_grep_replace'],
   model: 'opus',
   defaultModel: 'opus'
 };
@@ -143,7 +143,7 @@ export const designerLowAgent: AgentConfig = {
   name: 'designer-low',
   description: 'Simple styling and minor UI tweaks (Haiku). Use for trivial frontend work.',
   prompt: loadAgentPrompt('designer-low'),
-  tools: ['Read', 'Glob', 'Grep', 'Edit', 'Write', 'Bash'],
+  tools: ['Read', 'Glob', 'Grep', 'Edit', 'Write', 'Bash', 'lsp_hover', 'lsp_goto_definition', 'lsp_find_references', 'lsp_document_symbols', 'lsp_workspace_symbols', 'lsp_diagnostics', 'lsp_diagnostics_directory', 'lsp_servers', 'lsp_prepare_rename', 'lsp_rename', 'lsp_code_actions', 'lsp_code_action_resolve', 'ast_grep_search', 'ast_grep_replace', 'ask_gemini'],
   model: 'haiku',
   defaultModel: 'haiku'
 };
@@ -155,7 +155,7 @@ export const designerHighAgent: AgentConfig = {
   name: 'designer-high',
   description: 'Complex UI architecture and design systems (Opus). Use for sophisticated frontend work.',
   prompt: loadAgentPrompt('designer-high'),
-  tools: ['Read', 'Glob', 'Grep', 'Edit', 'Write', 'Bash'],
+  tools: ['Read', 'Glob', 'Grep', 'Edit', 'Write', 'Bash', 'lsp_hover', 'lsp_goto_definition', 'lsp_find_references', 'lsp_document_symbols', 'lsp_workspace_symbols', 'lsp_diagnostics', 'lsp_diagnostics_directory', 'lsp_servers', 'lsp_prepare_rename', 'lsp_rename', 'lsp_code_actions', 'lsp_code_action_resolve', 'ast_grep_search', 'ast_grep_replace', 'ask_gemini'],
   model: 'opus',
   defaultModel: 'opus'
 };
@@ -167,7 +167,7 @@ export const qaTesterHighAgent: AgentConfig = {
   name: 'qa-tester-high',
   description: 'Comprehensive production-ready QA testing with Opus. Use for thorough verification, edge case detection, security testing, and high-stakes releases.',
   prompt: loadAgentPrompt('qa-tester-high'),
-  tools: ['Bash', 'Read', 'Grep', 'Glob', 'TodoWrite', 'lsp_diagnostics'],
+  tools: ['Bash', 'Read', 'Grep', 'Glob', 'TodoWrite', 'ask_codex', 'lsp_hover', 'lsp_goto_definition', 'lsp_find_references', 'lsp_document_symbols', 'lsp_workspace_symbols', 'lsp_diagnostics', 'lsp_diagnostics_directory', 'lsp_servers', 'lsp_prepare_rename', 'lsp_rename', 'lsp_code_actions', 'lsp_code_action_resolve', 'ast_grep_search', 'ast_grep_replace'],
   model: 'opus',
   defaultModel: 'opus'
 };
@@ -207,7 +207,7 @@ export const securityReviewerAgent: AgentConfig = {
   name: 'security-reviewer',
   description: 'Security vulnerability detection specialist (Opus). Use for security audits and code review.',
   prompt: loadAgentPrompt('security-reviewer'),
-  tools: ['Read', 'Grep', 'Glob', 'Bash'],
+  tools: ['Read', 'Grep', 'Glob', 'Bash', 'ask_codex', 'lsp_hover', 'lsp_goto_definition', 'lsp_find_references', 'lsp_document_symbols', 'lsp_workspace_symbols', 'lsp_diagnostics', 'lsp_diagnostics_directory', 'lsp_servers', 'lsp_prepare_rename', 'lsp_rename', 'lsp_code_actions', 'lsp_code_action_resolve', 'ast_grep_search', 'ast_grep_replace'],
   model: 'opus',
   defaultModel: 'opus'
 };
@@ -219,7 +219,7 @@ export const securityReviewerLowAgent: AgentConfig = {
   name: 'security-reviewer-low',
   description: 'Quick security scan specialist (Haiku). Use for fast security checks on small code changes.',
   prompt: loadAgentPrompt('security-reviewer-low'),
-  tools: ['Read', 'Grep', 'Glob', 'Bash'],
+  tools: ['Read', 'Grep', 'Glob', 'Bash', 'ask_codex', 'lsp_hover', 'lsp_goto_definition', 'lsp_find_references', 'lsp_document_symbols', 'lsp_workspace_symbols', 'lsp_diagnostics', 'lsp_diagnostics_directory', 'lsp_servers', 'lsp_prepare_rename', 'lsp_rename', 'lsp_code_actions', 'lsp_code_action_resolve', 'ast_grep_search', 'ast_grep_replace'],
   model: 'haiku',
   defaultModel: 'haiku'
 };
@@ -279,7 +279,7 @@ export const codeReviewerAgent: AgentConfig = {
   name: 'code-reviewer',
   description: 'Expert code review specialist (Opus). Use for comprehensive code quality review.',
   prompt: loadAgentPrompt('code-reviewer'),
-  tools: ['Read', 'Grep', 'Glob', 'Bash', 'lsp_diagnostics', 'ast_grep_search'],
+  tools: ['Read', 'Grep', 'Glob', 'Bash', 'ask_codex', 'lsp_hover', 'lsp_goto_definition', 'lsp_find_references', 'lsp_document_symbols', 'lsp_workspace_symbols', 'lsp_diagnostics', 'lsp_diagnostics_directory', 'lsp_servers', 'lsp_prepare_rename', 'lsp_rename', 'lsp_code_actions', 'lsp_code_action_resolve', 'ast_grep_search', 'ast_grep_replace'],
   model: 'opus',
   defaultModel: 'opus'
 };
@@ -291,7 +291,7 @@ export const codeReviewerLowAgent: AgentConfig = {
   name: 'code-reviewer-low',
   description: 'Quick code quality checker (Haiku). Use for fast review of small changes.',
   prompt: loadAgentPrompt('code-reviewer-low'),
-  tools: ['Read', 'Grep', 'Glob', 'Bash', 'lsp_diagnostics'],
+  tools: ['Read', 'Grep', 'Glob', 'Bash', 'ask_codex', 'lsp_hover', 'lsp_goto_definition', 'lsp_find_references', 'lsp_document_symbols', 'lsp_workspace_symbols', 'lsp_diagnostics', 'lsp_diagnostics_directory', 'lsp_servers', 'lsp_prepare_rename', 'lsp_rename', 'lsp_code_actions', 'lsp_code_action_resolve', 'ast_grep_search', 'ast_grep_replace'],
   model: 'haiku',
   defaultModel: 'haiku'
 };

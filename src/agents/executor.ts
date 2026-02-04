@@ -37,7 +37,7 @@ export const executorAgent: AgentConfig = {
   name: 'executor',
   description: 'Focused task executor. Execute tasks directly. NEVER delegate or spawn other agents. Same discipline as Sisyphus, no delegation.',
   prompt: loadAgentPrompt('executor'),
-  tools: ['Read', 'Write', 'Edit', 'Grep', 'Glob', 'Bash', 'lsp_diagnostics', 'lsp_diagnostics_directory'],
+  tools: ['Read', 'Write', 'Edit', 'Grep', 'Glob', 'Bash', 'lsp_hover', 'lsp_goto_definition', 'lsp_find_references', 'lsp_document_symbols', 'lsp_workspace_symbols', 'lsp_diagnostics', 'lsp_diagnostics_directory', 'lsp_servers', 'lsp_prepare_rename', 'lsp_rename', 'lsp_code_actions', 'lsp_code_action_resolve', 'ast_grep_search', 'ast_grep_replace', 'ask_gemini'],
   model: 'sonnet',
   defaultModel: 'sonnet',
   metadata: SISYPHUS_JUNIOR_PROMPT_METADATA
