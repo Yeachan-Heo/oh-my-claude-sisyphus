@@ -53,10 +53,10 @@ function parseCodexOutput(output: string): string {
  */
 function executeCodex(prompt: string, model: string): Promise<string> {
   return new Promise((resolve, reject) => {
-    const args = ['exec', '-m', model, '--json', prompt];
+    const args = ['exec', '-m', model, '--json'];
     const child = spawn('codex', args, {
       timeout: CODEX_TIMEOUT,
-      stdio: ['ignore', 'pipe', 'pipe']
+      stdio: ['pipe', 'pipe', 'pipe']
     });
 
     let stdout = '';
@@ -81,6 +81,10 @@ function executeCodex(prompt: string, model: string): Promise<string> {
     child.on('error', (err) => {
       reject(new Error(`Failed to spawn Codex CLI: ${err.message}`));
     });
+
+    // Pipe prompt via stdin to avoid OS argument length limits
+    child.stdin.write(prompt);
+    child.stdin.end();
   });
 }
 

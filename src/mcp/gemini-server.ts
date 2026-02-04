@@ -19,10 +19,10 @@ const GEMINI_TIMEOUT = parseInt(process.env.OMC_GEMINI_TIMEOUT || '120000', 10);
  */
 function executeGemini(prompt: string, model?: string): Promise<string> {
   return new Promise((resolve, reject) => {
-    const args = model ? ['--model', model, '-p', prompt] : ['-p', prompt];
+    const args = model ? ['--model', model] : [];
     const child = spawn('gemini', args, {
       timeout: GEMINI_TIMEOUT,
-      stdio: ['ignore', 'pipe', 'pipe']
+      stdio: ['pipe', 'pipe', 'pipe']
     });
 
     let stdout = '';
@@ -47,6 +47,10 @@ function executeGemini(prompt: string, model?: string): Promise<string> {
     child.on('error', (err) => {
       reject(new Error(`Failed to spawn Gemini CLI: ${err.message}`));
     });
+
+    // Pipe prompt via stdin to avoid OS argument length limits
+    child.stdin.write(prompt);
+    child.stdin.end();
   });
 }
 
