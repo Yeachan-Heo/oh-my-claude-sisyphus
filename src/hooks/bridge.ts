@@ -38,6 +38,7 @@ import {
 import {
   checkPersistentModes,
   createHookOutput,
+  PersistentModeResult,
 } from "./persistent-mode/index.js";
 import { activateUltrawork, readUltraworkState } from "./ultrawork/index.js";
 import {
@@ -359,6 +360,8 @@ ${newState.prompt}`;
 /**
  * Process persistent mode hook (enhanced stop continuation)
  * Unified handler for ultrawork, ralph, and todo-continuation
+ * 
+ * FIX: Added timeout to prevent session freeze (issue #385)
  */
 async function processPersistentMode(input: HookInput): Promise<HookOutput> {
   const sessionId = input.sessionId;
@@ -380,8 +383,22 @@ async function processPersistentMode(input: HookInput): Promise<HookOutput> {
       | undefined,
   };
 
-  const result = await checkPersistentModes(sessionId, directory, stopContext);
-  return createHookOutput(result);
+  // Timeout protection: prevent hook from hanging indefinitely (issue #385)
+  const STOP_HOOK_TIMEOUT_MS = 3000;
+  
+  try {
+    const result = await Promise.race([
+      checkPersistentModes(sessionId, directory, stopContext),
+      new Promise<PersistentModeResult>((_, reject) =>
+        setTimeout(() => reject(new Error('Stop hook timeout')), STOP_HOOK_TIMEOUT_MS)
+      ),
+    ]);
+    return createHookOutput(result);
+  } catch (error) {
+    // On timeout or error, allow stop to proceed (fail-safe)
+    console.error('[persistent-mode] Hook timeout or error:', error);
+    return { continue: true };
+  }
 }
 
 /**
