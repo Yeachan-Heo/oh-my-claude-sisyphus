@@ -83,7 +83,7 @@ import {
   handlePermissionRequest,
   type PermissionRequestInput,
 } from "./permission-handler/index.js";
-import { handleSessionEnd, type SessionEndInput } from "./session-end/index.js";
+import { handleSessionEnd, cleanupStaleStates, type SessionEndInput } from "./session-end/index.js";
 import { initSilentAutoUpdate } from "../features/auto-update.js";
 
 const PKILL_F_FLAG_PATTERN = /\bpkill\b.*\s-f\b/;
@@ -394,6 +394,12 @@ async function processSessionStart(input: HookInput): Promise<HookOutput> {
 
   // Trigger silent auto-update check (non-blocking, checks config internally)
   initSilentAutoUpdate();
+
+  // Safety net: clean up stale state files from crashed/interrupted sessions
+  // This handles cases where SessionEnd hook never fired (crash, SIGINT, force quit)
+  if (sessionId) {
+    cleanupStaleStates(directory, sessionId);
+  }
 
   const messages: string[] = [];
 

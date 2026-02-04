@@ -231,8 +231,12 @@ const MODE_STATE_FILES = [
  * Clean up mode state files on session end.
  *
  * This prevents stale state from causing the stop hook to malfunction
- * in subsequent sessions. When a session ends normally, all active modes
- * should be considered terminated.
+ * in subsequent sessions. When a session ends normally, all mode states
+ * belonging to this session should be removed - regardless of active status.
+ *
+ * Files with `active: false` are already completed/cancelled modes that
+ * have no reason to persist. Files with `active: true` are modes that
+ * were interrupted by session end and should also be cleaned up.
  *
  * @param directory - The project directory
  * @param sessionId - Optional session ID to match. Only cleans states belonging to this session.
@@ -250,31 +254,28 @@ export function cleanupModeStates(directory: string, sessionId?: string): { file
   for (const { file, mode } of MODE_STATE_FILES) {
     const localPath = path.join(stateDir, file);
 
-    // Check if local state exists and is active
     if (fs.existsSync(localPath)) {
       try {
-        // For JSON files, check if active before removing
+        // For JSON files, check session ownership before removing
         if (file.endsWith('.json')) {
           const content = fs.readFileSync(localPath, 'utf-8');
           const state = JSON.parse(content);
 
-          // Only clean if marked as active AND belongs to this session
-          // (prevents removing other concurrent sessions' states)
-          if (state.active === true) {
-            // If sessionId is provided, only clean matching states
-            // If state has no session_id, it's legacy - clean it
-            // If state.session_id matches our sessionId, clean it
-            const stateSessionId = state.session_id as string | undefined;
-            if (!sessionId || !stateSessionId || stateSessionId === sessionId) {
-              fs.unlinkSync(localPath);
-              filesRemoved++;
-              if (!modesCleaned.includes(mode)) {
-                modesCleaned.push(mode);
-              }
+          // Session isolation: only clean states belonging to this session
+          // - If sessionId is not provided, clean all states (force cleanup)
+          // - If state has no session_id, it's legacy - clean it
+          // - If state.session_id matches our sessionId, clean it
+          // Note: We remove regardless of active status (fixes #403)
+          const stateSessionId = state.session_id as string | undefined;
+          if (!sessionId || !stateSessionId || stateSessionId === sessionId) {
+            fs.unlinkSync(localPath);
+            filesRemoved++;
+            if (!modesCleaned.includes(mode)) {
+              modesCleaned.push(mode);
             }
           }
         } else {
-          // For marker files, always remove
+          // For marker files, always remove (they don't have session isolation)
           fs.unlinkSync(localPath);
           filesRemoved++;
           if (!modesCleaned.includes(mode)) {
@@ -329,6 +330,89 @@ export function processSessionEnd(input: SessionEndInput): HookOutput {
 
   // Return simple response - metrics are persisted to .omc/sessions/
   return { continue: true };
+}
+
+/**
+ * Stale state threshold (24 hours).
+ * State files older than this from a different session are considered stale
+ * and are removed on session start as a safety net for abnormal terminations.
+ */
+const STALE_STATE_THRESHOLD_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Clean up stale mode state files from previous sessions.
+ *
+ * This is a safety net for cases where SessionEnd hook never fired
+ * (crash, SIGINT, force quit). Called on session start to ensure
+ * a clean environment.
+ *
+ * Only removes state files that:
+ * 1. Belong to a DIFFERENT session (never cleans current session's state)
+ * 2. Are older than 24 hours (avoids race conditions with concurrent sessions)
+ *
+ * @param directory - The project directory
+ * @param currentSessionId - The current session's ID (will NOT be cleaned)
+ * @returns Object with counts of files removed and modes cleaned
+ */
+export function cleanupStaleStates(directory: string, currentSessionId: string): { filesRemoved: number; modesCleaned: string[] } {
+  let filesRemoved = 0;
+  const modesCleaned: string[] = [];
+  const stateDir = path.join(directory, '.omc', 'state');
+
+  if (!fs.existsSync(stateDir)) {
+    return { filesRemoved, modesCleaned };
+  }
+
+  const now = Date.now();
+
+  for (const { file, mode } of MODE_STATE_FILES) {
+    const localPath = path.join(stateDir, file);
+
+    if (!fs.existsSync(localPath)) {
+      continue;
+    }
+
+    try {
+      if (file.endsWith('.json')) {
+        const content = fs.readFileSync(localPath, 'utf-8');
+        const state = JSON.parse(content);
+        const stateSessionId = state.session_id as string | undefined;
+
+        // Never clean current session's state
+        if (stateSessionId === currentSessionId) {
+          continue;
+        }
+
+        // Check file age - only remove if older than threshold
+        const stats = fs.statSync(localPath);
+        const ageMs = now - stats.mtimeMs;
+
+        if (ageMs > STALE_STATE_THRESHOLD_MS) {
+          fs.unlinkSync(localPath);
+          filesRemoved++;
+          if (!modesCleaned.includes(mode)) {
+            modesCleaned.push(mode);
+          }
+        }
+      } else {
+        // Marker files: check age only
+        const stats = fs.statSync(localPath);
+        const ageMs = now - stats.mtimeMs;
+
+        if (ageMs > STALE_STATE_THRESHOLD_MS) {
+          fs.unlinkSync(localPath);
+          filesRemoved++;
+          if (!modesCleaned.includes(mode)) {
+            modesCleaned.push(mode);
+          }
+        }
+      }
+    } catch {
+      // Ignore errors, continue with other files
+    }
+  }
+
+  return { filesRemoved, modesCleaned };
 }
 
 /**
