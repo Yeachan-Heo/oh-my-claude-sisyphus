@@ -156,8 +156,8 @@ describe('MCP Server Workflows', () => {
     it('should support different model options', async () => {
       const spawnCalls: string[][] = [];
 
-      vi.mocked(spawn).mockImplementation((cmd: string, args: string[]) => {
-        spawnCalls.push(args);
+      vi.mocked(spawn).mockImplementation((cmd: string, args: readonly string[]) => {
+        spawnCalls.push(args as string[]);
         return {
           stdout: { on: vi.fn((e: string, cb: Function) => { if (e === 'data') cb('OK'); }) },
           stderr: { on: vi.fn() },
@@ -216,8 +216,8 @@ describe('MCP Server Workflows', () => {
     it('should leverage 1M token context window with files', async () => {
       const spawnCalls: string[][] = [];
 
-      vi.mocked(spawn).mockImplementation((cmd: string, args: string[]) => {
-        spawnCalls.push(args);
+      vi.mocked(spawn).mockImplementation((cmd: string, args: readonly string[]) => {
+        spawnCalls.push(args as string[]);
         return {
           stdout: { on: vi.fn((e: string, cb: Function) => { if (e === 'data') cb('Large context analysis'); }) },
           stderr: { on: vi.fn() },
@@ -232,8 +232,8 @@ describe('MCP Server Workflows', () => {
     it('should handle Gemini model specification', async () => {
       const spawnCalls: string[][] = [];
 
-      vi.mocked(spawn).mockImplementation((cmd: string, args: string[]) => {
-        spawnCalls.push(args);
+      vi.mocked(spawn).mockImplementation((cmd: string, args: readonly string[]) => {
+        spawnCalls.push(args as string[]);
         return {
           stdout: { on: vi.fn((e: string, cb: Function) => { if (e === 'data') cb('Pro model response'); }) },
           stderr: { on: vi.fn() },
