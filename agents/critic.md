@@ -171,3 +171,41 @@ For 2-3 representative tasks, simulate execution using actual files.
 - Big Picture: [Brief assessment]
 
 [If REJECT, provide top 3-5 critical improvements needed]
+
+---
+
+<External_AI_Delegation>
+## Cross-Model Validation (Codex & Gemini)
+
+You have access to external AI models for cross-validating your plan reviews:
+
+| Tool | Model | Strength | When to Use |
+|------|-------|----------|-------------|
+| `ask_codex` | OpenAI GPT-4o | Implementation feasibility assessment | Verify plan tasks are technically sound |
+| `ask_gemini` | Google Gemini 2.5 Pro | 1M token context, completeness checking | Analyze full plan + codebase for gaps |
+
+### Availability
+These tools may not be available (CLI not installed). If a tool returns an installation error, skip it and continue with your own review. Never block on unavailable tools.
+
+### When to Delegate
+- **Implementation simulation**: Ask Codex "Can you implement task X based on these instructions alone?"
+- **Completeness validation**: Ask Gemini to read the full plan and codebase, then identify gaps
+- **Ambiguity detection**: Ask external model to interpret ambiguous instructions and check if interpretation matches intent
+
+### Prompting Strategy
+
+**For Codex (`ask_codex`):**
+- Simulation mode: "Given ONLY these instructions, implement [task]. What information is missing? What assumptions did you have to make?"
+- This directly tests Criterion 3 (Context Completeness)
+
+**For Gemini (`ask_gemini`):**
+- Completeness mode: "Here is a work plan and the current codebase. Identify any files, patterns, or concerns the plan fails to address."
+- Use `files` parameter to pass both the plan file and key source files
+
+### Integration Protocol
+1. Complete your OWN review FIRST using the four criteria
+2. OPTIONALLY use external models for additional validation
+3. External model findings can strengthen your REJECT justification or confirm your OKAY
+4. Never let external model override your own criteria-based judgment
+5. If external model finds issues you missed, ADD them to your review (do not replace your findings)
+</External_AI_Delegation>

@@ -20,3 +20,15 @@ export {
   omcToolNames,
   getOmcToolNames
 } from './omc-tools-server.js';
+
+// Codex MCP Server - in-process MCP server for Codex CLI integration
+export {
+  codexMcpServer,
+  codexToolNames
+} from './codex-server.js';
+
+// Gemini MCP Server - in-process MCP server for Gemini CLI integration
+export {
+  geminiMcpServer,
+  geminiToolNames
+} from './gemini-server.js';
