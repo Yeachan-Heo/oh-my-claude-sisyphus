@@ -1,5 +1,5 @@
-import { describe, test, expect } from 'vitest';
-import { loadAgentPrompt } from '../agents/utils.js';
+import { describe, test, expect, beforeEach } from 'vitest';
+import { loadAgentPrompt, clearPromptCache, isLazyPrompt, resolveLazyPrompt, createLazyPrompt } from '../agents/utils.js';
 
 describe('loadAgentPrompt', () => {
   describe('valid agent names', () => {
@@ -63,16 +63,71 @@ describe('loadAgentPrompt', () => {
 
   describe('error handling', () => {
     test('returns fallback for nonexistent agent', () => {
+      clearPromptCache();
       const result = loadAgentPrompt('nonexistent-agent-xyz');
       expect(result).toContain('Agent: nonexistent-agent-xyz');
       expect(result).toContain('Prompt unavailable');
     });
 
     test('fallback does not leak internal paths', () => {
+      clearPromptCache();
       const result = loadAgentPrompt('nonexistent-agent-xyz');
       expect(result).not.toContain('/home');
       expect(result).not.toContain('agents/');
       expect(result).not.toContain('.md');
+    });
+  });
+
+  describe('prompt caching', () => {
+    beforeEach(() => {
+      clearPromptCache();
+    });
+
+    test('returns cached result on second call', () => {
+      const first = loadAgentPrompt('architect');
+      const second = loadAgentPrompt('architect');
+      expect(first).toBe(second);
+    });
+
+    test('cache can be cleared', () => {
+      const first = loadAgentPrompt('architect');
+      clearPromptCache();
+      const second = loadAgentPrompt('architect');
+      // Same content but verifies cache was cleared (no error)
+      expect(first).toEqual(second);
+    });
+
+    test('caches fallback for nonexistent agents', () => {
+      const first = loadAgentPrompt('nonexistent-cache-test');
+      const second = loadAgentPrompt('nonexistent-cache-test');
+      expect(first).toBe(second);
+      expect(first).toContain('Prompt unavailable');
+    });
+  });
+
+  describe('lazy prompt utilities', () => {
+    test('createLazyPrompt creates placeholder', () => {
+      const lazy = createLazyPrompt('architect');
+      expect(lazy).toBe('__LAZY_PROMPT__:architect');
+    });
+
+    test('isLazyPrompt detects placeholders', () => {
+      expect(isLazyPrompt('__LAZY_PROMPT__:architect')).toBe(true);
+      expect(isLazyPrompt('Not a lazy prompt')).toBe(false);
+      expect(isLazyPrompt('')).toBe(false);
+    });
+
+    test('resolveLazyPrompt loads the actual prompt', () => {
+      clearPromptCache();
+      const resolved = resolveLazyPrompt('__LAZY_PROMPT__:architect');
+      expect(resolved).toBeTruthy();
+      expect(resolved.length).toBeGreaterThan(100);
+      expect(resolved).not.toContain('__LAZY_PROMPT__');
+    });
+
+    test('resolveLazyPrompt passes through non-lazy prompts', () => {
+      const normal = 'This is a normal prompt';
+      expect(resolveLazyPrompt(normal)).toBe(normal);
     });
   });
 });

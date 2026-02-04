@@ -24,6 +24,11 @@ import type {
 // ============================================================
 
 /**
+ * Cache for loaded agent prompts to avoid repeated file reads
+ */
+const promptCache = new Map<string, string>();
+
+/**
  * Get the package root directory (where agents/ folder lives)
  */
 function getPackageDir(): string {
@@ -40,6 +45,12 @@ function getPackageDir(): string {
  * Security: Validates agent name to prevent path traversal attacks
  */
 export function loadAgentPrompt(agentName: string): string {
+  // Check cache first
+  const cached = promptCache.get(agentName);
+  if (cached !== undefined) {
+    return cached;
+  }
+
   // Security: Validate agent name contains only safe characters (alphanumeric and hyphens)
   // This prevents path traversal attacks like "../../etc/passwd"
   if (!/^[a-z0-9-]+$/i.test(agentName)) {
@@ -61,15 +72,59 @@ export function loadAgentPrompt(agentName: string): string {
     const content = readFileSync(agentPath, 'utf-8');
     // Extract content after YAML frontmatter (---\n...\n---\n)
     const match = content.match(/^---[\s\S]*?---\s*([\s\S]*)$/);
-    return match ? match[1].trim() : content.trim();
+    const result = match ? match[1].trim() : content.trim();
+
+    // Cache the result
+    promptCache.set(agentName, result);
+    return result;
   } catch (error) {
     // Don't leak internal paths in error messages
     const message = error instanceof Error && error.message.includes('Invalid agent name')
       ? error.message
       : 'Agent prompt file not found';
     console.warn(`[loadAgentPrompt] ${message}`);
-    return `Agent: ${agentName}\n\nPrompt unavailable.`;
+    const fallback = `Agent: ${agentName}\n\nPrompt unavailable.`;
+    promptCache.set(agentName, fallback);
+    return fallback;
   }
+}
+
+/**
+ * Create a lazy prompt loader that defers file reading until the prompt is accessed.
+ * This reduces startup time by not loading all agent prompts at module initialization.
+ *
+ * @param agentName - The name of the agent whose prompt to load lazily
+ * @returns A string that triggers lazy loading when accessed (via getter)
+ */
+export function createLazyPrompt(agentName: string): string {
+  // Return a placeholder that will be replaced by the actual prompt
+  // when getAgentDefinitions() processes it
+  return `__LAZY_PROMPT__:${agentName}`;
+}
+
+/**
+ * Check if a prompt is a lazy placeholder
+ */
+export function isLazyPrompt(prompt: string): boolean {
+  return prompt.startsWith('__LAZY_PROMPT__:');
+}
+
+/**
+ * Resolve a lazy prompt placeholder to the actual prompt content
+ */
+export function resolveLazyPrompt(prompt: string): string {
+  if (!isLazyPrompt(prompt)) {
+    return prompt;
+  }
+  const agentName = prompt.replace('__LAZY_PROMPT__:', '');
+  return loadAgentPrompt(agentName);
+}
+
+/**
+ * Clear the prompt cache (useful for testing or hot-reloading)
+ */
+export function clearPromptCache(): void {
+  promptCache.clear();
 }
 
 /**

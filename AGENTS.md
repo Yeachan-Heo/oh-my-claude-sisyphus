@@ -36,7 +36,7 @@ oh-my-claudecode enhances Claude Code with:
 | Directory | Purpose | Related AGENTS.md |
 |-----------|---------|-------------------|
 | `src/` | TypeScript source code - core library | `src/AGENTS.md` |
-| `agents/` | Markdown prompt templates for 32 agents (see `agents/templates/` for guidelines) | - |
+| `agents/` | Markdown prompt templates for 34 agents (see `docs/agent-templates/` for guidelines) | - |
 | `skills/` | 37 skill definitions for workflows | `skills/AGENTS.md` |
 | `commands/` | 31 slash command definitions (mirrors skills) | - |
 | `scripts/` | Build scripts, utilities, and automation | - |

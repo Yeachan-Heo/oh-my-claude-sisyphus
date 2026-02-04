@@ -14,7 +14,8 @@
  */
 
 import { loadConfig, findContextFiles, loadContextFromFiles } from './config/loader.js';
-import { getAgentDefinitions, omcSystemPrompt } from './agents/definitions.js';
+import { getAgentDefinitions, getDefaultAgentTier, omcSystemPrompt } from './agents/definitions.js';
+import type { AgentTier } from './agents/definitions.js';
 import { getDefaultMcpServers, toSdkMcpFormat } from './mcp/servers.js';
 import { omcToolsServer, getOmcToolNames } from './mcp/omc-tools-server.js';
 import { createMagicKeywordProcessor, detectMagicKeywords } from './features/magic-keywords.js';
@@ -27,7 +28,8 @@ import {
 } from './features/background-tasks.js';
 import type { PluginConfig, SessionState } from './shared/types.js';
 
-export { loadConfig, getAgentDefinitions, omcSystemPrompt };
+export { loadConfig, getAgentDefinitions, getDefaultAgentTier, omcSystemPrompt };
+export type { AgentTier, AgentDefinitionsOptions } from './agents/definitions.js';
 export { getDefaultMcpServers, toSdkMcpFormat } from './mcp/servers.js';
 export { lspTools, astTools, allCustomTools } from './tools/index.js';
 export { omcToolsServer, omcToolNames, getOmcToolNames } from './mcp/omc-tools-server.js';
@@ -209,6 +211,19 @@ export interface SisyphusOptions {
   customSystemPrompt?: string;
   /** API key (default: from ANTHROPIC_API_KEY env) */
   apiKey?: string;
+  /**
+   * Agent tier to load. Controls how many agents are registered.
+   * Fewer agents = faster startup (mitigates Claude Code warmup overhead).
+   *
+   * - 'all' (default): All 34 agents
+   * - 'standard': 22 agents (removes redundant tier variants)
+   * - 'base': 13 agents (base agents only)
+   * - 'minimal': 6 agents (essential agents only)
+   *
+   * Can also be set via OMC_AGENT_TIERS environment variable.
+   * @see https://github.com/Yeachan-Heo/oh-my-claudecode/issues/405
+   */
+  agentTier?: AgentTier;
 }
 
 /**
@@ -296,8 +311,10 @@ export function createSisyphusSession(options?: SisyphusOptions): SisyphusSessio
     systemPrompt += contextAddition;
   }
 
-  // Get agent definitions
-  const agents = getAgentDefinitions();
+  // Get agent definitions (respects OMC_AGENT_TIERS env var and agentTier option)
+  const agents = getAgentDefinitions({
+    tier: options?.agentTier ?? getDefaultAgentTier(),
+  });
 
   // Build MCP servers configuration
   const externalMcpServers = getDefaultMcpServers({

@@ -8,7 +8,7 @@
  * Bash hook scripts were removed in v3.9.0.
  */
 
-import { existsSync, mkdirSync, writeFileSync, readFileSync, chmodSync, readdirSync } from 'fs';
+import { existsSync, mkdirSync, writeFileSync, readFileSync, chmodSync, readdirSync, statSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { homedir } from 'os';
@@ -195,6 +195,7 @@ function getPackageDir(): string {
 
 /**
  * Load agent definitions from /agents/*.md files
+ * Only loads .md files at the top level (skips subdirectories like templates/)
  */
 function loadAgentDefinitions(): Record<string, string> {
   const agentsDir = join(getPackageDir(), 'agents');
@@ -206,8 +207,20 @@ function loadAgentDefinitions(): Record<string, string> {
   }
 
   for (const file of readdirSync(agentsDir)) {
+    const filePath = join(agentsDir, file);
+    // Skip subdirectories (like templates/) - only load top-level .md files
+    // This prevents spurious agent registrations from internal documentation
+    // See: https://github.com/Yeachan-Heo/oh-my-claudecode/issues/405
+    try {
+      if (statSync(filePath).isDirectory()) {
+        continue;
+      }
+    } catch {
+      // If stat fails, skip the file
+      continue;
+    }
     if (file.endsWith('.md')) {
-      definitions[file] = readFileSync(join(agentsDir, file), 'utf-8');
+      definitions[file] = readFileSync(filePath, 'utf-8');
     }
   }
 

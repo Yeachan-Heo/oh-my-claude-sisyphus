@@ -69,8 +69,10 @@ export {
 // Core exports (getAgentDefinitions and omcSystemPrompt)
 export {
   getAgentDefinitions,
+  getDefaultAgentTier,
   omcSystemPrompt
 } from './definitions.js';
+export type { AgentTier, AgentDefinitionsOptions } from './definitions.js';
 
 // Deprecated exports (for backward compatibility)
 export {

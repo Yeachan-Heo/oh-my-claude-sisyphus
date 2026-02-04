@@ -26,7 +26,7 @@ The template uses the following placeholders:
 
 1. **Copy the base template**:
    ```bash
-   cp agents/templates/base-agent.md agents/my-new-agent.md
+   cp docs/agent-templates/base-agent.md agents/my-new-agent.md
    ```
 
 2. **Replace placeholders**:

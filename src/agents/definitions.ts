@@ -328,38 +328,102 @@ export const gitMasterAgent: AgentConfig = {
  */
 
 /**
- * Get all agent definitions as a record for use with Claude Agent SDK
+ * Agent loading tier options.
+ *
+ * Controls how many agents are registered at startup.
+ * Fewer agents = faster startup (mitigates Claude Code warmup overhead).
+ *
+ * - 'all': All 34 agents (base + tiered + specialized). Full functionality.
+ * - 'standard': 22 agents (base + one tier per domain + specialized).
+ *   Omits redundant low/high variants where the base agent suffices.
+ * - 'base': 13 base agents only. No tiered or specialized variants.
+ *   The orchestrator handles model routing via the `model` parameter.
+ * - 'minimal': 6 essential agents (architect, executor, explore, researcher, designer, writer).
+ *   Bare minimum for core orchestration workflows.
  */
-export function getAgentDefinitions(overrides?: Partial<Record<string, Partial<AgentConfig>>>): Record<string, {
+export type AgentTier = 'all' | 'standard' | 'base' | 'minimal';
+
+/** Options for getAgentDefinitions */
+export interface AgentDefinitionsOptions {
+  /** Override individual agent configs */
+  overrides?: Partial<Record<string, Partial<AgentConfig>>>;
+  /** Which tier of agents to load. Default: 'all'. Set via OMC_AGENT_TIERS env var. */
+  tier?: AgentTier;
+}
+
+/**
+ * Get all agent definitions as a record for use with Claude Agent SDK.
+ *
+ * Supports tiered loading to reduce agent count for faster startup.
+ * Set the OMC_AGENT_TIERS environment variable to control:
+ *   - 'all' (default): 34 agents
+ *   - 'standard': 22 agents (removes redundant tier variants)
+ *   - 'base': 13 agents (base agents only)
+ *   - 'minimal': 6 agents (essential agents only)
+ *
+ * @see https://github.com/Yeachan-Heo/oh-my-claudecode/issues/405
+ */
+export function getAgentDefinitions(optionsOrOverrides?: AgentDefinitionsOptions | Partial<Record<string, Partial<AgentConfig>>>): Record<string, {
   description: string;
   prompt: string;
   tools: string[];
   model?: ModelType;
   defaultModel?: ModelType;
 }> {
-  const agents = {
-    // Base agents (from individual files)
-    // Role: code-analysis
-    // NotFor: requirements-gathering, plan-creation, plan-review
+  // Support both old signature (overrides only) and new options object
+  let overrides: Partial<Record<string, Partial<AgentConfig>>> | undefined;
+  let tier: AgentTier;
+
+  if (optionsOrOverrides && ('tier' in optionsOrOverrides || 'overrides' in optionsOrOverrides)) {
+    const opts = optionsOrOverrides as AgentDefinitionsOptions;
+    overrides = opts.overrides;
+    tier = opts.tier ?? getDefaultAgentTier();
+  } else {
+    overrides = optionsOrOverrides as Partial<Record<string, Partial<AgentConfig>>> | undefined;
+    tier = getDefaultAgentTier();
+  }
+
+  // Minimal: 6 essential agents for core orchestration
+  const minimalAgents: Record<string, AgentConfig> = {
     architect: architectAgent,
     researcher: researcherAgent,
     explore: exploreAgent,
     designer: designerAgent,
     writer: writerAgent,
-    vision: visionAgent,
-    // Role: plan-review
-    // NotFor: requirements-gathering, plan-creation, code-analysis
-    critic: criticAgent,
-    // Role: requirements-analysis
-    // NotFor: code-analysis, plan-creation, plan-review
-    analyst: analystAgent,
     executor: executorAgent,
-    // Role: plan-creation
-    // NotFor: requirements-gathering, code-analysis, plan-review
+  };
+
+  // Base: 13 agents (all individual agent files)
+  const baseAgents: Record<string, AgentConfig> = {
+    ...minimalAgents,
+    vision: visionAgent,
+    critic: criticAgent,
+    analyst: analystAgent,
     planner: plannerAgent,
     'deep-executor': deepExecutorAgent,
     'qa-tester': qaTesterAgent,
     scientist: scientistAgent,
+  };
+
+  // Standard: 22 agents (base + one useful tier per domain + specialized)
+  const standardAgents: Record<string, AgentConfig> = {
+    ...baseAgents,
+    // Key tiered variants (one per domain, most useful tier)
+    'architect-low': architectLowAgent,
+    'executor-low': executorLowAgent,
+    'explore-medium': exploreMediumAgent,
+    // Specialized agents
+    'security-reviewer': securityReviewerAgent,
+    'build-fixer': buildFixerAgent,
+    'tdd-guide': tddGuideAgent,
+    'code-reviewer': codeReviewerAgent,
+    'code-reviewer-low': codeReviewerLowAgent,
+    'git-master': gitMasterAgent,
+  };
+
+  // All: 34 agents (full set)
+  const allAgents: Record<string, AgentConfig> = {
+    ...baseAgents,
     // Tiered variants (prompts loaded from /agents/*.md)
     'architect-medium': architectMediumAgent,
     'architect-low': architectLowAgent,
@@ -382,8 +446,18 @@ export function getAgentDefinitions(overrides?: Partial<Record<string, Partial<A
     'tdd-guide-low': tddGuideLowAgent,
     'code-reviewer': codeReviewerAgent,
     'code-reviewer-low': codeReviewerLowAgent,
-    'git-master': gitMasterAgent
+    'git-master': gitMasterAgent,
   };
+
+  // Select agents based on tier
+  const agentMap: Record<AgentTier, Record<string, AgentConfig>> = {
+    minimal: minimalAgents,
+    base: baseAgents,
+    standard: standardAgents,
+    all: allAgents,
+  };
+
+  const agents = agentMap[tier];
 
   const result: Record<string, { description: string; prompt: string; tools: string[]; model?: ModelType; defaultModel?: ModelType }> = {};
 
@@ -399,6 +473,18 @@ export function getAgentDefinitions(overrides?: Partial<Record<string, Partial<A
   }
 
   return result;
+}
+
+/**
+ * Get the default agent tier from environment or config.
+ * Reads OMC_AGENT_TIERS env var, falls back to 'all'.
+ */
+export function getDefaultAgentTier(): AgentTier {
+  const envTier = process.env.OMC_AGENT_TIERS?.toLowerCase();
+  if (envTier && ['all', 'standard', 'base', 'minimal'].includes(envTier)) {
+    return envTier as AgentTier;
+  }
+  return 'all';
 }
 
 // ============================================================
