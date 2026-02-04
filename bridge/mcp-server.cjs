@@ -2244,8 +2244,8 @@ var require_resolve = __commonJS({
       }
       return count;
     }
-    function getFullPath(resolver, id = "", normalize) {
-      if (normalize !== false)
+    function getFullPath(resolver, id = "", normalize2) {
+      if (normalize2 !== false)
         id = normalizeId(id);
       const p = resolver.parse(id);
       return _getFullPath(resolver, p);
@@ -2993,7 +2993,7 @@ var require_compile = __commonJS({
       const schOrFunc = root.refs[ref];
       if (schOrFunc)
         return schOrFunc;
-      let _sch = resolve4.call(this, root, ref);
+      let _sch = resolve5.call(this, root, ref);
       if (_sch === void 0) {
         const schema = (_a = root.localRefs) === null || _a === void 0 ? void 0 : _a[ref];
         const { schemaId } = this.opts;
@@ -3020,7 +3020,7 @@ var require_compile = __commonJS({
     function sameSchemaEnv(s1, s2) {
       return s1.schema === s2.schema && s1.root === s2.root && s1.baseId === s2.baseId;
     }
-    function resolve4(root, ref) {
+    function resolve5(root, ref) {
       let sch;
       while (typeof (sch = this.refs[ref]) == "string")
         ref = sch;
@@ -3235,8 +3235,8 @@ var require_utils = __commonJS({
       }
       return ind;
     }
-    function removeDotSegments(path6) {
-      let input = path6;
+    function removeDotSegments(path10) {
+      let input = path10;
       const output = [];
       let nextSlash = -1;
       let len = 0;
@@ -3435,8 +3435,8 @@ var require_schemes = __commonJS({
         wsComponent.secure = void 0;
       }
       if (wsComponent.resourceName) {
-        const [path6, query] = wsComponent.resourceName.split("?");
-        wsComponent.path = path6 && path6 !== "/" ? path6 : void 0;
+        const [path10, query] = wsComponent.resourceName.split("?");
+        wsComponent.path = path10 && path10 !== "/" ? path10 : void 0;
         wsComponent.query = query;
         wsComponent.resourceName = void 0;
       }
@@ -3585,7 +3585,7 @@ var require_fast_uri = __commonJS({
     "use strict";
     var { normalizeIPv6, removeDotSegments, recomposeAuthority, normalizeComponentEncoding, isIPv4, nonSimpleDomain } = require_utils();
     var { SCHEMES, getSchemeHandler } = require_schemes();
-    function normalize(uri, options) {
+    function normalize2(uri, options) {
       if (typeof uri === "string") {
         uri = /** @type {T} */
         serialize(parse5(uri, options), options);
@@ -3595,55 +3595,55 @@ var require_fast_uri = __commonJS({
       }
       return uri;
     }
-    function resolve4(baseURI, relativeURI, options) {
+    function resolve5(baseURI, relativeURI, options) {
       const schemelessOptions = options ? Object.assign({ scheme: "null" }, options) : { scheme: "null" };
       const resolved = resolveComponent(parse5(baseURI, schemelessOptions), parse5(relativeURI, schemelessOptions), schemelessOptions, true);
       schemelessOptions.skipEscape = true;
       return serialize(resolved, schemelessOptions);
     }
-    function resolveComponent(base, relative, options, skipNormalization) {
+    function resolveComponent(base, relative3, options, skipNormalization) {
       const target = {};
       if (!skipNormalization) {
         base = parse5(serialize(base, options), options);
-        relative = parse5(serialize(relative, options), options);
+        relative3 = parse5(serialize(relative3, options), options);
       }
       options = options || {};
-      if (!options.tolerant && relative.scheme) {
-        target.scheme = relative.scheme;
-        target.userinfo = relative.userinfo;
-        target.host = relative.host;
-        target.port = relative.port;
-        target.path = removeDotSegments(relative.path || "");
-        target.query = relative.query;
+      if (!options.tolerant && relative3.scheme) {
+        target.scheme = relative3.scheme;
+        target.userinfo = relative3.userinfo;
+        target.host = relative3.host;
+        target.port = relative3.port;
+        target.path = removeDotSegments(relative3.path || "");
+        target.query = relative3.query;
       } else {
-        if (relative.userinfo !== void 0 || relative.host !== void 0 || relative.port !== void 0) {
-          target.userinfo = relative.userinfo;
-          target.host = relative.host;
-          target.port = relative.port;
-          target.path = removeDotSegments(relative.path || "");
-          target.query = relative.query;
+        if (relative3.userinfo !== void 0 || relative3.host !== void 0 || relative3.port !== void 0) {
+          target.userinfo = relative3.userinfo;
+          target.host = relative3.host;
+          target.port = relative3.port;
+          target.path = removeDotSegments(relative3.path || "");
+          target.query = relative3.query;
         } else {
-          if (!relative.path) {
+          if (!relative3.path) {
             target.path = base.path;
-            if (relative.query !== void 0) {
-              target.query = relative.query;
+            if (relative3.query !== void 0) {
+              target.query = relative3.query;
             } else {
               target.query = base.query;
             }
           } else {
-            if (relative.path[0] === "/") {
-              target.path = removeDotSegments(relative.path);
+            if (relative3.path[0] === "/") {
+              target.path = removeDotSegments(relative3.path);
             } else {
               if ((base.userinfo !== void 0 || base.host !== void 0 || base.port !== void 0) && !base.path) {
-                target.path = "/" + relative.path;
+                target.path = "/" + relative3.path;
               } else if (!base.path) {
-                target.path = relative.path;
+                target.path = relative3.path;
               } else {
-                target.path = base.path.slice(0, base.path.lastIndexOf("/") + 1) + relative.path;
+                target.path = base.path.slice(0, base.path.lastIndexOf("/") + 1) + relative3.path;
               }
               target.path = removeDotSegments(target.path);
             }
-            target.query = relative.query;
+            target.query = relative3.query;
           }
           target.userinfo = base.userinfo;
           target.host = base.host;
@@ -3651,7 +3651,7 @@ var require_fast_uri = __commonJS({
         }
         target.scheme = base.scheme;
       }
-      target.fragment = relative.fragment;
+      target.fragment = relative3.fragment;
       return target;
     }
     function equal(uriA, uriB, options) {
@@ -3821,8 +3821,8 @@ var require_fast_uri = __commonJS({
     }
     var fastUri = {
       SCHEMES,
-      normalize,
-      resolve: resolve4,
+      normalize: normalize2,
+      resolve: resolve5,
       resolveComponent,
       equal,
       serialize,
@@ -6789,12 +6789,12 @@ var require_dist = __commonJS({
         throw new Error(`Unknown format "${name}"`);
       return f;
     };
-    function addFormats(ajv, list, fs5, exportName) {
+    function addFormats(ajv, list, fs8, exportName) {
       var _a;
       var _b;
       (_a = (_b = ajv.opts.code).formats) !== null && _a !== void 0 ? _a : _b.formats = (0, codegen_1._)`require("ajv-formats/dist/formats").${exportName}`;
       for (const f of list)
-        ajv.addFormat(f, fs5[f]);
+        ajv.addFormat(f, fs8[f]);
     }
     module2.exports = exports2 = formatsPlugin;
     Object.defineProperty(exports2, "__esModule", { value: true });
@@ -7280,8 +7280,8 @@ function getErrorMap() {
 
 // node_modules/zod/v3/helpers/parseUtil.js
 var makeIssue = (params) => {
-  const { data, path: path6, errorMaps, issueData } = params;
-  const fullPath = [...path6, ...issueData.path || []];
+  const { data, path: path10, errorMaps, issueData } = params;
+  const fullPath = [...path10, ...issueData.path || []];
   const fullIssue = {
     ...issueData,
     path: fullPath
@@ -7397,11 +7397,11 @@ var errorUtil;
 
 // node_modules/zod/v3/types.js
 var ParseInputLazyPath = class {
-  constructor(parent, value, path6, key) {
+  constructor(parent, value, path10, key) {
     this._cachedPath = [];
     this.parent = parent;
     this.data = value;
-    this._path = path6;
+    this._path = path10;
     this._key = key;
   }
   get path() {
@@ -11038,10 +11038,10 @@ function assignProp(target, prop, value) {
     configurable: true
   });
 }
-function getElementAtPath(obj, path6) {
-  if (!path6)
+function getElementAtPath(obj, path10) {
+  if (!path10)
     return obj;
-  return path6.reduce((acc, key) => acc?.[key], obj);
+  return path10.reduce((acc, key) => acc?.[key], obj);
 }
 function promiseAllObject(promisesObj) {
   const keys = Object.keys(promisesObj);
@@ -11361,11 +11361,11 @@ function aborted(x, startIndex = 0) {
   }
   return false;
 }
-function prefixIssues(path6, issues) {
+function prefixIssues(path10, issues) {
   return issues.map((iss) => {
     var _a;
     (_a = iss).path ?? (_a.path = []);
-    iss.path.unshift(path6);
+    iss.path.unshift(path10);
     return iss;
   });
 }
@@ -16652,7 +16652,7 @@ var Protocol = class {
           return;
         }
         const pollInterval = task2.pollInterval ?? this._options?.defaultTaskPollInterval ?? 1e3;
-        await new Promise((resolve4) => setTimeout(resolve4, pollInterval));
+        await new Promise((resolve5) => setTimeout(resolve5, pollInterval));
         options?.signal?.throwIfAborted();
       }
     } catch (error2) {
@@ -16669,7 +16669,7 @@ var Protocol = class {
    */
   request(request, resultSchema, options) {
     const { relatedRequestId, resumptionToken, onresumptiontoken, task, relatedTask } = options ?? {};
-    return new Promise((resolve4, reject) => {
+    return new Promise((resolve5, reject) => {
       const earlyReject = (error2) => {
         reject(error2);
       };
@@ -16747,7 +16747,7 @@ var Protocol = class {
           if (!parseResult.success) {
             reject(parseResult.error);
           } else {
-            resolve4(parseResult.data);
+            resolve5(parseResult.data);
           }
         } catch (error2) {
           reject(error2);
@@ -17008,12 +17008,12 @@ var Protocol = class {
       }
     } catch {
     }
-    return new Promise((resolve4, reject) => {
+    return new Promise((resolve5, reject) => {
       if (signal.aborted) {
         reject(new McpError(ErrorCode.InvalidRequest, "Request cancelled"));
         return;
       }
-      const timeoutId = setTimeout(resolve4, interval);
+      const timeoutId = setTimeout(resolve5, interval);
       signal.addEventListener("abort", () => {
         clearTimeout(timeoutId);
         reject(new McpError(ErrorCode.InvalidRequest, "Request cancelled"));
@@ -17742,12 +17742,12 @@ var StdioServerTransport = class {
     this.onclose?.();
   }
   send(message) {
-    return new Promise((resolve4) => {
+    return new Promise((resolve5) => {
       const json = serializeMessage(message);
       if (this._stdout.write(json)) {
-        resolve4();
+        resolve5();
       } else {
-        this._stdout.once("drain", resolve4);
+        this._stdout.once("drain", resolve5);
       }
     });
   }
@@ -17928,7 +17928,7 @@ var LspClient = class {
 Install with: ${this.serverConfig.installHint}`
       );
     }
-    return new Promise((resolve4, reject) => {
+    return new Promise((resolve5, reject) => {
       this.process = (0, import_child_process2.spawn)(this.serverConfig.command, this.serverConfig.args, {
         cwd: this.workspaceRoot,
         stdio: ["pipe", "pipe", "pipe"]
@@ -17951,7 +17951,7 @@ Install with: ${this.serverConfig.installHint}`
       });
       this.initialize().then(() => {
         this.initialized = true;
-        resolve4();
+        resolve5();
       }).catch(reject);
     });
   }
@@ -18047,13 +18047,13 @@ Install with: ${this.serverConfig.installHint}`
     const message = `Content-Length: ${Buffer.byteLength(content)}\r
 \r
 ${content}`;
-    return new Promise((resolve4, reject) => {
+    return new Promise((resolve5, reject) => {
       const timeoutHandle = setTimeout(() => {
         this.pendingRequests.delete(id);
         reject(new Error(`LSP request '${method}' timed out after ${timeout}ms`));
       }, timeout);
       this.pendingRequests.set(id, {
-        resolve: resolve4,
+        resolve: resolve5,
         reject,
         timeout: timeoutHandle
       });
@@ -18122,7 +18122,7 @@ ${content}`;
       }
     });
     this.openDocuments.add(uri);
-    await new Promise((resolve4) => setTimeout(resolve4, 100));
+    await new Promise((resolve5) => setTimeout(resolve5, 100));
   }
   /**
    * Close a document
@@ -18388,9 +18388,9 @@ function formatRange(range) {
   return start === end ? start : `${start}-${end}`;
 }
 function formatLocation(location) {
-  const path6 = uriToPath(location.uri);
+  const path10 = uriToPath(location.uri);
   const range = formatRange(location.range);
-  return `${path6}:${range}`;
+  return `${path10}:${range}`;
 }
 function formatHover(hover) {
   if (!hover) return "No hover information available";
@@ -18476,8 +18476,8 @@ function formatWorkspaceEdit(edit) {
   const lines = [];
   if (edit.changes) {
     for (const [uri, changes] of Object.entries(edit.changes)) {
-      const path6 = uriToPath(uri);
-      lines.push(`File: ${path6}`);
+      const path10 = uriToPath(uri);
+      lines.push(`File: ${path10}`);
       for (const change of changes) {
         const range = formatRange(change.range);
         const preview = change.newText.length > 50 ? change.newText.slice(0, 50) + "..." : change.newText;
@@ -18487,8 +18487,8 @@ function formatWorkspaceEdit(edit) {
   }
   if (edit.documentChanges) {
     for (const docChange of edit.documentChanges) {
-      const path6 = uriToPath(docChange.textDocument.uri);
-      lines.push(`File: ${path6}`);
+      const path10 = uriToPath(docChange.textDocument.uri);
+      lines.push(`File: ${path10}`);
       for (const change of docChange.edits) {
         const range = formatRange(change.range);
         const preview = change.newText.length > 50 ? change.newText.slice(0, 50) + "..." : change.newText;
@@ -18617,7 +18617,7 @@ async function runLspAggregatedDiagnostics(directory, extensions = [".ts", ".tsx
         continue;
       }
       await client.openDocument(file);
-      await new Promise((resolve4) => setTimeout(resolve4, LSP_DIAGNOSTICS_WAIT_MS));
+      await new Promise((resolve5) => setTimeout(resolve5, LSP_DIAGNOSTICS_WAIT_MS));
       const diagnostics = client.getDiagnostics(file);
       for (const diagnostic of diagnostics) {
         allDiagnostics.push({
@@ -18867,7 +18867,7 @@ var lspDiagnosticsTool = {
     const { file, severity } = args;
     return withLspClient(file, "diagnostics", async (client) => {
       await client.openDocument(file);
-      await new Promise((resolve4) => setTimeout(resolve4, LSP_DIAGNOSTICS_WAIT_MS));
+      await new Promise((resolve5) => setTimeout(resolve5, LSP_DIAGNOSTICS_WAIT_MS));
       let diagnostics = client.getDiagnostics(file);
       if (severity) {
         const severityMap = {
@@ -19279,7 +19279,7 @@ Note: Patterns must be valid AST nodes for the language.`,
     const {
       pattern,
       language,
-      path: path6 = ".",
+      path: path10 = ".",
       context = 2,
       maxResults = 20
     } = args;
@@ -19296,13 +19296,13 @@ Error: ${sgLoadError}`
           ]
         };
       }
-      const files = getFilesForLanguage(path6, language);
+      const files = getFilesForLanguage(path10, language);
       if (files.length === 0) {
         return {
           content: [
             {
               type: "text",
-              text: `No ${language} files found in ${path6}`
+              text: `No ${language} files found in ${path10}`
             }
           ]
         };
@@ -19342,7 +19342,7 @@ Error: ${sgLoadError}`
               type: "text",
               text: `No matches found for pattern: ${pattern}
 
-Searched ${files.length} ${language} file(s) in ${path6}
+Searched ${files.length} ${language} file(s) in ${path10}
 
 Tip: Ensure the pattern is a valid AST node. For example:
 - Use "function $NAME" not just "$NAME"
@@ -19402,7 +19402,7 @@ IMPORTANT: dryRun=true (default) only previews changes. Set dryRun=false to appl
     dryRun: external_exports.boolean().optional().describe("Preview only, don't apply changes (default: true)")
   },
   handler: async (args) => {
-    const { pattern, replacement, language, path: path6 = ".", dryRun = true } = args;
+    const { pattern, replacement, language, path: path10 = ".", dryRun = true } = args;
     try {
       const sg = await getSgModule();
       if (!sg) {
@@ -19416,13 +19416,13 @@ Error: ${sgLoadError}`
           ]
         };
       }
-      const files = getFilesForLanguage(path6, language);
+      const files = getFilesForLanguage(path10, language);
       if (files.length === 0) {
         return {
           content: [
             {
               type: "text",
-              text: `No ${language} files found in ${path6}`
+              text: `No ${language} files found in ${path10}`
             }
           ]
         };
@@ -19490,7 +19490,7 @@ Error: ${sgLoadError}`
               type: "text",
               text: `No matches found for pattern: ${pattern}
 
-Searched ${files.length} ${language} file(s) in ${path6}`
+Searched ${files.length} ${language} file(s) in ${path10}`
             }
           ]
         };
@@ -19692,6 +19692,49 @@ async function atomicWriteJson(filePath, data) {
       });
     }
   }
+}
+function atomicWriteFileSync(filePath, content) {
+  const dir = path2.dirname(filePath);
+  const base = path2.basename(filePath);
+  const tempPath = path2.join(dir, `.${base}.tmp.${crypto2.randomUUID()}`);
+  let fd = null;
+  let success = false;
+  try {
+    ensureDirSync(dir);
+    fd = fsSync.openSync(tempPath, "wx", 384);
+    fsSync.writeSync(fd, content, 0, "utf-8");
+    fsSync.fsyncSync(fd);
+    fsSync.closeSync(fd);
+    fd = null;
+    fsSync.renameSync(tempPath, filePath);
+    success = true;
+    try {
+      const dirFd = fsSync.openSync(dir, "r");
+      try {
+        fsSync.fsyncSync(dirFd);
+      } finally {
+        fsSync.closeSync(dirFd);
+      }
+    } catch {
+    }
+  } finally {
+    if (fd !== null) {
+      try {
+        fsSync.closeSync(fd);
+      } catch {
+      }
+    }
+    if (!success) {
+      try {
+        fsSync.unlinkSync(tempPath);
+      } catch {
+      }
+    }
+  }
+}
+function atomicWriteJsonSync(filePath, data) {
+  const jsonContent = JSON.stringify(data, null, 2);
+  atomicWriteFileSync(filePath, jsonContent);
 }
 async function safeReadJson(filePath) {
   try {
@@ -20077,7 +20120,7 @@ var SessionLock = class {
   }
 };
 function sleep(ms) {
-  return new Promise((resolve4) => setTimeout(resolve4, ms));
+  return new Promise((resolve5) => setTimeout(resolve5, ms));
 }
 
 // src/tools/python-repl/socket-client.ts
@@ -20107,7 +20150,7 @@ var JsonRpcError = class extends Error {
   }
 };
 async function sendSocketRequest(socketPath, method, params, timeout = 6e4) {
-  return new Promise((resolve4, reject) => {
+  return new Promise((resolve5, reject) => {
     const id = (0, import_crypto.randomUUID)();
     const request = {
       jsonrpc: "2.0",
@@ -20171,7 +20214,7 @@ async function sendSocketRequest(socketPath, method, params, timeout = 6e4) {
             ));
             return;
           }
-          resolve4(response.result);
+          resolve5(response.result);
         } catch (e) {
           reject(new Error(
             `Failed to parse JSON-RPC response: ${e.message}`
@@ -20489,7 +20532,7 @@ async function deleteBridgeMeta(sessionId) {
   }
 }
 function sleep2(ms) {
-  return new Promise((resolve4) => setTimeout(resolve4, ms));
+  return new Promise((resolve5) => setTimeout(resolve5, ms));
 }
 
 // src/tools/python-repl/tool.ts
@@ -20924,11 +20967,1553 @@ var pythonReplTool = {
   }
 };
 
+// src/tools/state-tools.ts
+var import_fs8 = require("fs");
+
+// src/lib/worktree-paths.ts
+var import_child_process8 = require("child_process");
+var import_fs6 = require("fs");
+var import_path7 = require("path");
+var OmcPaths = {
+  ROOT: ".omc",
+  STATE: ".omc/state",
+  PLANS: ".omc/plans",
+  RESEARCH: ".omc/research",
+  NOTEPAD: ".omc/notepad.md",
+  PROJECT_MEMORY: ".omc/project-memory.json"
+};
+var worktreeCache = null;
+function getWorktreeRoot(cwd) {
+  const effectiveCwd = cwd || process.cwd();
+  if (worktreeCache && worktreeCache.cwd === effectiveCwd) {
+    return worktreeCache.root;
+  }
+  try {
+    const root = (0, import_child_process8.execSync)("git rev-parse --show-toplevel", {
+      cwd: effectiveCwd,
+      encoding: "utf-8",
+      stdio: ["pipe", "pipe", "pipe"]
+    }).trim();
+    worktreeCache = { cwd: effectiveCwd, root };
+    return root;
+  } catch {
+    return effectiveCwd;
+  }
+}
+function validatePath(inputPath) {
+  if (inputPath.includes("..")) {
+    throw new Error(`Invalid path: path traversal not allowed (${inputPath})`);
+  }
+  if (inputPath.startsWith("/") || inputPath.startsWith("~")) {
+    throw new Error(`Invalid path: absolute paths not allowed (${inputPath})`);
+  }
+}
+function resolveOmcPath(relativePath, worktreeRoot) {
+  validatePath(relativePath);
+  const root = worktreeRoot || getWorktreeRoot() || process.cwd();
+  const omcDir = (0, import_path7.join)(root, OmcPaths.ROOT);
+  const fullPath = (0, import_path7.normalize)((0, import_path7.resolve)(omcDir, relativePath));
+  const relativeToRoot = (0, import_path7.relative)(root, fullPath);
+  if (relativeToRoot.startsWith("..") || relativeToRoot.startsWith(import_path7.sep + "..")) {
+    throw new Error(`Path escapes worktree boundary: ${relativePath}`);
+  }
+  return fullPath;
+}
+function resolveStatePath(stateName, worktreeRoot) {
+  if (stateName === "swarm" || stateName === "swarm-state") {
+    throw new Error("Swarm uses SQLite (swarm.db), not JSON state. Use getStateFilePath from mode-registry instead.");
+  }
+  const normalizedName = stateName.endsWith("-state") ? stateName : `${stateName}-state`;
+  return resolveOmcPath(`state/${normalizedName}.json`, worktreeRoot);
+}
+function ensureOmcDir(relativePath, worktreeRoot) {
+  const fullPath = resolveOmcPath(relativePath, worktreeRoot);
+  if (!(0, import_fs6.existsSync)(fullPath)) {
+    (0, import_fs6.mkdirSync)(fullPath, { recursive: true });
+  }
+  return fullPath;
+}
+function getWorktreeNotepadPath(worktreeRoot) {
+  const root = worktreeRoot || getWorktreeRoot() || process.cwd();
+  return (0, import_path7.join)(root, OmcPaths.NOTEPAD);
+}
+function getWorktreeProjectMemoryPath(worktreeRoot) {
+  const root = worktreeRoot || getWorktreeRoot() || process.cwd();
+  return (0, import_path7.join)(root, OmcPaths.PROJECT_MEMORY);
+}
+
+// src/hooks/mode-registry/index.ts
+var import_fs7 = require("fs");
+var import_path8 = require("path");
+var STALE_MARKER_THRESHOLD = 60 * 60 * 1e3;
+var MODE_CONFIGS = {
+  autopilot: {
+    name: "Autopilot",
+    stateFile: "autopilot-state.json",
+    activeProperty: "active"
+  },
+  ultrapilot: {
+    name: "Ultrapilot",
+    stateFile: "ultrapilot-state.json",
+    markerFile: "ultrapilot-ownership.json",
+    activeProperty: "active"
+  },
+  swarm: {
+    name: "Swarm",
+    stateFile: "swarm.db",
+    markerFile: "swarm-active.marker",
+    isSqlite: true
+  },
+  pipeline: {
+    name: "Pipeline",
+    stateFile: "pipeline-state.json",
+    activeProperty: "active"
+  },
+  ralph: {
+    name: "Ralph",
+    stateFile: "ralph-state.json",
+    markerFile: "ralph-verification.json",
+    activeProperty: "active",
+    hasGlobalState: false
+  },
+  ultrawork: {
+    name: "Ultrawork",
+    stateFile: "ultrawork-state.json",
+    activeProperty: "active",
+    hasGlobalState: false
+  },
+  ultraqa: {
+    name: "UltraQA",
+    stateFile: "ultraqa-state.json",
+    activeProperty: "active"
+  },
+  ecomode: {
+    name: "Ecomode",
+    stateFile: "ecomode-state.json",
+    activeProperty: "active",
+    hasGlobalState: false
+  }
+};
+function getStateDir(cwd) {
+  return (0, import_path8.join)(cwd, ".omc", "state");
+}
+function getStateFilePath(cwd, mode) {
+  const config2 = MODE_CONFIGS[mode];
+  return (0, import_path8.join)(getStateDir(cwd), config2.stateFile);
+}
+function getMarkerFilePath(cwd, mode) {
+  const config2 = MODE_CONFIGS[mode];
+  if (!config2.markerFile) return null;
+  return (0, import_path8.join)(getStateDir(cwd), config2.markerFile);
+}
+function isJsonModeActive(cwd, mode) {
+  const config2 = MODE_CONFIGS[mode];
+  const stateFile = getStateFilePath(cwd, mode);
+  if (!(0, import_fs7.existsSync)(stateFile)) {
+    return false;
+  }
+  try {
+    const content = (0, import_fs7.readFileSync)(stateFile, "utf-8");
+    const state = JSON.parse(content);
+    if (config2.activeProperty) {
+      return state[config2.activeProperty] === true;
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+function isSqliteModeActive(cwd, mode) {
+  const markerPath = getMarkerFilePath(cwd, mode);
+  if (markerPath && (0, import_fs7.existsSync)(markerPath)) {
+    try {
+      const content = (0, import_fs7.readFileSync)(markerPath, "utf-8");
+      const marker = JSON.parse(content);
+      if (marker.startedAt) {
+        const startTime = new Date(marker.startedAt).getTime();
+        const age = Date.now() - startTime;
+        if (age > STALE_MARKER_THRESHOLD) {
+          console.warn(`Stale ${mode} marker detected (${Math.round(age / 6e4)} min old). Auto-removing.`);
+          (0, import_fs7.unlinkSync)(markerPath);
+          return false;
+        }
+      }
+      return true;
+    } catch {
+      return false;
+    }
+  }
+  const dbPath = getStateFilePath(cwd, mode);
+  return (0, import_fs7.existsSync)(dbPath);
+}
+function isModeActive(mode, cwd) {
+  const config2 = MODE_CONFIGS[mode];
+  if (config2.isSqlite) {
+    return isSqliteModeActive(cwd, mode);
+  }
+  return isJsonModeActive(cwd, mode);
+}
+function getActiveModes(cwd) {
+  const modes = [];
+  for (const mode of Object.keys(MODE_CONFIGS)) {
+    if (isModeActive(mode, cwd)) {
+      modes.push(mode);
+    }
+  }
+  return modes;
+}
+function getAllModeStatuses(cwd) {
+  return Object.keys(MODE_CONFIGS).map((mode) => ({
+    mode,
+    active: isModeActive(mode, cwd),
+    stateFilePath: getStateFilePath(cwd, mode)
+  }));
+}
+function clearModeState(mode, cwd) {
+  const config2 = MODE_CONFIGS[mode];
+  let success = true;
+  const stateFile = getStateFilePath(cwd, mode);
+  if ((0, import_fs7.existsSync)(stateFile)) {
+    try {
+      (0, import_fs7.unlinkSync)(stateFile);
+    } catch {
+      success = false;
+    }
+  }
+  if (config2.isSqlite) {
+    const walFile = stateFile + "-wal";
+    const shmFile = stateFile + "-shm";
+    if ((0, import_fs7.existsSync)(walFile)) {
+      try {
+        (0, import_fs7.unlinkSync)(walFile);
+      } catch {
+        success = false;
+      }
+    }
+    if ((0, import_fs7.existsSync)(shmFile)) {
+      try {
+        (0, import_fs7.unlinkSync)(shmFile);
+      } catch {
+        success = false;
+      }
+    }
+  }
+  const markerFile = getMarkerFilePath(cwd, mode);
+  if (markerFile && (0, import_fs7.existsSync)(markerFile)) {
+    try {
+      (0, import_fs7.unlinkSync)(markerFile);
+    } catch {
+      success = false;
+    }
+  }
+  return success;
+}
+
+// src/tools/state-tools.ts
+var EXECUTION_MODES = [
+  "autopilot",
+  "ultrapilot",
+  "swarm",
+  "pipeline",
+  "ralph",
+  "ultrawork",
+  "ultraqa",
+  "ecomode"
+];
+var STATE_TOOL_MODES = [...EXECUTION_MODES, "ralplan"];
+function getStatePath(mode, root) {
+  if (MODE_CONFIGS[mode]) {
+    return getStateFilePath(root, mode);
+  }
+  return resolveStatePath(mode, root);
+}
+var stateReadTool = {
+  name: "state_read",
+  description: "Read the current state for a specific mode (ralph, ultrawork, autopilot, etc.). Returns the JSON state data or indicates if no state exists.",
+  schema: {
+    mode: external_exports.enum(STATE_TOOL_MODES).describe("The mode to read state for"),
+    workingDirectory: external_exports.string().optional().describe("Working directory (defaults to cwd)")
+  },
+  handler: async (args) => {
+    const { mode, workingDirectory } = args;
+    const cwd = workingDirectory || process.cwd();
+    try {
+      const root = getWorktreeRoot(cwd) || cwd;
+      const statePath = getStatePath(mode, root);
+      if (mode === "swarm") {
+        if (!(0, import_fs8.existsSync)(statePath)) {
+          return {
+            content: [{
+              type: "text",
+              text: `No state found for mode: swarm
+Note: Swarm uses SQLite (swarm.db), not JSON. Expected path: ${statePath}`
+            }]
+          };
+        }
+        return {
+          content: [{
+            type: "text",
+            text: `## State for swarm
+
+Path: ${statePath}
+
+Note: Swarm uses SQLite database. Use swarm-specific tools to query state.`
+          }]
+        };
+      }
+      if (!(0, import_fs8.existsSync)(statePath)) {
+        return {
+          content: [{
+            type: "text",
+            text: `No state found for mode: ${mode}
+Expected path: ${statePath}`
+          }]
+        };
+      }
+      const content = (0, import_fs8.readFileSync)(statePath, "utf-8");
+      const state = JSON.parse(content);
+      return {
+        content: [{
+          type: "text",
+          text: `## State for ${mode}
+
+Path: ${statePath}
+
+\`\`\`json
+${JSON.stringify(state, null, 2)}
+\`\`\``
+        }]
+      };
+    } catch (error2) {
+      return {
+        content: [{
+          type: "text",
+          text: `Error reading state for ${mode}: ${error2 instanceof Error ? error2.message : String(error2)}`
+        }]
+      };
+    }
+  }
+};
+var stateWriteTool = {
+  name: "state_write",
+  description: "Write/update state for a specific mode. Creates the state file and directories if they do not exist. Use with caution - prefer using mode-specific APIs when available. Note: swarm uses SQLite and cannot be written via this tool.",
+  schema: {
+    mode: external_exports.enum(STATE_TOOL_MODES).describe("The mode to write state for"),
+    state: external_exports.record(external_exports.string(), external_exports.unknown()).describe("The state object to write (JSON)"),
+    workingDirectory: external_exports.string().optional().describe("Working directory (defaults to cwd)")
+  },
+  handler: async (args) => {
+    const { mode, state, workingDirectory } = args;
+    const cwd = workingDirectory || process.cwd();
+    try {
+      const root = getWorktreeRoot(cwd) || cwd;
+      if (mode === "swarm") {
+        return {
+          content: [{
+            type: "text",
+            text: `Error: Swarm uses SQLite database (swarm.db), not JSON. Use swarm-specific APIs to modify state.`
+          }]
+        };
+      }
+      ensureOmcDir("state", root);
+      const statePath = getStatePath(mode, root);
+      const stateWithMeta = {
+        ...state,
+        _meta: {
+          mode,
+          updatedAt: (/* @__PURE__ */ new Date()).toISOString(),
+          updatedBy: "state_write_tool"
+        }
+      };
+      atomicWriteJsonSync(statePath, stateWithMeta);
+      return {
+        content: [{
+          type: "text",
+          text: `Successfully wrote state for ${mode}
+Path: ${statePath}
+
+\`\`\`json
+${JSON.stringify(stateWithMeta, null, 2)}
+\`\`\``
+        }]
+      };
+    } catch (error2) {
+      return {
+        content: [{
+          type: "text",
+          text: `Error writing state for ${mode}: ${error2 instanceof Error ? error2.message : String(error2)}`
+        }]
+      };
+    }
+  }
+};
+var stateClearTool = {
+  name: "state_clear",
+  description: "Clear/delete state for a specific mode. Removes the state file and any associated marker files.",
+  schema: {
+    mode: external_exports.enum(STATE_TOOL_MODES).describe("The mode to clear state for"),
+    workingDirectory: external_exports.string().optional().describe("Working directory (defaults to cwd)")
+  },
+  handler: async (args) => {
+    const { mode, workingDirectory } = args;
+    const cwd = workingDirectory || process.cwd();
+    try {
+      const root = getWorktreeRoot(cwd) || cwd;
+      if (MODE_CONFIGS[mode]) {
+        const success = clearModeState(mode, root);
+        if (success) {
+          return {
+            content: [{
+              type: "text",
+              text: `Successfully cleared state for mode: ${mode}`
+            }]
+          };
+        } else {
+          return {
+            content: [{
+              type: "text",
+              text: `Warning: Some files could not be removed for mode: ${mode}`
+            }]
+          };
+        }
+      }
+      const statePath = getStatePath(mode, root);
+      if ((0, import_fs8.existsSync)(statePath)) {
+        (0, import_fs8.unlinkSync)(statePath);
+        return {
+          content: [{
+            type: "text",
+            text: `Successfully cleared state for mode: ${mode}
+Removed: ${statePath}`
+          }]
+        };
+      } else {
+        return {
+          content: [{
+            type: "text",
+            text: `No state found to clear for mode: ${mode}`
+          }]
+        };
+      }
+    } catch (error2) {
+      return {
+        content: [{
+          type: "text",
+          text: `Error clearing state for ${mode}: ${error2 instanceof Error ? error2.message : String(error2)}`
+        }]
+      };
+    }
+  }
+};
+var stateListActiveTool = {
+  name: "state_list_active",
+  description: "List all currently active modes. Returns which modes have active state files.",
+  schema: {
+    workingDirectory: external_exports.string().optional().describe("Working directory (defaults to cwd)")
+  },
+  handler: async (args) => {
+    const { workingDirectory } = args;
+    const cwd = workingDirectory || process.cwd();
+    try {
+      const root = getWorktreeRoot(cwd) || cwd;
+      const activeModes = [...getActiveModes(root)];
+      const ralplanPath = getStatePath("ralplan", root);
+      if ((0, import_fs8.existsSync)(ralplanPath)) {
+        try {
+          const content = (0, import_fs8.readFileSync)(ralplanPath, "utf-8");
+          const state = JSON.parse(content);
+          if (state.active) {
+            activeModes.push("ralplan");
+          }
+        } catch {
+        }
+      }
+      if (activeModes.length === 0) {
+        return {
+          content: [{
+            type: "text",
+            text: "## Active Modes\n\nNo modes are currently active."
+          }]
+        };
+      }
+      const modeList = activeModes.map((mode) => `- **${mode}**`).join("\n");
+      return {
+        content: [{
+          type: "text",
+          text: `## Active Modes (${activeModes.length})
+
+${modeList}`
+        }]
+      };
+    } catch (error2) {
+      return {
+        content: [{
+          type: "text",
+          text: `Error listing active modes: ${error2 instanceof Error ? error2.message : String(error2)}`
+        }]
+      };
+    }
+  }
+};
+var stateGetStatusTool = {
+  name: "state_get_status",
+  description: "Get detailed status for a specific mode or all modes. Shows active status, file paths, and state contents.",
+  schema: {
+    mode: external_exports.enum(STATE_TOOL_MODES).optional().describe("Specific mode to check (omit for all modes)"),
+    workingDirectory: external_exports.string().optional().describe("Working directory (defaults to cwd)")
+  },
+  handler: async (args) => {
+    const { mode, workingDirectory } = args;
+    const cwd = workingDirectory || process.cwd();
+    try {
+      const root = getWorktreeRoot(cwd) || cwd;
+      if (mode) {
+        const statePath = getStatePath(mode, root);
+        const active = MODE_CONFIGS[mode] ? isModeActive(mode, root) : (0, import_fs8.existsSync)(statePath) && (() => {
+          try {
+            const content = (0, import_fs8.readFileSync)(statePath, "utf-8");
+            const state = JSON.parse(content);
+            return state.active === true;
+          } catch {
+            return false;
+          }
+        })();
+        let statePreview = "No state file";
+        if ((0, import_fs8.existsSync)(statePath)) {
+          try {
+            const content = (0, import_fs8.readFileSync)(statePath, "utf-8");
+            const state = JSON.parse(content);
+            statePreview = JSON.stringify(state, null, 2).slice(0, 500);
+            if (statePreview.length >= 500) statePreview += "\n...(truncated)";
+          } catch {
+            statePreview = "Error reading state file";
+          }
+        }
+        return {
+          content: [{
+            type: "text",
+            text: `## Status: ${mode}
+
+- **Active:** ${active ? "Yes" : "No"}
+- **State Path:** ${statePath}
+- **Exists:** ${(0, import_fs8.existsSync)(statePath) ? "Yes" : "No"}
+
+### State Preview
+\`\`\`json
+${statePreview}
+\`\`\``
+          }]
+        };
+      }
+      const statuses = getAllModeStatuses(root);
+      const lines = ["## All Mode Statuses\n"];
+      for (const status of statuses) {
+        const icon = status.active ? "[ACTIVE]" : "[INACTIVE]";
+        lines.push(`${icon} **${status.mode}**: ${status.active ? "Active" : "Inactive"}`);
+        lines.push(`   Path: \`${status.stateFilePath}\``);
+      }
+      const ralplanPath = getStatePath("ralplan", root);
+      let ralplanActive = false;
+      if ((0, import_fs8.existsSync)(ralplanPath)) {
+        try {
+          const content = (0, import_fs8.readFileSync)(ralplanPath, "utf-8");
+          const state = JSON.parse(content);
+          ralplanActive = state.active === true;
+        } catch {
+        }
+      }
+      const ralplanIcon = ralplanActive ? "[ACTIVE]" : "[INACTIVE]";
+      lines.push(`${ralplanIcon} **ralplan**: ${ralplanActive ? "Active" : "Inactive"}`);
+      lines.push(`   Path: \`${ralplanPath}\``);
+      return {
+        content: [{
+          type: "text",
+          text: lines.join("\n")
+        }]
+      };
+    } catch (error2) {
+      return {
+        content: [{
+          type: "text",
+          text: `Error getting status: ${error2 instanceof Error ? error2.message : String(error2)}`
+        }]
+      };
+    }
+  }
+};
+var stateTools = [
+  stateReadTool,
+  stateWriteTool,
+  stateClearTool,
+  stateListActiveTool,
+  stateGetStatusTool
+];
+
+// src/hooks/notepad/index.ts
+var import_fs9 = require("fs");
+var import_path9 = require("path");
+var NOTEPAD_FILENAME = "notepad.md";
+var DEFAULT_CONFIG = {
+  priorityMaxChars: 500,
+  workingMemoryDays: 7,
+  maxTotalSize: 8192
+  // 8KB
+};
+var PRIORITY_HEADER = "## Priority Context";
+var WORKING_MEMORY_HEADER = "## Working Memory";
+var MANUAL_HEADER = "## MANUAL";
+function getNotepadPath(directory) {
+  return (0, import_path9.join)(directory, ".omc", NOTEPAD_FILENAME);
+}
+function initNotepad(directory) {
+  const omcDir = (0, import_path9.join)(directory, ".omc");
+  if (!(0, import_fs9.existsSync)(omcDir)) {
+    try {
+      (0, import_fs9.mkdirSync)(omcDir, { recursive: true });
+    } catch {
+      return false;
+    }
+  }
+  const notepadPath = getNotepadPath(directory);
+  if ((0, import_fs9.existsSync)(notepadPath)) {
+    return true;
+  }
+  const content = `# Notepad
+<!-- Auto-managed by OMC. Manual edits preserved in MANUAL section. -->
+
+${PRIORITY_HEADER}
+<!-- ALWAYS loaded. Keep under 500 chars. Critical discoveries only. -->
+
+${WORKING_MEMORY_HEADER}
+<!-- Session notes. Auto-pruned after 7 days. -->
+
+${MANUAL_HEADER}
+<!-- User content. Never auto-pruned. -->
+
+`;
+  try {
+    atomicWriteFileSync(notepadPath, content);
+    return true;
+  } catch {
+    return false;
+  }
+}
+function readNotepad(directory) {
+  const notepadPath = getNotepadPath(directory);
+  if (!(0, import_fs9.existsSync)(notepadPath)) {
+    return null;
+  }
+  try {
+    return (0, import_fs9.readFileSync)(notepadPath, "utf-8");
+  } catch {
+    return null;
+  }
+}
+function extractSection(content, header) {
+  const regex = new RegExp(`${header}\\n([\\s\\S]*?)(?=\\n## [^#]|$)`);
+  const match = content.match(regex);
+  if (!match) {
+    return null;
+  }
+  let section = match[1];
+  section = section.replace(/<!--[\s\S]*?-->/g, "").trim();
+  return section || null;
+}
+function replaceSection(content, header, newContent) {
+  const regex = new RegExp(`(${header}\\n)([\\s\\S]*?)(?=## |$)`);
+  const commentMatch = content.match(
+    new RegExp(`${header}\\n(<!--[\\s\\S]*?-->)`)
+  );
+  const comment = commentMatch ? commentMatch[1] + "\n" : "";
+  return content.replace(regex, `$1${comment}${newContent}
+
+`);
+}
+function getPriorityContext(directory) {
+  const content = readNotepad(directory);
+  if (!content) {
+    return null;
+  }
+  return extractSection(content, PRIORITY_HEADER);
+}
+function getWorkingMemory(directory) {
+  const content = readNotepad(directory);
+  if (!content) {
+    return null;
+  }
+  return extractSection(content, WORKING_MEMORY_HEADER);
+}
+function getManualSection(directory) {
+  const content = readNotepad(directory);
+  if (!content) {
+    return null;
+  }
+  return extractSection(content, MANUAL_HEADER);
+}
+function setPriorityContext(directory, content, config2 = DEFAULT_CONFIG) {
+  if (!(0, import_fs9.existsSync)(getNotepadPath(directory))) {
+    if (!initNotepad(directory)) {
+      return { success: false };
+    }
+  }
+  const notepadPath = getNotepadPath(directory);
+  let notepadContent = (0, import_fs9.readFileSync)(notepadPath, "utf-8");
+  const warning = content.length > config2.priorityMaxChars ? `Priority Context exceeds ${config2.priorityMaxChars} chars (${content.length} chars). Consider condensing.` : void 0;
+  notepadContent = replaceSection(notepadContent, PRIORITY_HEADER, content);
+  try {
+    atomicWriteFileSync(notepadPath, notepadContent);
+    return { success: true, warning };
+  } catch {
+    return { success: false };
+  }
+}
+function addWorkingMemoryEntry(directory, content) {
+  if (!(0, import_fs9.existsSync)(getNotepadPath(directory))) {
+    if (!initNotepad(directory)) {
+      return false;
+    }
+  }
+  const notepadPath = getNotepadPath(directory);
+  let notepadContent = (0, import_fs9.readFileSync)(notepadPath, "utf-8");
+  const currentMemory = extractSection(notepadContent, WORKING_MEMORY_HEADER) || "";
+  const now = /* @__PURE__ */ new Date();
+  const timestamp = now.toISOString().slice(0, 16).replace("T", " ");
+  const newEntry = `### ${timestamp}
+${content}
+`;
+  const updatedMemory = currentMemory ? currentMemory + "\n" + newEntry : newEntry;
+  notepadContent = replaceSection(
+    notepadContent,
+    WORKING_MEMORY_HEADER,
+    updatedMemory
+  );
+  try {
+    atomicWriteFileSync(notepadPath, notepadContent);
+    return true;
+  } catch {
+    return false;
+  }
+}
+function addManualEntry(directory, content) {
+  if (!(0, import_fs9.existsSync)(getNotepadPath(directory))) {
+    if (!initNotepad(directory)) {
+      return false;
+    }
+  }
+  const notepadPath = getNotepadPath(directory);
+  let notepadContent = (0, import_fs9.readFileSync)(notepadPath, "utf-8");
+  const currentManual = extractSection(notepadContent, MANUAL_HEADER) || "";
+  const now = /* @__PURE__ */ new Date();
+  const timestamp = now.toISOString().slice(0, 16).replace("T", " ");
+  const newEntry = `### ${timestamp}
+${content}
+`;
+  const updatedManual = currentManual ? currentManual + "\n" + newEntry : newEntry;
+  notepadContent = replaceSection(notepadContent, MANUAL_HEADER, updatedManual);
+  try {
+    atomicWriteFileSync(notepadPath, notepadContent);
+    return true;
+  } catch {
+    return false;
+  }
+}
+function pruneOldEntries(directory, daysOld = DEFAULT_CONFIG.workingMemoryDays) {
+  const notepadPath = getNotepadPath(directory);
+  if (!(0, import_fs9.existsSync)(notepadPath)) {
+    return { pruned: 0, remaining: 0 };
+  }
+  let notepadContent = (0, import_fs9.readFileSync)(notepadPath, "utf-8");
+  const workingMemory = extractSection(notepadContent, WORKING_MEMORY_HEADER);
+  if (!workingMemory) {
+    return { pruned: 0, remaining: 0 };
+  }
+  const entryRegex = /### (\d{4}-\d{2}-\d{2} \d{2}:\d{2})\n([\s\S]*?)(?=### |$)/g;
+  const entries = [];
+  let match = entryRegex.exec(workingMemory);
+  while (match !== null) {
+    entries.push({
+      timestamp: match[1],
+      content: match[2].trim()
+    });
+    match = entryRegex.exec(workingMemory);
+  }
+  const cutoff = /* @__PURE__ */ new Date();
+  cutoff.setDate(cutoff.getDate() - daysOld);
+  const kept = entries.filter((entry) => {
+    const entryDate = new Date(entry.timestamp);
+    return entryDate >= cutoff;
+  });
+  const pruned = entries.length - kept.length;
+  const newContent = kept.map((entry) => `### ${entry.timestamp}
+${entry.content}`).join("\n\n");
+  notepadContent = replaceSection(
+    notepadContent,
+    WORKING_MEMORY_HEADER,
+    newContent
+  );
+  try {
+    atomicWriteFileSync(notepadPath, notepadContent);
+    return { pruned, remaining: kept.length };
+  } catch {
+    return { pruned: 0, remaining: entries.length };
+  }
+}
+function getNotepadStats(directory) {
+  const notepadPath = getNotepadPath(directory);
+  if (!(0, import_fs9.existsSync)(notepadPath)) {
+    return {
+      exists: false,
+      totalSize: 0,
+      prioritySize: 0,
+      workingMemoryEntries: 0,
+      oldestEntry: null
+    };
+  }
+  const content = (0, import_fs9.readFileSync)(notepadPath, "utf-8");
+  const priorityContext = extractSection(content, PRIORITY_HEADER) || "";
+  const workingMemory = extractSection(content, WORKING_MEMORY_HEADER) || "";
+  const entryMatches = workingMemory.match(
+    /### \d{4}-\d{2}-\d{2} \d{2}:\d{2}/g
+  );
+  const entryCount = entryMatches ? entryMatches.length : 0;
+  let oldestEntry = null;
+  if (entryMatches && entryMatches.length > 0) {
+    const timestamps = entryMatches.map((m) => m.replace("### ", ""));
+    timestamps.sort();
+    oldestEntry = timestamps[0];
+  }
+  return {
+    exists: true,
+    totalSize: Buffer.byteLength(content, "utf-8"),
+    prioritySize: Buffer.byteLength(priorityContext, "utf-8"),
+    workingMemoryEntries: entryCount,
+    oldestEntry
+  };
+}
+function formatFullNotepad(directory) {
+  const content = readNotepad(directory);
+  if (!content) {
+    return null;
+  }
+  return content;
+}
+
+// src/tools/notepad-tools.ts
+var SECTION_NAMES = ["all", "priority", "working", "manual"];
+var notepadReadTool = {
+  name: "notepad_read",
+  description: "Read the notepad content. Can read the full notepad or a specific section (priority, working, manual).",
+  schema: {
+    section: external_exports.enum(SECTION_NAMES).optional().describe('Section to read: "all" (default), "priority", "working", or "manual"'),
+    workingDirectory: external_exports.string().optional().describe("Working directory (defaults to cwd)")
+  },
+  handler: async (args) => {
+    const { section = "all", workingDirectory } = args;
+    const cwd = workingDirectory || process.cwd();
+    try {
+      const root = getWorktreeRoot(cwd) || cwd;
+      if (section === "all") {
+        const content = formatFullNotepad(root);
+        if (!content) {
+          return {
+            content: [{
+              type: "text",
+              text: "Notepad does not exist. Use notepad_write_* tools to create it."
+            }]
+          };
+        }
+        return {
+          content: [{
+            type: "text",
+            text: `## Notepad
+
+Path: ${getWorktreeNotepadPath(root)}
+
+${content}`
+          }]
+        };
+      }
+      let sectionContent = null;
+      let sectionTitle = "";
+      switch (section) {
+        case "priority":
+          sectionContent = getPriorityContext(root);
+          sectionTitle = "Priority Context";
+          break;
+        case "working":
+          sectionContent = getWorkingMemory(root);
+          sectionTitle = "Working Memory";
+          break;
+        case "manual":
+          sectionContent = getManualSection(root);
+          sectionTitle = "MANUAL";
+          break;
+      }
+      if (!sectionContent) {
+        return {
+          content: [{
+            type: "text",
+            text: `## ${sectionTitle}
+
+(Empty or notepad does not exist)`
+          }]
+        };
+      }
+      return {
+        content: [{
+          type: "text",
+          text: `## ${sectionTitle}
+
+${sectionContent}`
+        }]
+      };
+    } catch (error2) {
+      return {
+        content: [{
+          type: "text",
+          text: `Error reading notepad: ${error2 instanceof Error ? error2.message : String(error2)}`
+        }]
+      };
+    }
+  }
+};
+var notepadWritePriorityTool = {
+  name: "notepad_write_priority",
+  description: "Write to the Priority Context section. This REPLACES the existing content. Keep under 500 chars - this is always loaded at session start.",
+  schema: {
+    content: external_exports.string().max(2e3).describe("Content to write (recommend under 500 chars)"),
+    workingDirectory: external_exports.string().optional().describe("Working directory (defaults to cwd)")
+  },
+  handler: async (args) => {
+    const { content, workingDirectory } = args;
+    const cwd = workingDirectory || process.cwd();
+    try {
+      const root = getWorktreeRoot(cwd) || cwd;
+      ensureOmcDir("", root);
+      const result = setPriorityContext(root, content);
+      if (!result.success) {
+        return {
+          content: [{
+            type: "text",
+            text: "Failed to write to Priority Context. Check file permissions."
+          }]
+        };
+      }
+      let response = `Successfully wrote to Priority Context (${content.length} chars)`;
+      if (result.warning) {
+        response += `
+
+**Warning:** ${result.warning}`;
+      }
+      return {
+        content: [{
+          type: "text",
+          text: response
+        }]
+      };
+    } catch (error2) {
+      return {
+        content: [{
+          type: "text",
+          text: `Error writing to Priority Context: ${error2 instanceof Error ? error2.message : String(error2)}`
+        }]
+      };
+    }
+  }
+};
+var notepadWriteWorkingTool = {
+  name: "notepad_write_working",
+  description: "Add an entry to Working Memory section. Entries are timestamped and auto-pruned after 7 days.",
+  schema: {
+    content: external_exports.string().max(4e3).describe("Content to add as a new entry"),
+    workingDirectory: external_exports.string().optional().describe("Working directory (defaults to cwd)")
+  },
+  handler: async (args) => {
+    const { content, workingDirectory } = args;
+    const cwd = workingDirectory || process.cwd();
+    try {
+      const root = getWorktreeRoot(cwd) || cwd;
+      ensureOmcDir("", root);
+      const success = addWorkingMemoryEntry(root, content);
+      if (!success) {
+        return {
+          content: [{
+            type: "text",
+            text: "Failed to add entry to Working Memory. Check file permissions."
+          }]
+        };
+      }
+      return {
+        content: [{
+          type: "text",
+          text: `Successfully added entry to Working Memory (${content.length} chars)`
+        }]
+      };
+    } catch (error2) {
+      return {
+        content: [{
+          type: "text",
+          text: `Error writing to Working Memory: ${error2 instanceof Error ? error2.message : String(error2)}`
+        }]
+      };
+    }
+  }
+};
+var notepadWriteManualTool = {
+  name: "notepad_write_manual",
+  description: "Add an entry to the MANUAL section. Content in this section is never auto-pruned.",
+  schema: {
+    content: external_exports.string().max(4e3).describe("Content to add as a new entry"),
+    workingDirectory: external_exports.string().optional().describe("Working directory (defaults to cwd)")
+  },
+  handler: async (args) => {
+    const { content, workingDirectory } = args;
+    const cwd = workingDirectory || process.cwd();
+    try {
+      const root = getWorktreeRoot(cwd) || cwd;
+      ensureOmcDir("", root);
+      const success = addManualEntry(root, content);
+      if (!success) {
+        return {
+          content: [{
+            type: "text",
+            text: "Failed to add entry to MANUAL section. Check file permissions."
+          }]
+        };
+      }
+      return {
+        content: [{
+          type: "text",
+          text: `Successfully added entry to MANUAL section (${content.length} chars)`
+        }]
+      };
+    } catch (error2) {
+      return {
+        content: [{
+          type: "text",
+          text: `Error writing to MANUAL: ${error2 instanceof Error ? error2.message : String(error2)}`
+        }]
+      };
+    }
+  }
+};
+var notepadPruneTool = {
+  name: "notepad_prune",
+  description: "Prune Working Memory entries older than N days (default: 7 days).",
+  schema: {
+    daysOld: external_exports.number().int().min(1).max(365).optional().describe("Remove entries older than this many days (default: 7)"),
+    workingDirectory: external_exports.string().optional().describe("Working directory (defaults to cwd)")
+  },
+  handler: async (args) => {
+    const { daysOld = DEFAULT_CONFIG.workingMemoryDays, workingDirectory } = args;
+    const cwd = workingDirectory || process.cwd();
+    try {
+      const root = getWorktreeRoot(cwd) || cwd;
+      const result = pruneOldEntries(root, daysOld);
+      return {
+        content: [{
+          type: "text",
+          text: `## Prune Results
+
+- Pruned: ${result.pruned} entries
+- Remaining: ${result.remaining} entries
+- Threshold: ${daysOld} days`
+        }]
+      };
+    } catch (error2) {
+      return {
+        content: [{
+          type: "text",
+          text: `Error pruning notepad: ${error2 instanceof Error ? error2.message : String(error2)}`
+        }]
+      };
+    }
+  }
+};
+var notepadStatsTool = {
+  name: "notepad_stats",
+  description: "Get statistics about the notepad (size, entry count, oldest entry).",
+  schema: {
+    workingDirectory: external_exports.string().optional().describe("Working directory (defaults to cwd)")
+  },
+  handler: async (args) => {
+    const { workingDirectory } = args;
+    const cwd = workingDirectory || process.cwd();
+    try {
+      const root = getWorktreeRoot(cwd) || cwd;
+      const stats = getNotepadStats(root);
+      if (!stats.exists) {
+        return {
+          content: [{
+            type: "text",
+            text: "## Notepad Statistics\n\nNotepad does not exist yet."
+          }]
+        };
+      }
+      const lines = [
+        "## Notepad Statistics\n",
+        `- **Total Size:** ${stats.totalSize} bytes`,
+        `- **Priority Context Size:** ${stats.prioritySize} bytes`,
+        `- **Working Memory Entries:** ${stats.workingMemoryEntries}`,
+        `- **Oldest Entry:** ${stats.oldestEntry || "None"}`,
+        `- **Path:** ${getWorktreeNotepadPath(root)}`
+      ];
+      return {
+        content: [{
+          type: "text",
+          text: lines.join("\n")
+        }]
+      };
+    } catch (error2) {
+      return {
+        content: [{
+          type: "text",
+          text: `Error getting notepad stats: ${error2 instanceof Error ? error2.message : String(error2)}`
+        }]
+      };
+    }
+  }
+};
+var notepadTools = [
+  notepadReadTool,
+  notepadWritePriorityTool,
+  notepadWriteWorkingTool,
+  notepadWriteManualTool,
+  notepadPruneTool,
+  notepadStatsTool
+];
+
+// src/features/context-injector/collector.ts
+var PRIORITY_ORDER = {
+  critical: 0,
+  high: 1,
+  normal: 2,
+  low: 3
+};
+var CONTEXT_SEPARATOR = "\n\n---\n\n";
+var ContextCollector = class {
+  sessions = /* @__PURE__ */ new Map();
+  /**
+   * Register a context entry for a session.
+   * If an entry with the same source:id already exists, it will be replaced.
+   */
+  register(sessionId, options) {
+    if (!this.sessions.has(sessionId)) {
+      this.sessions.set(sessionId, /* @__PURE__ */ new Map());
+    }
+    const sessionMap = this.sessions.get(sessionId);
+    const key = `${options.source}:${options.id}`;
+    const entry = {
+      id: options.id,
+      source: options.source,
+      content: options.content,
+      priority: options.priority ?? "normal",
+      timestamp: Date.now(),
+      metadata: options.metadata
+    };
+    sessionMap.set(key, entry);
+  }
+  /**
+   * Get pending context for a session without consuming it.
+   */
+  getPending(sessionId) {
+    const sessionMap = this.sessions.get(sessionId);
+    if (!sessionMap || sessionMap.size === 0) {
+      return {
+        merged: "",
+        entries: [],
+        hasContent: false
+      };
+    }
+    const entries = this.sortEntries([...sessionMap.values()]);
+    const merged = entries.map((e) => e.content).join(CONTEXT_SEPARATOR);
+    return {
+      merged,
+      entries,
+      hasContent: entries.length > 0
+    };
+  }
+  /**
+   * Get and consume pending context for a session.
+   * After consumption, the session's context is cleared.
+   */
+  consume(sessionId) {
+    const pending = this.getPending(sessionId);
+    this.clear(sessionId);
+    return pending;
+  }
+  /**
+   * Clear all context for a session.
+   */
+  clear(sessionId) {
+    this.sessions.delete(sessionId);
+  }
+  /**
+   * Check if a session has pending context.
+   */
+  hasPending(sessionId) {
+    const sessionMap = this.sessions.get(sessionId);
+    return sessionMap !== void 0 && sessionMap.size > 0;
+  }
+  /**
+   * Get count of entries for a session.
+   */
+  getEntryCount(sessionId) {
+    const sessionMap = this.sessions.get(sessionId);
+    return sessionMap?.size ?? 0;
+  }
+  /**
+   * Remove a specific entry from a session.
+   */
+  removeEntry(sessionId, source, id) {
+    const sessionMap = this.sessions.get(sessionId);
+    if (!sessionMap) return false;
+    const key = `${source}:${id}`;
+    return sessionMap.delete(key);
+  }
+  /**
+   * Get all active session IDs.
+   */
+  getActiveSessions() {
+    return [...this.sessions.keys()];
+  }
+  /**
+   * Sort entries by priority (higher first) then by timestamp (earlier first).
+   */
+  sortEntries(entries) {
+    return entries.sort((a, b) => {
+      const priorityDiff = PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority];
+      if (priorityDiff !== 0) return priorityDiff;
+      return a.timestamp - b.timestamp;
+    });
+  }
+};
+var contextCollector = new ContextCollector();
+
+// src/hooks/rules-injector/finder.ts
+var import_fs10 = require("fs");
+var import_path11 = require("path");
+
+// src/hooks/rules-injector/constants.ts
+var import_path10 = require("path");
+var import_os = require("os");
+var OMC_STORAGE_DIR = (0, import_path10.join)((0, import_os.homedir)(), ".omc");
+var RULES_INJECTOR_STORAGE = (0, import_path10.join)(OMC_STORAGE_DIR, "rules-injector");
+
+// src/hooks/project-memory/storage.ts
+var import_promises = __toESM(require("fs/promises"), 1);
+var import_path12 = __toESM(require("path"), 1);
+
+// src/hooks/project-memory/constants.ts
+var MEMORY_FILE = "project-memory.json";
+var MEMORY_DIR = ".omc";
+var CACHE_EXPIRY_MS = 24 * 60 * 60 * 1e3;
+
+// src/hooks/project-memory/storage.ts
+function getMemoryPath(projectRoot) {
+  return import_path12.default.join(projectRoot, MEMORY_DIR, MEMORY_FILE);
+}
+async function loadProjectMemory(projectRoot) {
+  const memoryPath = getMemoryPath(projectRoot);
+  try {
+    const content = await import_promises.default.readFile(memoryPath, "utf-8");
+    const memory = JSON.parse(content);
+    if (!memory.version || !memory.projectRoot || !memory.lastScanned) {
+      return null;
+    }
+    return memory;
+  } catch (error2) {
+    return null;
+  }
+}
+async function saveProjectMemory(projectRoot, memory) {
+  const omcDir = import_path12.default.join(projectRoot, MEMORY_DIR);
+  const memoryPath = getMemoryPath(projectRoot);
+  try {
+    await import_promises.default.mkdir(omcDir, { recursive: true });
+    await import_promises.default.writeFile(memoryPath, JSON.stringify(memory, null, 2), "utf-8");
+  } catch (error2) {
+    console.error("Failed to save project memory:", error2);
+  }
+}
+
+// src/hooks/project-memory/detector.ts
+var import_promises3 = __toESM(require("fs/promises"), 1);
+var import_path14 = __toESM(require("path"), 1);
+
+// src/hooks/project-memory/directory-mapper.ts
+var import_promises2 = __toESM(require("fs/promises"), 1);
+var import_path13 = __toESM(require("path"), 1);
+
+// src/hooks/project-memory/directive-detector.ts
+function addDirective(directives, newDirective) {
+  const isDuplicate = directives.some(
+    (d) => d.directive.toLowerCase() === newDirective.directive.toLowerCase()
+  );
+  if (!isDuplicate) {
+    directives.push(newDirective);
+    if (directives.length > 20) {
+      directives.sort((a, b) => {
+        if (a.priority !== b.priority) {
+          return a.priority === "high" ? -1 : 1;
+        }
+        return b.timestamp - a.timestamp;
+      });
+      directives.splice(20);
+    }
+  }
+  return directives;
+}
+
+// src/hooks/project-memory/hot-path-tracker.ts
+var import_path15 = __toESM(require("path"), 1);
+
+// src/hooks/project-memory/learner.ts
+async function addCustomNote(projectRoot, category, content) {
+  try {
+    const memory = await loadProjectMemory(projectRoot);
+    if (!memory) {
+      return;
+    }
+    memory.customNotes.push({
+      timestamp: Date.now(),
+      source: "manual",
+      category,
+      content
+    });
+    if (memory.customNotes.length > 20) {
+      memory.customNotes = memory.customNotes.slice(-20);
+    }
+    await saveProjectMemory(projectRoot, memory);
+  } catch (error2) {
+    console.error("Error adding custom note:", error2);
+  }
+}
+
+// src/tools/memory-tools.ts
+var projectMemoryReadTool = {
+  name: "project_memory_read",
+  description: "Read the project memory. Can read the full memory or a specific section.",
+  schema: {
+    section: external_exports.enum(["all", "techStack", "build", "conventions", "structure", "notes", "directives"]).optional().describe("Section to read (default: all)"),
+    workingDirectory: external_exports.string().optional().describe("Working directory (defaults to cwd)")
+  },
+  handler: async (args) => {
+    const { section = "all", workingDirectory } = args;
+    const cwd = workingDirectory || process.cwd();
+    try {
+      const root = getWorktreeRoot(cwd) || cwd;
+      const memory = await loadProjectMemory(root);
+      if (!memory) {
+        return {
+          content: [{
+            type: "text",
+            text: `Project memory does not exist.
+Expected path: ${getWorktreeProjectMemoryPath(root)}
+
+Run a session to auto-detect project environment, or use project_memory_write to create manually.`
+          }]
+        };
+      }
+      if (section === "all") {
+        return {
+          content: [{
+            type: "text",
+            text: `## Project Memory
+
+Path: ${getWorktreeProjectMemoryPath(root)}
+
+\`\`\`json
+${JSON.stringify(memory, null, 2)}
+\`\`\``
+          }]
+        };
+      }
+      const sectionMap = {
+        techStack: "techStack",
+        build: "build",
+        conventions: "conventions",
+        structure: "structure",
+        notes: "customNotes",
+        directives: "userDirectives"
+      };
+      const key = sectionMap[section];
+      const data = key === "notes" ? memory.customNotes : key === "directives" ? memory.userDirectives : memory[key];
+      return {
+        content: [{
+          type: "text",
+          text: `## Project Memory: ${section}
+
+\`\`\`json
+${JSON.stringify(data, null, 2)}
+\`\`\``
+        }]
+      };
+    } catch (error2) {
+      return {
+        content: [{
+          type: "text",
+          text: `Error reading project memory: ${error2 instanceof Error ? error2.message : String(error2)}`
+        }]
+      };
+    }
+  }
+};
+var projectMemoryWriteTool = {
+  name: "project_memory_write",
+  description: "Write/update project memory. Can replace entirely or merge with existing memory.",
+  schema: {
+    memory: external_exports.record(external_exports.string(), external_exports.unknown()).describe("The memory object to write"),
+    merge: external_exports.boolean().optional().describe("If true, merge with existing memory (default: false = replace)"),
+    workingDirectory: external_exports.string().optional().describe("Working directory (defaults to cwd)")
+  },
+  handler: async (args) => {
+    const { memory, merge: merge2 = false, workingDirectory } = args;
+    const cwd = workingDirectory || process.cwd();
+    try {
+      const root = getWorktreeRoot(cwd) || cwd;
+      ensureOmcDir("", root);
+      let finalMemory;
+      if (merge2) {
+        const existing = await loadProjectMemory(root);
+        if (existing) {
+          finalMemory = { ...existing, ...memory };
+        } else {
+          finalMemory = memory;
+        }
+      } else {
+        finalMemory = memory;
+      }
+      if (!finalMemory.version) finalMemory.version = "1.0.0";
+      if (!finalMemory.lastScanned) finalMemory.lastScanned = Date.now();
+      if (!finalMemory.projectRoot) finalMemory.projectRoot = root;
+      await saveProjectMemory(root, finalMemory);
+      return {
+        content: [{
+          type: "text",
+          text: `Successfully ${merge2 ? "merged" : "wrote"} project memory.
+Path: ${getWorktreeProjectMemoryPath(root)}`
+        }]
+      };
+    } catch (error2) {
+      return {
+        content: [{
+          type: "text",
+          text: `Error writing project memory: ${error2 instanceof Error ? error2.message : String(error2)}`
+        }]
+      };
+    }
+  }
+};
+var projectMemoryAddNoteTool = {
+  name: "project_memory_add_note",
+  description: "Add a custom note to project memory. Notes are categorized and persisted across sessions.",
+  schema: {
+    category: external_exports.string().max(50).describe('Note category (e.g., "build", "test", "deploy", "env", "architecture")'),
+    content: external_exports.string().max(1e3).describe("Note content"),
+    workingDirectory: external_exports.string().optional().describe("Working directory (defaults to cwd)")
+  },
+  handler: async (args) => {
+    const { category, content, workingDirectory } = args;
+    const cwd = workingDirectory || process.cwd();
+    try {
+      const root = getWorktreeRoot(cwd) || cwd;
+      let memory = await loadProjectMemory(root);
+      if (!memory) {
+        return {
+          content: [{
+            type: "text",
+            text: "Project memory does not exist. Run a session first to auto-detect project environment."
+          }]
+        };
+      }
+      await addCustomNote(root, category, content);
+      return {
+        content: [{
+          type: "text",
+          text: `Successfully added note to project memory.
+
+- **Category:** ${category}
+- **Content:** ${content}`
+        }]
+      };
+    } catch (error2) {
+      return {
+        content: [{
+          type: "text",
+          text: `Error adding note: ${error2 instanceof Error ? error2.message : String(error2)}`
+        }]
+      };
+    }
+  }
+};
+var projectMemoryAddDirectiveTool = {
+  name: "project_memory_add_directive",
+  description: "Add a user directive to project memory. Directives are instructions that persist across sessions and survive compaction.",
+  schema: {
+    directive: external_exports.string().max(500).describe('The directive (e.g., "Always use TypeScript strict mode")'),
+    context: external_exports.string().max(500).optional().describe("Additional context for the directive"),
+    priority: external_exports.enum(["high", "normal"]).optional().describe("Priority level (default: normal)"),
+    workingDirectory: external_exports.string().optional().describe("Working directory (defaults to cwd)")
+  },
+  handler: async (args) => {
+    const { directive, context = "", priority = "normal", workingDirectory } = args;
+    const cwd = workingDirectory || process.cwd();
+    try {
+      const root = getWorktreeRoot(cwd) || cwd;
+      let memory = await loadProjectMemory(root);
+      if (!memory) {
+        return {
+          content: [{
+            type: "text",
+            text: "Project memory does not exist. Run a session first to auto-detect project environment."
+          }]
+        };
+      }
+      const newDirective = {
+        timestamp: Date.now(),
+        directive,
+        context,
+        source: "explicit",
+        priority
+      };
+      memory.userDirectives = addDirective(memory.userDirectives, newDirective);
+      await saveProjectMemory(root, memory);
+      return {
+        content: [{
+          type: "text",
+          text: `Successfully added directive to project memory.
+
+- **Directive:** ${directive}
+- **Priority:** ${priority}
+- **Context:** ${context || "(none)"}`
+        }]
+      };
+    } catch (error2) {
+      return {
+        content: [{
+          type: "text",
+          text: `Error adding directive: ${error2 instanceof Error ? error2.message : String(error2)}`
+        }]
+      };
+    }
+  }
+};
+var memoryTools = [
+  projectMemoryReadTool,
+  projectMemoryWriteTool,
+  projectMemoryAddNoteTool,
+  projectMemoryAddDirectiveTool
+];
+
 // src/mcp/standalone-server.ts
 var allTools = [
   ...lspTools,
   ...astTools,
-  pythonReplTool
+  pythonReplTool,
+  ...stateTools,
+  ...notepadTools,
+  ...memoryTools
 ];
 function zodToJsonSchema2(schema) {
   const rawShape = schema instanceof external_exports.ZodObject ? schema.shape : schema;
