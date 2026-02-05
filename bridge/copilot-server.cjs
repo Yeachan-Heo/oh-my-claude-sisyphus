@@ -14030,16 +14030,17 @@ function validateModelName(model) {
     throw new Error(`Invalid model name: "${model}". Model names must match pattern: alphanumeric start, followed by alphanumeric, dots, hyphens, or underscores (max 64 chars).`);
   }
 }
-var COPILOT_DEFAULT_MODEL = process.env.OMC_COPILOT_DEFAULT_MODEL || "gpt-5.1-codex-max";
+var COPILOT_DEFAULT_MODEL = process.env.OMC_COPILOT_DEFAULT_MODEL || "";
 var COPILOT_TIMEOUT = Math.min(Math.max(5e3, parseInt(process.env.OMC_COPILOT_TIMEOUT || "3600000", 10) || 36e5), 36e5);
 var COPILOT_VALID_ROLES = ["architect", "planner", "critic", "analyst", "code-reviewer", "security-reviewer", "tdd-guide"];
 var MAX_CONTEXT_FILES = 20;
 var MAX_FILE_SIZE = 5 * 1024 * 1024;
 function executeCopilot(prompt, model, cwd) {
   return new Promise((resolve6, reject) => {
-    validateModelName(model);
+    if (model) validateModelName(model);
     let settled = false;
-    const args = ["--allow-all-tools", "--allow-all-paths", "--model", model];
+    const args = ["--allow-all-tools", "--allow-all-paths"];
+    if (model) args.push("--model", model);
     const child = (0, import_child_process3.spawn)("copilot", args, {
       stdio: ["pipe", "pipe", "pipe"],
       ...cwd ? { cwd } : {}
@@ -14092,8 +14093,9 @@ function executeCopilot(prompt, model, cwd) {
 }
 function executeCopilotBackground(fullPrompt, model, jobMeta, workingDirectory) {
   try {
-    validateModelName(model);
-    const args = ["--allow-all-tools", "--allow-all-paths", "--model", model];
+    if (model) validateModelName(model);
+    const args = ["--allow-all-tools", "--allow-all-paths"];
+    if (model) args.push("--model", model);
     const child = (0, import_child_process3.spawn)("copilot", args, {
       detached: true,
       stdio: ["pipe", "pipe", "pipe"],
@@ -14113,7 +14115,7 @@ function executeCopilotBackground(fullPrompt, model, jobMeta, workingDirectory) 
       pid,
       promptFile: jobMeta.promptFile,
       responseFile: jobMeta.responseFile,
-      model,
+      model: model || "cli-default",
       agentRole: jobMeta.agentRole,
       spawnedAt: (/* @__PURE__ */ new Date()).toISOString()
     };
@@ -14171,7 +14173,7 @@ function executeCopilotBackground(fullPrompt, model, jobMeta, workingDirectory) 
         persistResponse({
           provider: "copilot",
           agentRole: jobMeta.agentRole,
-          model,
+          model: model || "cli-default",
           promptId: jobMeta.jobId,
           slug: jobMeta.slug,
           response,
@@ -14238,7 +14240,7 @@ ${(0, import_fs4.readFileSync)(resolvedReal, "utf-8")}`;
   }
 }
 async function handleAskCopilot(args) {
-  const { agent_role, model = COPILOT_DEFAULT_MODEL, context_files } = args;
+  const { agent_role, model = COPILOT_DEFAULT_MODEL || void 0, context_files } = args;
   const trustedRoot = getWorktreeRoot(process.cwd()) || process.cwd();
   let trustedRootReal;
   try {
@@ -14363,7 +14365,7 @@ ${detection.installHint}`
   const promptResult = persistPrompt({
     provider: "copilot",
     agentRole: agent_role,
-    model,
+    model: model || "cli-default",
     files: context_files,
     prompt: resolvedPrompt,
     fullPrompt,
@@ -14383,7 +14385,7 @@ ${detection.installHint}`
       jobId: promptResult.id,
       slug: promptResult.slug,
       agentRole: agent_role,
-      model,
+      model: model || "cli-default",
       promptFile: promptResult.filePath,
       responseFile: expectedResponsePath
     }, baseDir);
@@ -14433,7 +14435,7 @@ ${detection.installHint}`
       persistResponse({
         provider: "copilot",
         agentRole: agent_role,
-        model,
+        model: model || "cli-default",
         promptId: promptResult.id,
         slug: promptResult.slug,
         response,
@@ -14913,7 +14915,7 @@ var askCopilotTool = {
       prompt_file: { type: "string", description: "Path to file containing the prompt" },
       output_file: { type: "string", description: "Required. Path to write response. Response content is NOT returned inline - read from this file." },
       context_files: { type: "array", items: { type: "string" }, description: "File paths to include as context (contents will be prepended to prompt)" },
-      model: { type: "string", description: `Copilot model to use (default: ${COPILOT_DEFAULT_MODEL}). Set OMC_COPILOT_DEFAULT_MODEL env var to change default.` },
+      model: { type: "string", description: "Copilot model to use. If omitted, Copilot CLI uses its own configured default. Set OMC_COPILOT_DEFAULT_MODEL env var to override globally." },
       background: { type: "boolean", description: "Run in background (non-blocking). Returns immediately with job metadata and file paths. Check response file for completion." },
       working_directory: { type: "string", description: "Working directory for path resolution and CLI execution. Defaults to process.cwd()." }
     },

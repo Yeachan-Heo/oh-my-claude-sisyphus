@@ -13,7 +13,6 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import {
   COPILOT_VALID_ROLES,
-  COPILOT_DEFAULT_MODEL,
   handleAskCopilot,
 } from './copilot-core.js';
 import {
@@ -38,7 +37,7 @@ const askCopilotTool = {
       prompt_file: { type: 'string', description: 'Path to file containing the prompt' },
       output_file: { type: 'string', description: 'Required. Path to write response. Response content is NOT returned inline - read from this file.' },
       context_files: { type: 'array', items: { type: 'string' }, description: 'File paths to include as context (contents will be prepended to prompt)' },
-      model: { type: 'string', description: `Copilot model to use (default: ${COPILOT_DEFAULT_MODEL}). Set OMC_COPILOT_DEFAULT_MODEL env var to change default.` },
+      model: { type: 'string', description: 'Copilot model to use. If omitted, Copilot CLI uses its own configured default. Set OMC_COPILOT_DEFAULT_MODEL env var to override globally.' },
       background: { type: 'boolean', description: 'Run in background (non-blocking). Returns immediately with job metadata and file paths. Check response file for completion.' },
       working_directory: { type: 'string', description: 'Working directory for path resolution and CLI execution. Defaults to process.cwd().' },
     },

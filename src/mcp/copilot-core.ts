@@ -37,8 +37,8 @@ function validateModelName(model: string): void {
   }
 }
 
-// Default model can be overridden via environment variable
-export const COPILOT_DEFAULT_MODEL = process.env.OMC_COPILOT_DEFAULT_MODEL || 'gpt-5.1-codex-max';
+// Optional default model override — if unset, Copilot CLI uses its own configured default
+export const COPILOT_DEFAULT_MODEL = process.env.OMC_COPILOT_DEFAULT_MODEL || '';
 export const COPILOT_TIMEOUT = Math.min(Math.max(5000, parseInt(process.env.OMC_COPILOT_TIMEOUT || '3600000', 10) || 3600000), 3600000);
 
 // Copilot is a full coding agent, suitable for analytical/planning tasks like Codex
@@ -51,11 +51,12 @@ export const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB per file
  * Execute Copilot CLI command and return the response.
  * Copilot CLI reads from stdin and outputs plain text.
  */
-export function executeCopilot(prompt: string, model: string, cwd?: string): Promise<string> {
+export function executeCopilot(prompt: string, model: string | undefined, cwd?: string): Promise<string> {
   return new Promise((resolve, reject) => {
-    validateModelName(model);
+    if (model) validateModelName(model);
     let settled = false;
-    const args = ['--allow-all-tools', '--allow-all-paths', '--model', model];
+    const args = ['--allow-all-tools', '--allow-all-paths'];
+    if (model) args.push('--model', model);
     const child = spawn('copilot', args, {
       stdio: ['pipe', 'pipe', 'pipe'],
       ...(cwd ? { cwd } : {})
@@ -121,13 +122,14 @@ export function executeCopilot(prompt: string, model: string, cwd?: string): Pro
  */
 export function executeCopilotBackground(
   fullPrompt: string,
-  model: string,
+  model: string | undefined,
   jobMeta: BackgroundJobMeta,
   workingDirectory?: string
 ): { pid: number } | { error: string } {
   try {
-    validateModelName(model);
-    const args = ['--allow-all-tools', '--allow-all-paths', '--model', model];
+    if (model) validateModelName(model);
+    const args = ['--allow-all-tools', '--allow-all-paths'];
+    if (model) args.push('--model', model);
     const child = spawn('copilot', args, {
       detached: true,
       stdio: ['pipe', 'pipe', 'pipe'],
@@ -151,7 +153,7 @@ export function executeCopilotBackground(
       pid,
       promptFile: jobMeta.promptFile,
       responseFile: jobMeta.responseFile,
-      model,
+      model: model || 'cli-default',
       agentRole: jobMeta.agentRole,
       spawnedAt: new Date().toISOString(),
     };
@@ -215,7 +217,7 @@ export function executeCopilotBackground(
         persistResponse({
           provider: 'copilot',
           agentRole: jobMeta.agentRole,
-          model,
+          model: model || 'cli-default',
           promptId: jobMeta.jobId,
           slug: jobMeta.slug,
           response,
@@ -299,7 +301,7 @@ export async function handleAskCopilot(args: {
   background?: boolean;
   working_directory?: string;
 }): Promise<{ content: Array<{ type: 'text'; text: string }>; isError?: boolean }> {
-  const { agent_role, model = COPILOT_DEFAULT_MODEL, context_files } = args;
+  const { agent_role, model = COPILOT_DEFAULT_MODEL || undefined, context_files } = args;
 
   const trustedRoot = getWorktreeRoot(process.cwd()) || process.cwd();
   let trustedRootReal: string;
@@ -440,7 +442,7 @@ ${resolvedPrompt}`;
   const promptResult = persistPrompt({
     provider: 'copilot',
     agentRole: agent_role,
-    model,
+    model: model || 'cli-default',
     files: context_files,
     prompt: resolvedPrompt,
     fullPrompt,
@@ -466,7 +468,7 @@ ${resolvedPrompt}`;
       jobId: promptResult.id,
       slug: promptResult.slug,
       agentRole: agent_role,
-      model,
+      model: model || 'cli-default',
       promptFile: promptResult.filePath,
       responseFile: expectedResponsePath!,
     }, baseDir);
@@ -524,7 +526,7 @@ ${resolvedPrompt}`;
       persistResponse({
         provider: 'copilot',
         agentRole: agent_role,
-        model,
+        model: model || 'cli-default',
         promptId: promptResult.id,
         slug: promptResult.slug,
         response,
