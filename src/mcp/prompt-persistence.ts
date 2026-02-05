@@ -5,10 +5,37 @@
  * sending to Codex/Gemini, providing visibility, debugging, and compliance audit trail.
  */
 
-import { mkdirSync, writeFileSync, readFileSync, existsSync, renameSync, readdirSync, unlinkSync } from 'fs';
-import { join } from 'path';
-import { randomBytes } from 'crypto';
-import { getWorktreeRoot } from '../lib/worktree-paths.js';
+import {
+  mkdirSync,
+  writeFileSync,
+  readFileSync,
+  existsSync,
+  renameSync,
+  readdirSync,
+  unlinkSync,
+} from "fs";
+import { join } from "path";
+import { randomBytes } from "crypto";
+import { getWorktreeRoot } from "../lib/worktree-paths.js";
+import { getSisyphusConfig } from "../features/auto-update.js";
+
+const BIDI_CONTROL_REGEX =
+  /[\u202A-\u202E\u2066-\u2069\u200E\u200F\u200B-\u200D\u2060\uFEFF]/g;
+
+function isPromptPersistenceEnabled(): boolean {
+  const config = getSisyphusConfig();
+  return config.promptPersistence?.enabled === true;
+}
+
+function sanitizeForStorage(value: string, label: string): string {
+  const sanitized = value.replace(BIDI_CONTROL_REGEX, "");
+  if (sanitized !== value) {
+    console.warn(
+      `[prompt-persistence] Removed bidi/invisible characters from ${label}.`,
+    );
+  }
+  return sanitized;
+}
 
 function yamlString(value: string): string {
   // JSON strings are valid YAML scalars and safely escape quotes/newlines.
@@ -43,8 +70,8 @@ function renameOverwritingSync(fromPath: string, toPath: string): void {
  * @returns A filesystem-safe slug
  */
 export function slugify(text: string, maxWords = 4): string {
-  if (!text || typeof text !== 'string') {
-    return 'prompt';
+  if (!text || typeof text !== "string") {
+    return "prompt";
   }
 
   // Take first maxWords words
@@ -52,18 +79,18 @@ export function slugify(text: string, maxWords = 4): string {
 
   // Join, lowercase, replace non-alphanumeric with hyphens
   let slug = words
-    .join('-')
+    .join("-")
     .toLowerCase()
-    .replace(/[^a-z0-9-]/g, '-')
-    .replace(/-+/g, '-')  // Collapse multiple hyphens
-    .replace(/^-|-$/g, ''); // Trim leading/trailing hyphens
+    .replace(/[^a-z0-9-]/g, "-")
+    .replace(/-+/g, "-") // Collapse multiple hyphens
+    .replace(/^-|-$/g, ""); // Trim leading/trailing hyphens
 
   // Truncate to 40 chars max
   if (slug.length > 40) {
-    slug = slug.substring(0, 40).replace(/-$/, '');
+    slug = slug.substring(0, 40).replace(/-$/, "");
   }
 
-  return slug || 'prompt';
+  return slug || "prompt";
 }
 
 /**
@@ -72,31 +99,31 @@ export function slugify(text: string, maxWords = 4): string {
  * @returns 8-character hex string
  */
 export function generatePromptId(): string {
-  return randomBytes(4).toString('hex');
+  return randomBytes(4).toString("hex");
 }
 
 /**
  * Options for persisting a prompt
  */
 export interface PersistPromptOptions {
-  provider: 'codex' | 'gemini';
+  provider: "codex" | "gemini";
   agentRole: string;
   model: string;
   files?: string[];
-  prompt: string;        // The raw user prompt (for slug generation)
-  fullPrompt: string;    // The fully assembled prompt (system + files + user)
+  prompt: string; // The raw user prompt (for slug generation)
+  fullPrompt: string; // The fully assembled prompt (system + files + user)
 }
 
 /**
  * Options for persisting a response
  */
 export interface PersistResponseOptions {
-  provider: 'codex' | 'gemini';
+  provider: "codex" | "gemini";
   agentRole: string;
   model: string;
-  promptId: string;      // The ID from the corresponding prompt file
-  slug: string;          // The slug from the corresponding prompt file
-  response: string;      // The model's response
+  promptId: string; // The ID from the corresponding prompt file
+  slug: string; // The slug from the corresponding prompt file
+  response: string; // The model's response
   usedFallback?: boolean;
   fallbackModel?: string;
 }
@@ -114,10 +141,10 @@ export interface PersistPromptResult {
  * Job status for background execution tracking
  */
 export interface JobStatus {
-  provider: 'codex' | 'gemini';
+  provider: "codex" | "gemini";
   jobId: string;
   slug: string;
-  status: 'spawned' | 'running' | 'completed' | 'failed' | 'timeout';
+  status: "spawned" | "running" | "completed" | "failed" | "timeout";
   pid?: number;
   promptFile: string;
   responseFile: string;
@@ -134,7 +161,7 @@ export interface JobStatus {
  * Metadata passed to background execution functions
  */
 export interface BackgroundJobMeta {
-  provider: 'codex' | 'gemini';
+  provider: "codex" | "gemini";
   jobId: string;
   slug: string;
   agentRole: string;
@@ -148,7 +175,7 @@ export interface BackgroundJobMeta {
  */
 export function getPromptsDir(): string {
   const root = getWorktreeRoot() || process.cwd();
-  return join(root, '.omc', 'prompts');
+  return join(root, ".omc", "prompts");
 }
 
 /**
@@ -156,23 +183,23 @@ export function getPromptsDir(): string {
  */
 function buildPromptFrontmatter(options: PersistPromptOptions): string {
   const lines = [
-    '---',
+    "---",
     `provider: ${yamlString(options.provider)}`,
     `agent_role: ${yamlString(options.agentRole)}`,
     `model: ${yamlString(options.model)}`,
   ];
 
   if (options.files && options.files.length > 0) {
-    lines.push('files:');
+    lines.push("files:");
     for (const file of options.files) {
       lines.push(`  - ${yamlString(file)}`);
     }
   }
 
   lines.push(`timestamp: ${yamlString(new Date().toISOString())}`);
-  lines.push('---');
+  lines.push("---");
 
-  return lines.join('\n');
+  return lines.join("\n");
 }
 
 /**
@@ -180,7 +207,7 @@ function buildPromptFrontmatter(options: PersistPromptOptions): string {
  */
 function buildResponseFrontmatter(options: PersistResponseOptions): string {
   const lines = [
-    '---',
+    "---",
     `provider: ${yamlString(options.provider)}`,
     `agent_role: ${yamlString(options.agentRole)}`,
     `model: ${yamlString(options.model)}`,
@@ -193,9 +220,9 @@ function buildResponseFrontmatter(options: PersistResponseOptions): string {
   }
 
   lines.push(`timestamp: ${yamlString(new Date().toISOString())}`);
-  lines.push('---');
+  lines.push("---");
 
-  return lines.join('\n');
+  return lines.join("\n");
 }
 
 /**
@@ -204,24 +231,36 @@ function buildResponseFrontmatter(options: PersistResponseOptions): string {
  * @param options - The prompt details to persist
  * @returns The file path and metadata, or undefined on failure
  */
-export function persistPrompt(options: PersistPromptOptions): PersistPromptResult | undefined {
+export function persistPrompt(
+  options: PersistPromptOptions,
+): PersistPromptResult | undefined {
+  if (!isPromptPersistenceEnabled()) {
+    return undefined;
+  }
   try {
     const promptsDir = getPromptsDir();
     mkdirSync(promptsDir, { recursive: true });
 
-    const slug = slugify(options.prompt);
+    const sanitizedPrompt = sanitizeForStorage(options.prompt, "prompt");
+    const sanitizedFullPrompt = sanitizeForStorage(
+      options.fullPrompt,
+      "full prompt",
+    );
+    const slug = slugify(sanitizedPrompt);
     const id = generatePromptId();
     const filename = `${options.provider}-prompt-${slug}-${id}.md`;
     const filePath = join(promptsDir, filename);
 
     const frontmatter = buildPromptFrontmatter(options);
-    const content = `${frontmatter}\n\n${options.fullPrompt}`;
+    const content = `${frontmatter}\n\n${sanitizedFullPrompt}`;
 
-    writeFileSync(filePath, content, 'utf-8');
+    writeFileSync(filePath, content, "utf-8");
 
     return { filePath, id, slug };
   } catch (err) {
-    console.warn(`[prompt-persistence] Failed to persist prompt: ${(err as Error).message}`);
+    console.warn(
+      `[prompt-persistence] Failed to persist prompt: ${(err as Error).message}`,
+    );
     return undefined;
   }
 }
@@ -235,7 +274,11 @@ export function persistPrompt(options: PersistPromptOptions): PersistPromptResul
  * @param promptId - The ID from the prompt
  * @returns The expected file path for the response
  */
-export function getExpectedResponsePath(provider: 'codex' | 'gemini', slug: string, promptId: string): string {
+export function getExpectedResponsePath(
+  provider: "codex" | "gemini",
+  slug: string,
+  promptId: string,
+): string {
   const promptsDir = getPromptsDir();
   const filename = `${provider}-response-${slug}-${promptId}.md`;
   return join(promptsDir, filename);
@@ -247,7 +290,12 @@ export function getExpectedResponsePath(provider: 'codex' | 'gemini', slug: stri
  * @param options - The response details to persist
  * @returns The file path, or undefined on failure
  */
-export function persistResponse(options: PersistResponseOptions): string | undefined {
+export function persistResponse(
+  options: PersistResponseOptions,
+): string | undefined {
+  if (!isPromptPersistenceEnabled()) {
+    return undefined;
+  }
   try {
     const promptsDir = getPromptsDir();
     mkdirSync(promptsDir, { recursive: true });
@@ -256,13 +304,16 @@ export function persistResponse(options: PersistResponseOptions): string | undef
     const filePath = join(promptsDir, filename);
 
     const frontmatter = buildResponseFrontmatter(options);
-    const content = `${frontmatter}\n\n${options.response}`;
+    const sanitizedResponse = sanitizeForStorage(options.response, "response");
+    const content = `${frontmatter}\n\n${sanitizedResponse}`;
 
-    writeFileSync(filePath, content, 'utf-8');
+    writeFileSync(filePath, content, "utf-8");
 
     return filePath;
   } catch (err) {
-    console.warn(`[prompt-persistence] Failed to persist response: ${(err as Error).message}`);
+    console.warn(
+      `[prompt-persistence] Failed to persist response: ${(err as Error).message}`,
+    );
     return undefined;
   }
 }
@@ -272,7 +323,11 @@ export function persistResponse(options: PersistResponseOptions): string | undef
 /**
  * Get the status file path for a background job
  */
-export function getStatusFilePath(provider: 'codex' | 'gemini', slug: string, promptId: string): string {
+export function getStatusFilePath(
+  provider: "codex" | "gemini",
+  slug: string,
+  promptId: string,
+): string {
   const promptsDir = getPromptsDir();
   return join(promptsDir, `${provider}-status-${slug}-${promptId}.json`);
 }
@@ -281,30 +336,43 @@ export function getStatusFilePath(provider: 'codex' | 'gemini', slug: string, pr
  * Write job status atomically (temp file + rename)
  */
 export function writeJobStatus(status: JobStatus): void {
+  if (!isPromptPersistenceEnabled()) {
+    return;
+  }
   try {
     const promptsDir = getPromptsDir();
     mkdirSync(promptsDir, { recursive: true });
 
-    const statusPath = getStatusFilePath(status.provider, status.slug, status.jobId);
-    const tempPath = statusPath + '.tmp';
+    const statusPath = getStatusFilePath(
+      status.provider,
+      status.slug,
+      status.jobId,
+    );
+    const tempPath = statusPath + ".tmp";
 
-    writeFileSync(tempPath, JSON.stringify(status, null, 2), 'utf-8');
+    writeFileSync(tempPath, JSON.stringify(status, null, 2), "utf-8");
     renameOverwritingSync(tempPath, statusPath);
   } catch (err) {
-    console.warn(`[prompt-persistence] Failed to write job status: ${(err as Error).message}`);
+    console.warn(
+      `[prompt-persistence] Failed to write job status: ${(err as Error).message}`,
+    );
   }
 }
 
 /**
  * Read job status from disk
  */
-export function readJobStatus(provider: 'codex' | 'gemini', slug: string, promptId: string): JobStatus | undefined {
+export function readJobStatus(
+  provider: "codex" | "gemini",
+  slug: string,
+  promptId: string,
+): JobStatus | undefined {
   const statusPath = getStatusFilePath(provider, slug, promptId);
   if (!existsSync(statusPath)) {
     return undefined;
   }
   try {
-    const content = readFileSync(statusPath, 'utf-8');
+    const content = readFileSync(statusPath, "utf-8");
     return JSON.parse(content) as JobStatus;
   } catch {
     return undefined;
@@ -315,9 +383,9 @@ export function readJobStatus(provider: 'codex' | 'gemini', slug: string, prompt
  * Check if a background job's response is ready
  */
 export function checkResponseReady(
-  provider: 'codex' | 'gemini',
+  provider: "codex" | "gemini",
   slug: string,
-  promptId: string
+  promptId: string,
 ): { ready: boolean; responsePath: string; status?: JobStatus } {
   const responsePath = getExpectedResponsePath(provider, slug, promptId);
   const ready = existsSync(responsePath);
@@ -329,9 +397,9 @@ export function checkResponseReady(
  * Read a completed response, stripping YAML frontmatter
  */
 export function readCompletedResponse(
-  provider: 'codex' | 'gemini',
+  provider: "codex" | "gemini",
   slug: string,
-  promptId: string
+  promptId: string,
 ): { response: string; status: JobStatus } | undefined {
   const responsePath = getExpectedResponsePath(provider, slug, promptId);
   if (!existsSync(responsePath)) {
@@ -344,7 +412,7 @@ export function readCompletedResponse(
   }
 
   try {
-    const content = readFileSync(responsePath, 'utf-8');
+    const content = readFileSync(responsePath, "utf-8");
     const frontmatterMatch = content.match(/^---\n[\s\S]*?\n---\n\n/);
     const response = frontmatterMatch
       ? content.slice(frontmatterMatch[0].length)
@@ -358,7 +426,7 @@ export function readCompletedResponse(
 /**
  * List all active (spawned or running) background jobs
  */
-export function listActiveJobs(provider?: 'codex' | 'gemini'): JobStatus[] {
+export function listActiveJobs(provider?: "codex" | "gemini"): JobStatus[] {
   const promptsDir = getPromptsDir();
   if (!existsSync(promptsDir)) {
     return [];
@@ -367,19 +435,19 @@ export function listActiveJobs(provider?: 'codex' | 'gemini'): JobStatus[] {
   try {
     const files = readdirSync(promptsDir);
     const statusFiles = files.filter((f: string) => {
-      if (!f.endsWith('.json')) return false;
+      if (!f.endsWith(".json")) return false;
       if (provider) {
         return f.startsWith(`${provider}-status-`);
       }
-      return f.includes('-status-');
+      return f.includes("-status-");
     });
 
     const activeJobs: JobStatus[] = [];
     for (const file of statusFiles) {
       try {
-        const content = readFileSync(join(promptsDir, file), 'utf-8');
+        const content = readFileSync(join(promptsDir, file), "utf-8");
         const status = JSON.parse(content) as JobStatus;
-        if (status.status === 'spawned' || status.status === 'running') {
+        if (status.status === "spawned" || status.status === "running") {
           activeJobs.push(status);
         }
       } catch {
@@ -404,7 +472,9 @@ export function cleanupStaleJobs(maxAgeMs: number): number {
 
   try {
     const files = readdirSync(promptsDir);
-    const statusFiles = files.filter((f: string) => f.includes('-status-') && f.endsWith('.json'));
+    const statusFiles = files.filter(
+      (f: string) => f.includes("-status-") && f.endsWith(".json"),
+    );
 
     let cleanedCount = 0;
     const now = Date.now();
@@ -412,15 +482,15 @@ export function cleanupStaleJobs(maxAgeMs: number): number {
     for (const file of statusFiles) {
       try {
         const filePath = join(promptsDir, file);
-        const content = readFileSync(filePath, 'utf-8');
+        const content = readFileSync(filePath, "utf-8");
         const status = JSON.parse(content) as JobStatus;
 
-        if (status.status === 'spawned' || status.status === 'running') {
+        if (status.status === "spawned" || status.status === "running") {
           const spawnedAt = new Date(status.spawnedAt).getTime();
           if (now - spawnedAt > maxAgeMs) {
-            status.status = 'timeout';
+            status.status = "timeout";
             status.completedAt = new Date().toISOString();
-            status.error = 'Job exceeded maximum age and was marked stale';
+            status.error = "Job exceeded maximum age and was marked stale";
             writeJobStatus(status);
             cleanedCount++;
           }

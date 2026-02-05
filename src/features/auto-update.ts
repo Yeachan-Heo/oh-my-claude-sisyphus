@@ -10,22 +10,22 @@
  * - Configurable update notifications
  */
 
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
-import { join, dirname } from 'path';
-import { homedir } from 'os';
-import { execSync } from 'child_process';
-import { TaskTool } from '../hooks/beads-context/types.js';
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
+import { join, dirname } from "path";
+import { homedir } from "os";
+import { execSync } from "child_process";
+import { TaskTool } from "../hooks/beads-context/types.js";
 
 /** GitHub repository information */
-export const REPO_OWNER = 'Yeachan-Heo';
-export const REPO_NAME = 'oh-my-claudecode';
+export const REPO_OWNER = "Yeachan-Heo";
+export const REPO_NAME = "oh-my-claudecode";
 export const GITHUB_API_URL = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}`;
 export const GITHUB_RAW_URL = `https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}`;
 
 /** Installation paths */
-export const CLAUDE_CONFIG_DIR = join(homedir(), '.claude');
-export const VERSION_FILE = join(CLAUDE_CONFIG_DIR, '.omc-version.json');
-export const CONFIG_FILE = join(CLAUDE_CONFIG_DIR, '.omc-config.json');
+export const CLAUDE_CONFIG_DIR = join(homedir(), ".claude");
+export const VERSION_FILE = join(CLAUDE_CONFIG_DIR, ".omc-version.json");
+export const CONFIG_FILE = join(CLAUDE_CONFIG_DIR, ".omc-config.json");
 
 /**
  * Stop hook callback configuration for file logging
@@ -35,7 +35,7 @@ export interface StopCallbackFileConfig {
   /** File path with placeholders: {session_id}, {date}, {time} */
   path: string;
   /** Output format */
-  format?: 'markdown' | 'json';
+  format?: "markdown" | "json";
 }
 
 /**
@@ -73,6 +73,11 @@ export interface StopHookCallbacksConfig {
 export interface SisyphusConfig {
   /** Whether silent auto-updates are enabled (opt-in for security) */
   silentAutoUpdate: boolean;
+  /** Prompt persistence settings (opt-in for privacy) */
+  promptPersistence?: {
+    /** Whether prompt/response persistence is enabled */
+    enabled?: boolean;
+  };
   /** When the configuration was set */
   configuredAt?: string;
   /** Configuration schema version */
@@ -87,7 +92,7 @@ export interface SisyphusConfig {
     injectInstructions?: boolean;
   };
   /** Preferred execution mode for parallel work (set by omc-setup Step 3.7) */
-  defaultExecutionMode?: 'ultrawork' | 'ecomode';
+  defaultExecutionMode?: "ultrawork" | "ecomode";
   /** Ecomode-specific configuration */
   ecomode?: {
     /** Whether ecomode is enabled (default: true). Set to false to disable ecomode completely. */
@@ -111,10 +116,11 @@ export function getSisyphusConfig(): SisyphusConfig {
   }
 
   try {
-    const content = readFileSync(CONFIG_FILE, 'utf-8');
+    const content = readFileSync(CONFIG_FILE, "utf-8");
     const config = JSON.parse(content) as SisyphusConfig;
     return {
       silentAutoUpdate: config.silentAutoUpdate ?? false,
+      promptPersistence: config.promptPersistence,
       configuredAt: config.configuredAt,
       configVersion: config.configVersion,
       taskTool: config.taskTool,
@@ -161,7 +167,7 @@ export interface VersionMetadata {
   /** Git commit hash if installed from source */
   commitHash?: string;
   /** Installation method: 'script' | 'npm' | 'source' */
-  installMethod: 'script' | 'npm' | 'source';
+  installMethod: "script" | "npm" | "source";
 }
 
 /**
@@ -207,17 +213,17 @@ export function getInstalledVersion(): VersionMetadata | null {
     // Try to detect version from package.json if installed via npm
     try {
       // Check if we can find the package in node_modules
-      const result = execSync('npm list -g oh-my-claude-sisyphus --json', {
-        encoding: 'utf-8',
+      const result = execSync("npm list -g oh-my-claude-sisyphus --json", {
+        encoding: "utf-8",
         timeout: 5000,
-        stdio: 'pipe'
+        stdio: "pipe",
       });
       const data = JSON.parse(result);
-      if (data.dependencies?.['oh-my-claude-sisyphus']?.version) {
+      if (data.dependencies?.["oh-my-claude-sisyphus"]?.version) {
         return {
-          version: data.dependencies['oh-my-claude-sisyphus'].version,
+          version: data.dependencies["oh-my-claude-sisyphus"].version,
           installedAt: new Date().toISOString(),
-          installMethod: 'npm'
+          installMethod: "npm",
         };
       }
     } catch {
@@ -227,10 +233,10 @@ export function getInstalledVersion(): VersionMetadata | null {
   }
 
   try {
-    const content = readFileSync(VERSION_FILE, 'utf-8');
+    const content = readFileSync(VERSION_FILE, "utf-8");
     return JSON.parse(content) as VersionMetadata;
   } catch (error) {
-    console.error('Error reading version file:', error);
+    console.error("Error reading version file:", error);
     return null;
   }
 }
@@ -263,40 +269,42 @@ export function updateLastCheckTime(): void {
 export async function fetchLatestRelease(): Promise<ReleaseInfo> {
   const response = await fetch(`${GITHUB_API_URL}/releases/latest`, {
     headers: {
-      'Accept': 'application/vnd.github.v3+json',
-      'User-Agent': 'oh-my-claudecode-updater'
-    }
+      Accept: "application/vnd.github.v3+json",
+      "User-Agent": "oh-my-claudecode-updater",
+    },
   });
 
   if (response.status === 404) {
     // No releases found - try to get version from package.json in repo
     const pkgResponse = await fetch(`${GITHUB_RAW_URL}/main/package.json`, {
       headers: {
-        'User-Agent': 'oh-my-claudecode-updater'
-      }
+        "User-Agent": "oh-my-claudecode-updater",
+      },
     });
 
     if (pkgResponse.ok) {
-      const pkg = await pkgResponse.json() as { version: string };
+      const pkg = (await pkgResponse.json()) as { version: string };
       return {
         tag_name: `v${pkg.version}`,
         name: `Version ${pkg.version}`,
         published_at: new Date().toISOString(),
         html_url: `https://github.com/${REPO_OWNER}/${REPO_NAME}`,
-        body: 'No release notes available (fetched from package.json)',
+        body: "No release notes available (fetched from package.json)",
         prerelease: false,
-        draft: false
+        draft: false,
       };
     }
 
-    throw new Error('No releases found and could not fetch package.json');
+    throw new Error("No releases found and could not fetch package.json");
   }
 
   if (!response.ok) {
-    throw new Error(`Failed to fetch release info: ${response.status} ${response.statusText}`);
+    throw new Error(
+      `Failed to fetch release info: ${response.status} ${response.statusText}`,
+    );
   }
 
-  return await response.json() as ReleaseInfo;
+  return (await response.json()) as ReleaseInfo;
 }
 
 /**
@@ -305,11 +313,11 @@ export async function fetchLatestRelease(): Promise<ReleaseInfo> {
  */
 export function compareVersions(a: string, b: string): number {
   // Remove 'v' prefix if present
-  const cleanA = a.replace(/^v/, '');
-  const cleanB = b.replace(/^v/, '');
+  const cleanA = a.replace(/^v/, "");
+  const cleanB = b.replace(/^v/, "");
 
-  const partsA = cleanA.split('.').map(n => parseInt(n, 10) || 0);
-  const partsB = cleanB.split('.').map(n => parseInt(n, 10) || 0);
+  const partsA = cleanA.split(".").map((n) => parseInt(n, 10) || 0);
+  const partsB = cleanB.split(".").map((n) => parseInt(n, 10) || 0);
 
   const maxLength = Math.max(partsA.length, partsB.length);
 
@@ -332,9 +340,11 @@ export async function checkForUpdates(): Promise<UpdateCheckResult> {
   const release = await fetchLatestRelease();
 
   const currentVersion = installed?.version ?? null;
-  const latestVersion = release.tag_name.replace(/^v/, '');
+  const latestVersion = release.tag_name.replace(/^v/, "");
 
-  const updateAvailable = currentVersion === null || compareVersions(currentVersion, latestVersion) < 0;
+  const updateAvailable =
+    currentVersion === null ||
+    compareVersions(currentVersion, latestVersion) < 0;
 
   // Update last check time
   updateLastCheckTime();
@@ -344,7 +354,7 @@ export async function checkForUpdates(): Promise<UpdateCheckResult> {
     latestVersion,
     updateAvailable,
     releaseInfo: release,
-    releaseNotes: release.body || 'No release notes available.'
+    releaseNotes: release.body || "No release notes available.",
   };
 }
 
@@ -361,37 +371,37 @@ export async function performUpdate(options?: {
   try {
     // Fetch the latest release to get the version
     const release = await fetchLatestRelease();
-    const newVersion = release.tag_name.replace(/^v/, '');
+    const newVersion = release.tag_name.replace(/^v/, "");
 
     // Use npm for updates on all platforms (install.sh was removed)
     try {
-      execSync('npm install -g oh-my-claude-sisyphus@latest', {
-        encoding: 'utf-8',
-        stdio: options?.verbose ? 'inherit' : 'pipe',
+      execSync("npm install -g oh-my-claude-sisyphus@latest", {
+        encoding: "utf-8",
+        stdio: options?.verbose ? "inherit" : "pipe",
         timeout: 120000, // 2 minute timeout for npm
-        ...(process.platform === 'win32' ? { windowsHide: true } : {})
+        ...(process.platform === "win32" ? { windowsHide: true } : {}),
       });
 
       // Update version metadata
       saveVersionMetadata({
         version: newVersion,
         installedAt: new Date().toISOString(),
-        installMethod: 'npm',
-        lastCheckAt: new Date().toISOString()
+        installMethod: "npm",
+        lastCheckAt: new Date().toISOString(),
       });
 
       return {
         success: true,
         previousVersion,
         newVersion,
-        message: `Successfully updated from ${previousVersion ?? 'unknown'} to ${newVersion}`
+        message: `Successfully updated from ${previousVersion ?? "unknown"} to ${newVersion}`,
       };
     } catch (npmError) {
       throw new Error(
-        'Auto-update via npm failed. Please run manually:\n' +
-        '  npm install -g oh-my-claude-sisyphus@latest\n' +
-        'Or use: /plugin install oh-my-claudecode\n' +
-        `Error: ${npmError instanceof Error ? npmError.message : npmError}`
+        "Auto-update via npm failed. Please run manually:\n" +
+          "  npm install -g oh-my-claude-sisyphus@latest\n" +
+          "Or use: /plugin install oh-my-claudecode\n" +
+          `Error: ${npmError instanceof Error ? npmError.message : npmError}`,
       );
     }
   } catch (error) {
@@ -399,9 +409,9 @@ export async function performUpdate(options?: {
     return {
       success: false,
       previousVersion,
-      newVersion: 'unknown',
+      newVersion: "unknown",
       message: `Update failed: ${errorMessage}`,
-      errors: [errorMessage]
+      errors: [errorMessage],
     };
   }
 }
@@ -409,36 +419,43 @@ export async function performUpdate(options?: {
 /**
  * Get a formatted update notification message
  */
-export function formatUpdateNotification(checkResult: UpdateCheckResult): string {
+export function formatUpdateNotification(
+  checkResult: UpdateCheckResult,
+): string {
   if (!checkResult.updateAvailable) {
-    return `oh-my-claudecode is up to date (v${checkResult.currentVersion ?? 'unknown'})`;
+    return `oh-my-claudecode is up to date (v${checkResult.currentVersion ?? "unknown"})`;
   }
 
   const lines = [
-    '╔═══════════════════════════════════════════════════════════╗',
-    '║           oh-my-claudecode Update Available!              ║',
-    '╚═══════════════════════════════════════════════════════════╝',
-    '',
-    `  Current version: ${checkResult.currentVersion ?? 'unknown'}`,
+    "╔═══════════════════════════════════════════════════════════╗",
+    "║           oh-my-claudecode Update Available!              ║",
+    "╚═══════════════════════════════════════════════════════════╝",
+    "",
+    `  Current version: ${checkResult.currentVersion ?? "unknown"}`,
     `  Latest version:  ${checkResult.latestVersion}`,
-    '',
-    '  To update, run: /update',
-    '  Or reinstall via: /plugin install oh-my-claudecode',
-    ''
+    "",
+    "  To update, run: /update",
+    "  Or reinstall via: /plugin install oh-my-claudecode",
+    "",
   ];
 
   // Add truncated release notes if available
-  if (checkResult.releaseNotes && checkResult.releaseNotes !== 'No release notes available.') {
-    lines.push('  Release notes:');
-    const notes = checkResult.releaseNotes.split('\n').slice(0, 5);
-    notes.forEach(line => lines.push(`    ${line}`));
-    if (checkResult.releaseNotes.split('\n').length > 5) {
-      lines.push('    ...');
+  if (
+    checkResult.releaseNotes &&
+    checkResult.releaseNotes !== "No release notes available."
+  ) {
+    lines.push("  Release notes:");
+    const notes = checkResult.releaseNotes.split("\n").slice(0, 5);
+    notes.forEach((line) => {
+      lines.push(`    ${line}`);
+    });
+    if (checkResult.releaseNotes.split("\n").length > 5) {
+      lines.push("    ...");
     }
-    lines.push('');
+    lines.push("");
   }
 
-  return lines.join('\n');
+  return lines.join("\n");
 }
 
 /**
@@ -461,25 +478,27 @@ export function shouldCheckForUpdates(intervalHours: number = 24): boolean {
 /**
  * Perform a background update check (non-blocking)
  */
-export function backgroundUpdateCheck(callback?: (result: UpdateCheckResult) => void): void {
+export function backgroundUpdateCheck(
+  callback?: (result: UpdateCheckResult) => void,
+): void {
   if (!shouldCheckForUpdates()) {
     return;
   }
 
   // Run the check asynchronously without blocking
   checkForUpdates()
-    .then(result => {
+    .then((result) => {
       if (callback) {
         callback(result);
       } else if (result.updateAvailable) {
         // Default behavior: print notification to console
-        console.log('\n' + formatUpdateNotification(result));
+        console.log("\n" + formatUpdateNotification(result));
       }
     })
-    .catch(error => {
+    .catch((error) => {
       // Silently ignore errors in background checks
       if (process.env.OMC_DEBUG) {
-        console.error('Background update check failed:', error);
+        console.error("Background update check failed:", error);
       }
     });
 }
@@ -488,33 +507,42 @@ export function backgroundUpdateCheck(callback?: (result: UpdateCheckResult) => 
  * CLI helper: perform interactive update
  */
 export async function interactiveUpdate(): Promise<void> {
-  console.log('Checking for updates...');
+  console.log("Checking for updates...");
 
   try {
     const checkResult = await checkForUpdates();
 
     if (!checkResult.updateAvailable) {
-      console.log(`✓ You are running the latest version (${checkResult.currentVersion})`);
+      console.log(
+        `✓ You are running the latest version (${checkResult.currentVersion})`,
+      );
       return;
     }
 
     console.log(formatUpdateNotification(checkResult));
-    console.log('Starting update...\n');
+    console.log("Starting update...\n");
 
     const result = await performUpdate({ verbose: true });
 
     if (result.success) {
       console.log(`\n✓ ${result.message}`);
-      console.log('\nPlease restart your Claude Code session to use the new version.');
+      console.log(
+        "\nPlease restart your Claude Code session to use the new version.",
+      );
     } else {
       console.error(`\n✗ ${result.message}`);
       if (result.errors) {
-        result.errors.forEach(err => console.error(`  - ${err}`));
+        result.errors.forEach((err) => {
+          console.error(`  - ${err}`);
+        });
       }
       process.exit(1);
     }
   } catch (error) {
-    console.error('Update check failed:', error instanceof Error ? error.message : error);
+    console.error(
+      "Update check failed:",
+      error instanceof Error ? error.message : error,
+    );
     process.exit(1);
   }
 }
@@ -534,7 +562,10 @@ export interface SilentUpdateConfig {
 }
 
 /** State file for tracking silent update status */
-const SILENT_UPDATE_STATE_FILE = join(CLAUDE_CONFIG_DIR, '.omc-silent-update.json');
+const SILENT_UPDATE_STATE_FILE = join(
+  CLAUDE_CONFIG_DIR,
+  ".omc-silent-update.json",
+);
 
 interface SilentUpdateState {
   lastAttempt?: string;
@@ -552,7 +583,7 @@ function getSilentUpdateState(): SilentUpdateState {
     return { consecutiveFailures: 0, pendingRestart: false };
   }
   try {
-    return JSON.parse(readFileSync(SILENT_UPDATE_STATE_FILE, 'utf-8'));
+    return JSON.parse(readFileSync(SILENT_UPDATE_STATE_FILE, "utf-8"));
   } catch {
     return { consecutiveFailures: 0, pendingRestart: false };
   }
@@ -582,7 +613,7 @@ function silentLog(message: string, logFile?: string): void {
       if (!existsSync(dir)) {
         mkdirSync(dir, { recursive: true });
       }
-      writeFileSync(logFile, logMessage, { flag: 'a' });
+      writeFileSync(logFile, logMessage, { flag: "a" });
     } catch {
       // Silently ignore log errors
     }
@@ -605,18 +636,23 @@ function silentLog(message: string, logFile?: string): void {
  * @param config - Silent update configuration
  * @returns Promise resolving to update result or null if skipped
  */
-export async function silentAutoUpdate(config: SilentUpdateConfig = {}): Promise<UpdateResult | null> {
+export async function silentAutoUpdate(
+  config: SilentUpdateConfig = {},
+): Promise<UpdateResult | null> {
   const {
     checkIntervalHours = 24,
     autoApply = true,
-    logFile = join(CLAUDE_CONFIG_DIR, '.omc-update.log'),
-    maxRetries = 3
+    logFile = join(CLAUDE_CONFIG_DIR, ".omc-update.log"),
+    maxRetries = 3,
   } = config;
 
   // SECURITY: Check if silent auto-update is enabled in configuration
   // Default is disabled - users must explicitly opt-in during installation
   if (!isSilentAutoUpdateEnabled()) {
-    silentLog('Silent auto-update is disabled (run installer to enable, or use /update)', logFile);
+    silentLog(
+      "Silent auto-update is disabled (run installer to enable, or use /update)",
+      logFile,
+    );
     return null;
   }
 
@@ -630,16 +666,21 @@ export async function silentAutoUpdate(config: SilentUpdateConfig = {}): Promise
   // Check for consecutive failures and apply exponential backoff
   if (state.consecutiveFailures >= maxRetries) {
     const backoffHours = Math.min(24 * state.consecutiveFailures, 168); // Max 1 week
-    const lastAttempt = state.lastAttempt ? new Date(state.lastAttempt).getTime() : 0;
+    const lastAttempt = state.lastAttempt
+      ? new Date(state.lastAttempt).getTime()
+      : 0;
     const hoursSinceLastAttempt = (Date.now() - lastAttempt) / (1000 * 60 * 60);
 
     if (hoursSinceLastAttempt < backoffHours) {
-      silentLog(`Skipping update check (in backoff period: ${backoffHours}h)`, logFile);
+      silentLog(
+        `Skipping update check (in backoff period: ${backoffHours}h)`,
+        logFile,
+      );
       return null;
     }
   }
 
-  silentLog('Starting silent update check...', logFile);
+  silentLog("Starting silent update check...", logFile);
   state.lastAttempt = new Date().toISOString();
 
   try {
@@ -647,28 +688,37 @@ export async function silentAutoUpdate(config: SilentUpdateConfig = {}): Promise
     const checkResult = await checkForUpdates();
 
     if (!checkResult.updateAvailable) {
-      silentLog(`No update available (current: ${checkResult.currentVersion})`, logFile);
+      silentLog(
+        `No update available (current: ${checkResult.currentVersion})`,
+        logFile,
+      );
       state.consecutiveFailures = 0;
       state.pendingRestart = false;
       saveSilentUpdateState(state);
       return null;
     }
 
-    silentLog(`Update available: ${checkResult.currentVersion} -> ${checkResult.latestVersion}`, logFile);
+    silentLog(
+      `Update available: ${checkResult.currentVersion} -> ${checkResult.latestVersion}`,
+      logFile,
+    );
 
     if (!autoApply) {
-      silentLog('Auto-apply disabled, skipping installation', logFile);
+      silentLog("Auto-apply disabled, skipping installation", logFile);
       return null;
     }
 
     // Perform the update silently
     const result = await performUpdate({
       skipConfirmation: true,
-      verbose: false
+      verbose: false,
     });
 
     if (result.success) {
-      silentLog(`Update successful: ${result.previousVersion} -> ${result.newVersion}`, logFile);
+      silentLog(
+        `Update successful: ${result.previousVersion} -> ${result.newVersion}`,
+        logFile,
+      );
       state.consecutiveFailures = 0;
       state.pendingRestart = true;
       state.lastSuccess = new Date().toISOString();
@@ -689,9 +739,9 @@ export async function silentAutoUpdate(config: SilentUpdateConfig = {}): Promise
     return {
       success: false,
       previousVersion: null,
-      newVersion: 'unknown',
+      newVersion: "unknown",
       message: `Silent update failed: ${errorMessage}`,
-      errors: [errorMessage]
+      errors: [errorMessage],
     };
   }
 }
