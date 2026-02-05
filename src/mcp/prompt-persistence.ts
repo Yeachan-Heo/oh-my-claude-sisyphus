@@ -85,6 +85,7 @@ export interface PersistPromptOptions {
   files?: string[];
   prompt: string;        // The raw user prompt (for slug generation)
   fullPrompt: string;    // The fully assembled prompt (system + files + user)
+  workingDirectory?: string;
 }
 
 /**
@@ -99,6 +100,7 @@ export interface PersistResponseOptions {
   response: string;      // The model's response
   usedFallback?: boolean;
   fallbackModel?: string;
+  workingDirectory?: string;
 }
 
 /**
@@ -146,8 +148,8 @@ export interface BackgroundJobMeta {
 /**
  * Get the prompts directory path under the worktree
  */
-export function getPromptsDir(): string {
-  const root = getWorktreeRoot() || process.cwd();
+export function getPromptsDir(workingDirectory?: string): string {
+  const root = getWorktreeRoot(workingDirectory) || workingDirectory || process.cwd();
   return join(root, '.omc', 'prompts');
 }
 
@@ -206,7 +208,7 @@ function buildResponseFrontmatter(options: PersistResponseOptions): string {
  */
 export function persistPrompt(options: PersistPromptOptions): PersistPromptResult | undefined {
   try {
-    const promptsDir = getPromptsDir();
+    const promptsDir = getPromptsDir(options.workingDirectory);
     mkdirSync(promptsDir, { recursive: true });
 
     const slug = slugify(options.prompt);
@@ -233,10 +235,11 @@ export function persistPrompt(options: PersistPromptOptions): PersistPromptResul
  * @param provider - The provider (codex or gemini)
  * @param slug - The slug from the prompt
  * @param promptId - The ID from the prompt
+ * @param workingDirectory - Optional working directory
  * @returns The expected file path for the response
  */
-export function getExpectedResponsePath(provider: 'codex' | 'gemini', slug: string, promptId: string): string {
-  const promptsDir = getPromptsDir();
+export function getExpectedResponsePath(provider: 'codex' | 'gemini', slug: string, promptId: string, workingDirectory?: string): string {
+  const promptsDir = getPromptsDir(workingDirectory);
   const filename = `${provider}-response-${slug}-${promptId}.md`;
   return join(promptsDir, filename);
 }
@@ -249,7 +252,7 @@ export function getExpectedResponsePath(provider: 'codex' | 'gemini', slug: stri
  */
 export function persistResponse(options: PersistResponseOptions): string | undefined {
   try {
-    const promptsDir = getPromptsDir();
+    const promptsDir = getPromptsDir(options.workingDirectory);
     mkdirSync(promptsDir, { recursive: true });
 
     const filename = `${options.provider}-response-${options.slug}-${options.promptId}.md`;
@@ -272,20 +275,20 @@ export function persistResponse(options: PersistResponseOptions): string | undef
 /**
  * Get the status file path for a background job
  */
-export function getStatusFilePath(provider: 'codex' | 'gemini', slug: string, promptId: string): string {
-  const promptsDir = getPromptsDir();
+export function getStatusFilePath(provider: 'codex' | 'gemini', slug: string, promptId: string, workingDirectory?: string): string {
+  const promptsDir = getPromptsDir(workingDirectory);
   return join(promptsDir, `${provider}-status-${slug}-${promptId}.json`);
 }
 
 /**
  * Write job status atomically (temp file + rename)
  */
-export function writeJobStatus(status: JobStatus): void {
+export function writeJobStatus(status: JobStatus, workingDirectory?: string): void {
   try {
-    const promptsDir = getPromptsDir();
+    const promptsDir = getPromptsDir(workingDirectory);
     mkdirSync(promptsDir, { recursive: true });
 
-    const statusPath = getStatusFilePath(status.provider, status.slug, status.jobId);
+    const statusPath = getStatusFilePath(status.provider, status.slug, status.jobId, workingDirectory);
     const tempPath = statusPath + '.tmp';
 
     writeFileSync(tempPath, JSON.stringify(status, null, 2), 'utf-8');

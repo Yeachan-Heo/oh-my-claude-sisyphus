@@ -64,12 +64,13 @@ export function parseCodexOutput(output: string): string {
 /**
  * Execute Codex CLI command and return the response
  */
-export function executeCodex(prompt: string, model: string): Promise<string> {
+export function executeCodex(prompt: string, model: string, cwd?: string): Promise<string> {
   return new Promise((resolve, reject) => {
     let settled = false;
     const args = ['exec', '-m', model, '--json', '--full-auto'];
     const child = spawn('codex', args, {
-      stdio: ['pipe', 'pipe', 'pipe']
+      stdio: ['pipe', 'pipe', 'pipe'],
+      ...(cwd ? { cwd } : {})
     });
 
     // Manual timeout handling to ensure proper cleanup
@@ -133,13 +134,15 @@ export function executeCodex(prompt: string, model: string): Promise<string> {
 export function executeCodexBackground(
   fullPrompt: string,
   model: string,
-  jobMeta: BackgroundJobMeta
+  jobMeta: BackgroundJobMeta,
+  workingDirectory?: string
 ): { pid: number } | { error: string } {
   try {
     const args = ['exec', '-m', model, '--json', '--full-auto'];
     const child = spawn('codex', args, {
       detached: true,
-      stdio: ['pipe', 'pipe', 'pipe']
+      stdio: ['pipe', 'pipe', 'pipe'],
+      ...(workingDirectory ? { cwd: workingDirectory } : {})
     });
 
     if (!child.pid) {
@@ -162,7 +165,7 @@ export function executeCodexBackground(
       agentRole: jobMeta.agentRole,
       spawnedAt: new Date().toISOString(),
     };
-    writeJobStatus(initialStatus);
+    writeJobStatus(initialStatus, workingDirectory);
 
     let stdout = '';
     let stderr = '';
@@ -183,7 +186,7 @@ export function executeCodexBackground(
           status: 'timeout',
           completedAt: new Date().toISOString(),
           error: `Codex timed out after ${CODEX_TIMEOUT}ms`,
-        });
+        }, workingDirectory);
       }
     }, CODEX_TIMEOUT);
 
@@ -200,11 +203,11 @@ export function executeCodexBackground(
         status: 'failed',
         completedAt: new Date().toISOString(),
         error: `Stdin write error: ${err.message}`,
-      });
+      }, workingDirectory);
     });
     child.stdin?.write(fullPrompt);
     child.stdin?.end();
-    writeJobStatus({ ...initialStatus, status: 'running' });
+    writeJobStatus({ ...initialStatus, status: 'running' }, workingDirectory);
 
     child.on('close', (code) => {
       if (settled) return;
@@ -220,19 +223,20 @@ export function executeCodexBackground(
           promptId: jobMeta.jobId,
           slug: jobMeta.slug,
           response,
+          workingDirectory,
         });
         writeJobStatus({
           ...initialStatus,
           status: 'completed',
           completedAt: new Date().toISOString(),
-        });
+        }, workingDirectory);
       } else {
         writeJobStatus({
           ...initialStatus,
           status: 'failed',
           completedAt: new Date().toISOString(),
           error: `Codex exited with code ${code}: ${stderr || 'No output'}`,
-        });
+        }, workingDirectory);
       }
     });
 
@@ -245,7 +249,7 @@ export function executeCodexBackground(
         status: 'failed',
         completedAt: new Date().toISOString(),
         error: `Failed to spawn Codex CLI: ${err.message}`,
-      });
+      }, workingDirectory);
     });
 
     return { pid };
@@ -257,16 +261,16 @@ export function executeCodexBackground(
 /**
  * Validate and read a file for context inclusion
  */
-export function validateAndReadFile(filePath: string): string {
+export function validateAndReadFile(filePath: string, baseDir?: string): string {
   if (typeof filePath !== 'string') {
     return `--- File: ${filePath} --- (Invalid path type)`;
   }
   try {
-    const resolvedAbs = resolve(filePath);
+    const workingDir = baseDir || process.cwd();
+    const resolvedAbs = resolve(workingDir, filePath);
 
     // Security: ensure file is within working directory (worktree boundary)
-    const cwd = process.cwd();
-    const cwdReal = realpathSync(cwd);
+    const cwdReal = realpathSync(workingDir);
 
     const relAbs = relative(cwdReal, resolvedAbs);
     if (relAbs === '' || relAbs === '..' || relAbs.startsWith('..' + sep)) {
@@ -306,8 +310,12 @@ export async function handleAskCodex(args: {
   model?: string;
   context_files?: string[];
   background?: boolean;
+  working_directory?: string;
 }): Promise<{ content: Array<{ type: 'text'; text: string }>; isError?: boolean }> {
   const { agent_role, model = CODEX_DEFAULT_MODEL, context_files } = args;
+
+  // Derive baseDir from working_directory or use process.cwd()
+  const baseDir = args.working_directory || process.cwd();
 
   // Validate agent_role
   if (!agent_role || !(CODEX_VALID_ROLES as readonly string[]).includes(agent_role)) {
@@ -338,9 +346,8 @@ export async function handleAskCodex(args: {
 
   // Resolve prompt from prompt_file
   let resolvedPrompt: string;
-  const resolvedPath = resolve(args.prompt_file);
-  const cwd = process.cwd();
-  const cwdReal = realpathSync(cwd);
+  const resolvedPath = resolve(baseDir, args.prompt_file);
+  const cwdReal = realpathSync(baseDir);
   const relPath = relative(cwdReal, resolvedPath);
   if (relPath === '' || relPath === '..' || relPath.startsWith('..' + sep)) {
     return {
@@ -385,7 +392,7 @@ export async function handleAskCodex(args: {
   // If output_file specified, nudge the prompt to write there
   let userPrompt = resolvedPrompt;
   if (args.output_file) {
-    const outputPath = resolve(args.output_file);
+    const outputPath = resolve(baseDir, args.output_file);
     userPrompt = `IMPORTANT: Write your complete response to the file: ${outputPath}\n\n${resolvedPrompt}`;
   }
 
@@ -416,7 +423,7 @@ export async function handleAskCodex(args: {
         isError: true
       };
     }
-    fileContext = context_files.map(f => validateAndReadFile(f)).join('\n\n');
+    fileContext = context_files.map(f => validateAndReadFile(f, baseDir)).join('\n\n');
   }
 
   // Combine: system prompt > file context > user prompt
@@ -430,11 +437,12 @@ export async function handleAskCodex(args: {
     files: context_files,
     prompt: resolvedPrompt,
     fullPrompt,
+    workingDirectory: baseDir,
   });
 
   // Compute expected response path for immediate return
   const expectedResponsePath = promptResult
-    ? getExpectedResponsePath('codex', promptResult.slug, promptResult.id)
+    ? getExpectedResponsePath('codex', promptResult.slug, promptResult.id, baseDir)
     : undefined;
 
   // Background mode: return immediately with job metadata
@@ -446,7 +454,7 @@ export async function handleAskCodex(args: {
       };
     }
 
-    const statusFilePath = getStatusFilePath('codex', promptResult.slug, promptResult.id);
+    const statusFilePath = getStatusFilePath('codex', promptResult.slug, promptResult.id, baseDir);
     const result = executeCodexBackground(fullPrompt, model, {
       provider: 'codex',
       jobId: promptResult.id,
@@ -455,7 +463,7 @@ export async function handleAskCodex(args: {
       model,
       promptFile: promptResult.filePath,
       responseFile: expectedResponsePath!,
-    });
+    }, baseDir);
 
     if ('error' in result) {
       return {
@@ -492,7 +500,7 @@ export async function handleAskCodex(args: {
   ].filter(Boolean).join('\n');
 
   try {
-    const response = await executeCodex(fullPrompt, model);
+    const response = await executeCodex(fullPrompt, model, baseDir);
 
     // Persist response to disk
     if (promptResult) {
@@ -503,16 +511,16 @@ export async function handleAskCodex(args: {
         promptId: promptResult.id,
         slug: promptResult.slug,
         response,
+        workingDirectory: baseDir,
       });
     }
 
     // Handle output_file: if CLI didn't write it, write stdout there directly
     if (args.output_file) {
-      const outputPath = resolve(args.output_file);
+      const outputPath = resolve(baseDir, args.output_file);
 
       // Security: validate output_file is within working directory
-      const cwd = process.cwd();
-      const cwdReal = realpathSync(cwd);
+      const cwdReal = realpathSync(baseDir);
       const relOutput = relative(cwdReal, outputPath);
       if (relOutput === '' || relOutput === '..' || relOutput.startsWith('..' + sep)) {
         console.warn(`[codex-core] output_file '${args.output_file}' is outside the working directory, skipping write.`);
@@ -535,7 +543,7 @@ export async function handleAskCodex(args: {
     return {
       content: [{
         type: 'text' as const,
-        text: `${paramLines}\n\n---\n\n${response}`
+        text: paramLines
       }]
     };
   } catch (err) {

@@ -13869,8 +13869,8 @@ function slugify(text, maxWords = 4) {
 function generatePromptId() {
   return (0, import_crypto.randomBytes)(4).toString("hex");
 }
-function getPromptsDir() {
-  const root = getWorktreeRoot() || process.cwd();
+function getPromptsDir(workingDirectory) {
+  const root = getWorktreeRoot(workingDirectory) || workingDirectory || process.cwd();
   return (0, import_path3.join)(root, ".omc", "prompts");
 }
 function buildPromptFrontmatter(options) {
@@ -13908,7 +13908,7 @@ function buildResponseFrontmatter(options) {
 }
 function persistPrompt(options) {
   try {
-    const promptsDir = getPromptsDir();
+    const promptsDir = getPromptsDir(options.workingDirectory);
     (0, import_fs3.mkdirSync)(promptsDir, { recursive: true });
     const slug = slugify(options.prompt);
     const id = generatePromptId();
@@ -13925,14 +13925,14 @@ ${options.fullPrompt}`;
     return void 0;
   }
 }
-function getExpectedResponsePath(provider, slug, promptId) {
-  const promptsDir = getPromptsDir();
+function getExpectedResponsePath(provider, slug, promptId, workingDirectory) {
+  const promptsDir = getPromptsDir(workingDirectory);
   const filename = `${provider}-response-${slug}-${promptId}.md`;
   return (0, import_path3.join)(promptsDir, filename);
 }
 function persistResponse(options) {
   try {
-    const promptsDir = getPromptsDir();
+    const promptsDir = getPromptsDir(options.workingDirectory);
     (0, import_fs3.mkdirSync)(promptsDir, { recursive: true });
     const filename = `${options.provider}-response-${options.slug}-${options.promptId}.md`;
     const filePath = (0, import_path3.join)(promptsDir, filename);
@@ -13947,15 +13947,15 @@ ${options.response}`;
     return void 0;
   }
 }
-function getStatusFilePath(provider, slug, promptId) {
-  const promptsDir = getPromptsDir();
+function getStatusFilePath(provider, slug, promptId, workingDirectory) {
+  const promptsDir = getPromptsDir(workingDirectory);
   return (0, import_path3.join)(promptsDir, `${provider}-status-${slug}-${promptId}.json`);
 }
-function writeJobStatus(status) {
+function writeJobStatus(status, workingDirectory) {
   try {
-    const promptsDir = getPromptsDir();
+    const promptsDir = getPromptsDir(workingDirectory);
     (0, import_fs3.mkdirSync)(promptsDir, { recursive: true });
-    const statusPath = getStatusFilePath(status.provider, status.slug, status.jobId);
+    const statusPath = getStatusFilePath(status.provider, status.slug, status.jobId, workingDirectory);
     const tempPath = statusPath + ".tmp";
     (0, import_fs3.writeFileSync)(tempPath, JSON.stringify(status, null, 2), "utf-8");
     renameOverwritingSync(tempPath, statusPath);
@@ -13995,12 +13995,13 @@ function parseCodexOutput(output) {
   }
   return messages.join("\n") || output;
 }
-function executeCodex(prompt, model) {
+function executeCodex(prompt, model, cwd) {
   return new Promise((resolve4, reject) => {
     let settled = false;
     const args = ["exec", "-m", model, "--json", "--full-auto"];
     const child = (0, import_child_process3.spawn)("codex", args, {
-      stdio: ["pipe", "pipe", "pipe"]
+      stdio: ["pipe", "pipe", "pipe"],
+      ...cwd ? { cwd } : {}
     });
     const timeoutHandle = setTimeout(() => {
       if (!settled) {
@@ -14048,12 +14049,13 @@ function executeCodex(prompt, model) {
     child.stdin.end();
   });
 }
-function executeCodexBackground(fullPrompt, model, jobMeta) {
+function executeCodexBackground(fullPrompt, model, jobMeta, workingDirectory) {
   try {
     const args = ["exec", "-m", model, "--json", "--full-auto"];
     const child = (0, import_child_process3.spawn)("codex", args, {
       detached: true,
-      stdio: ["pipe", "pipe", "pipe"]
+      stdio: ["pipe", "pipe", "pipe"],
+      ...workingDirectory ? { cwd: workingDirectory } : {}
     });
     if (!child.pid) {
       return { error: "Failed to get process ID" };
@@ -14072,7 +14074,7 @@ function executeCodexBackground(fullPrompt, model, jobMeta) {
       agentRole: jobMeta.agentRole,
       spawnedAt: (/* @__PURE__ */ new Date()).toISOString()
     };
-    writeJobStatus(initialStatus);
+    writeJobStatus(initialStatus, workingDirectory);
     let stdout = "";
     let stderr = "";
     let settled = false;
@@ -14089,7 +14091,7 @@ function executeCodexBackground(fullPrompt, model, jobMeta) {
           status: "timeout",
           completedAt: (/* @__PURE__ */ new Date()).toISOString(),
           error: `Codex timed out after ${CODEX_TIMEOUT}ms`
-        });
+        }, workingDirectory);
       }
     }, CODEX_TIMEOUT);
     child.stdout?.on("data", (data) => {
@@ -14107,11 +14109,11 @@ function executeCodexBackground(fullPrompt, model, jobMeta) {
         status: "failed",
         completedAt: (/* @__PURE__ */ new Date()).toISOString(),
         error: `Stdin write error: ${err.message}`
-      });
+      }, workingDirectory);
     });
     child.stdin?.write(fullPrompt);
     child.stdin?.end();
-    writeJobStatus({ ...initialStatus, status: "running" });
+    writeJobStatus({ ...initialStatus, status: "running" }, workingDirectory);
     child.on("close", (code) => {
       if (settled) return;
       settled = true;
@@ -14124,20 +14126,21 @@ function executeCodexBackground(fullPrompt, model, jobMeta) {
           model,
           promptId: jobMeta.jobId,
           slug: jobMeta.slug,
-          response
+          response,
+          workingDirectory
         });
         writeJobStatus({
           ...initialStatus,
           status: "completed",
           completedAt: (/* @__PURE__ */ new Date()).toISOString()
-        });
+        }, workingDirectory);
       } else {
         writeJobStatus({
           ...initialStatus,
           status: "failed",
           completedAt: (/* @__PURE__ */ new Date()).toISOString(),
           error: `Codex exited with code ${code}: ${stderr || "No output"}`
-        });
+        }, workingDirectory);
       }
     });
     child.on("error", (err) => {
@@ -14149,21 +14152,21 @@ function executeCodexBackground(fullPrompt, model, jobMeta) {
         status: "failed",
         completedAt: (/* @__PURE__ */ new Date()).toISOString(),
         error: `Failed to spawn Codex CLI: ${err.message}`
-      });
+      }, workingDirectory);
     });
     return { pid };
   } catch (err) {
     return { error: `Failed to start background execution: ${err.message}` };
   }
 }
-function validateAndReadFile(filePath) {
+function validateAndReadFile(filePath, baseDir) {
   if (typeof filePath !== "string") {
     return `--- File: ${filePath} --- (Invalid path type)`;
   }
   try {
-    const resolvedAbs = (0, import_path4.resolve)(filePath);
-    const cwd = process.cwd();
-    const cwdReal = (0, import_fs4.realpathSync)(cwd);
+    const workingDir = baseDir || process.cwd();
+    const resolvedAbs = (0, import_path4.resolve)(workingDir, filePath);
+    const cwdReal = (0, import_fs4.realpathSync)(workingDir);
     const relAbs = (0, import_path4.relative)(cwdReal, resolvedAbs);
     if (relAbs === "" || relAbs === ".." || relAbs.startsWith(".." + import_path4.sep)) {
       return `[BLOCKED] File '${filePath}' is outside the working directory. Only files within the project are allowed.`;
@@ -14188,6 +14191,7 @@ ${(0, import_fs4.readFileSync)(resolvedReal, "utf-8")}`;
 }
 async function handleAskCodex(args) {
   const { agent_role, model = CODEX_DEFAULT_MODEL, context_files } = args;
+  const baseDir = args.working_directory || process.cwd();
   if (!agent_role || !CODEX_VALID_ROLES.includes(agent_role)) {
     return {
       content: [{
@@ -14210,9 +14214,8 @@ async function handleAskCodex(args) {
     };
   }
   let resolvedPrompt;
-  const resolvedPath = (0, import_path4.resolve)(args.prompt_file);
-  const cwd = process.cwd();
-  const cwdReal = (0, import_fs4.realpathSync)(cwd);
+  const resolvedPath = (0, import_path4.resolve)(baseDir, args.prompt_file);
+  const cwdReal = (0, import_fs4.realpathSync)(baseDir);
   const relPath = (0, import_path4.relative)(cwdReal, resolvedPath);
   if (relPath === "" || relPath === ".." || relPath.startsWith(".." + import_path4.sep)) {
     return {
@@ -14252,7 +14255,7 @@ async function handleAskCodex(args) {
   }
   let userPrompt = resolvedPrompt;
   if (args.output_file) {
-    const outputPath = (0, import_path4.resolve)(args.output_file);
+    const outputPath = (0, import_path4.resolve)(baseDir, args.output_file);
     userPrompt = `IMPORTANT: Write your complete response to the file: ${outputPath}
 
 ${resolvedPrompt}`;
@@ -14281,7 +14284,7 @@ ${detection.installHint}`
         isError: true
       };
     }
-    fileContext = context_files.map((f) => validateAndReadFile(f)).join("\n\n");
+    fileContext = context_files.map((f) => validateAndReadFile(f, baseDir)).join("\n\n");
   }
   const fullPrompt = buildPromptWithSystemContext(userPrompt, fileContext, resolvedSystemPrompt);
   const promptResult = persistPrompt({
@@ -14290,9 +14293,10 @@ ${detection.installHint}`
     model,
     files: context_files,
     prompt: resolvedPrompt,
-    fullPrompt
+    fullPrompt,
+    workingDirectory: baseDir
   });
-  const expectedResponsePath = promptResult ? getExpectedResponsePath("codex", promptResult.slug, promptResult.id) : void 0;
+  const expectedResponsePath = promptResult ? getExpectedResponsePath("codex", promptResult.slug, promptResult.id, baseDir) : void 0;
   if (args.background) {
     if (!promptResult) {
       return {
@@ -14300,7 +14304,7 @@ ${detection.installHint}`
         isError: true
       };
     }
-    const statusFilePath = getStatusFilePath("codex", promptResult.slug, promptResult.id);
+    const statusFilePath = getStatusFilePath("codex", promptResult.slug, promptResult.id, baseDir);
     const result = executeCodexBackground(fullPrompt, model, {
       provider: "codex",
       jobId: promptResult.id,
@@ -14309,7 +14313,7 @@ ${detection.installHint}`
       model,
       promptFile: promptResult.filePath,
       responseFile: expectedResponsePath
-    });
+    }, baseDir);
     if ("error" in result) {
       return {
         content: [{ type: "text", text: `Failed to spawn background job: ${result.error}` }],
@@ -14341,7 +14345,7 @@ ${detection.installHint}`
     expectedResponsePath ? `**Response File:** ${expectedResponsePath}` : null
   ].filter(Boolean).join("\n");
   try {
-    const response = await executeCodex(fullPrompt, model);
+    const response = await executeCodex(fullPrompt, model, baseDir);
     if (promptResult) {
       persistResponse({
         provider: "codex",
@@ -14349,13 +14353,13 @@ ${detection.installHint}`
         model,
         promptId: promptResult.id,
         slug: promptResult.slug,
-        response
+        response,
+        workingDirectory: baseDir
       });
     }
     if (args.output_file) {
-      const outputPath = (0, import_path4.resolve)(args.output_file);
-      const cwd2 = process.cwd();
-      const cwdReal2 = (0, import_fs4.realpathSync)(cwd2);
+      const outputPath = (0, import_path4.resolve)(baseDir, args.output_file);
+      const cwdReal2 = (0, import_fs4.realpathSync)(baseDir);
       const relOutput = (0, import_path4.relative)(cwdReal2, outputPath);
       if (relOutput === "" || relOutput === ".." || relOutput.startsWith(".." + import_path4.sep)) {
         console.warn(`[codex-core] output_file '${args.output_file}' is outside the working directory, skipping write.`);
@@ -14377,11 +14381,7 @@ ${detection.installHint}`
     return {
       content: [{
         type: "text",
-        text: `${paramLines}
-
----
-
-${response}`
+        text: paramLines
       }]
     };
   } catch (err) {
@@ -14412,10 +14412,11 @@ var askCodexTool = {
         description: `Required. Agent perspective for Codex: ${CODEX_VALID_ROLES.join(", ")}. Codex is optimized for analytical/planning tasks.`
       },
       prompt_file: { type: "string", description: "Path to file containing the prompt" },
-      output_file: { type: "string", description: "Path to write response. If CLI doesn't write here, stdout is written directly to output_file" },
+      output_file: { type: "string", description: "Strongly recommended. Path to write response. Response content is NOT returned inline - read from this file or the Response File path in output." },
       context_files: { type: "array", items: { type: "string" }, description: "File paths to include as context (contents will be prepended to prompt)" },
       model: { type: "string", description: `Codex model to use (default: ${CODEX_DEFAULT_MODEL}). Set OMC_CODEX_DEFAULT_MODEL env var to change default.` },
-      background: { type: "boolean", description: "Run in background (non-blocking). Returns immediately with job metadata and file paths. Check response file for completion." }
+      background: { type: "boolean", description: "Run in background (non-blocking). Returns immediately with job metadata and file paths. Check response file for completion." },
+      working_directory: { type: "string", description: "Working directory for path resolution and CLI execution. Defaults to process.cwd()." }
     },
     required: ["agent_role", "prompt_file"]
   }
@@ -14432,8 +14433,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   if (name !== "ask_codex") {
     return { content: [{ type: "text", text: `Unknown tool: ${name}` }], isError: true };
   }
-  const { prompt_file, output_file, agent_role, model, context_files, background } = args ?? {};
-  return handleAskCodex({ prompt_file, output_file, agent_role, model, context_files, background });
+  const { prompt_file, output_file, agent_role, model, context_files, background, working_directory } = args ?? {};
+  return handleAskCodex({ prompt_file, output_file, agent_role, model, context_files, background, working_directory });
 });
 async function main() {
   const transport = new StdioServerTransport();
