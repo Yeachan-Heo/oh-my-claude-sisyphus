@@ -17,6 +17,10 @@
 *.cmd text eol=crlf
 *.ps1 text eol=crlf
 
+# Generated bundles (collapse in GitHub diffs)
+bridge/*.cjs linguist-generated=true
+bridge/*.mjs linguist-generated=true
+
 # Binary files (no conversion)
 *.png binary
 *.jpg binary

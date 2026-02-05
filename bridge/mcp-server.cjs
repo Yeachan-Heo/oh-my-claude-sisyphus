@@ -22128,6 +22128,9 @@ var notepadTools = [
   notepadStatsTool
 ];
 
+// src/hooks/project-memory/index.ts
+var import_os2 = require("os");
+
 // src/features/context-injector/collector.ts
 var PRIORITY_ORDER = {
   critical: 0,

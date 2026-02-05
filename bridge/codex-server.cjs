@@ -13712,9 +13712,9 @@ var StdioServerTransport = class {
 };
 
 // src/mcp/codex-core.ts
-var import_child_process3 = require("child_process");
-var import_fs4 = require("fs");
-var import_path4 = require("path");
+var import_child_process4 = require("child_process");
+var import_fs5 = require("fs");
+var import_path5 = require("path");
 
 // src/mcp/cli-detection.ts
 var import_child_process = require("child_process");
@@ -14120,9 +14120,8 @@ var SECTION_ORDER = {
   "escalation-protocol": 30
 };
 function getPackageDir() {
-  const __filename = (0, import_url.fileURLToPath)(import_meta.url);
-  const __dirname = (0, import_path.dirname)(__filename);
-  return (0, import_path.join)(__dirname, "..", "..");
+  const dir = typeof __dirname !== "undefined" ? __dirname : (0, import_path.dirname)((0, import_url.fileURLToPath)(import_meta.url));
+  return (0, import_path.join)(dir, "..", "..");
 }
 function stripFrontmatter(content) {
   const match = content.match(/^---[\s\S]*?---\s*([\s\S]*)$/);
@@ -14374,8 +14373,8 @@ ${systemPrompt}
 }
 
 // src/mcp/prompt-persistence.ts
-var import_fs3 = require("fs");
-var import_path3 = require("path");
+var import_fs4 = require("fs");
+var import_path4 = require("path");
 var import_crypto = require("crypto");
 
 // src/lib/worktree-paths.ts
@@ -14401,23 +14400,78 @@ function getWorktreeRoot(cwd) {
   }
 }
 
+// src/features/auto-update.ts
+var import_fs3 = require("fs");
+var import_path3 = require("path");
+var import_os = require("os");
+var import_child_process3 = require("child_process");
+var REPO_OWNER = "Yeachan-Heo";
+var REPO_NAME = "oh-my-claudecode";
+var GITHUB_API_URL = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}`;
+var GITHUB_RAW_URL = `https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}`;
+var CLAUDE_CONFIG_DIR = (0, import_path3.join)((0, import_os.homedir)(), ".claude");
+var VERSION_FILE = (0, import_path3.join)(CLAUDE_CONFIG_DIR, ".omc-version.json");
+var CONFIG_FILE = (0, import_path3.join)(CLAUDE_CONFIG_DIR, ".omc-config.json");
+function getSisyphusConfig() {
+  if (!(0, import_fs3.existsSync)(CONFIG_FILE)) {
+    return { silentAutoUpdate: false };
+  }
+  try {
+    const content = (0, import_fs3.readFileSync)(CONFIG_FILE, "utf-8");
+    const config2 = JSON.parse(content);
+    return {
+      silentAutoUpdate: config2.silentAutoUpdate ?? false,
+      promptPersistence: config2.promptPersistence,
+      configuredAt: config2.configuredAt,
+      configVersion: config2.configVersion,
+      taskTool: config2.taskTool,
+      taskToolConfig: config2.taskToolConfig,
+      defaultExecutionMode: config2.defaultExecutionMode,
+      ecomode: config2.ecomode,
+      setupCompleted: config2.setupCompleted,
+      setupVersion: config2.setupVersion,
+      stopHookCallbacks: config2.stopHookCallbacks
+    };
+  } catch {
+    return { silentAutoUpdate: false };
+  }
+}
+var SILENT_UPDATE_STATE_FILE = (0, import_path3.join)(
+  CLAUDE_CONFIG_DIR,
+  ".omc-silent-update.json"
+);
+
 // src/mcp/prompt-persistence.ts
+var BIDI_CONTROL_REGEX = /[\u202A-\u202E\u2066-\u2069\u200E\u200F\u200B-\u200D\u2060\uFEFF]/g;
+function isPromptPersistenceEnabled() {
+  const config2 = getSisyphusConfig();
+  return config2.promptPersistence?.enabled === true;
+}
+function sanitizeForStorage(value, label) {
+  const sanitized = value.replace(BIDI_CONTROL_REGEX, "");
+  if (sanitized !== value) {
+    console.warn(
+      `[prompt-persistence] Removed bidi/invisible characters from ${label}.`
+    );
+  }
+  return sanitized;
+}
 function yamlString(value) {
   return JSON.stringify(value);
 }
 function renameOverwritingSync(fromPath, toPath) {
   try {
-    (0, import_fs3.renameSync)(fromPath, toPath);
+    (0, import_fs4.renameSync)(fromPath, toPath);
     return;
   } catch {
   }
   try {
-    if ((0, import_fs3.existsSync)(toPath)) {
-      (0, import_fs3.unlinkSync)(toPath);
+    if ((0, import_fs4.existsSync)(toPath)) {
+      (0, import_fs4.unlinkSync)(toPath);
     }
   } catch {
   }
-  (0, import_fs3.renameSync)(fromPath, toPath);
+  (0, import_fs4.renameSync)(fromPath, toPath);
 }
 function slugify(text, maxWords = 4) {
   if (!text || typeof text !== "string") {
@@ -14435,7 +14489,7 @@ function generatePromptId() {
 }
 function getPromptsDir() {
   const root = getWorktreeRoot() || process.cwd();
-  return (0, import_path3.join)(root, ".omc", "prompts");
+  return (0, import_path4.join)(root, ".omc", "prompts");
 }
 function buildPromptFrontmatter(options) {
   const lines = [
@@ -14471,67 +14525,106 @@ function buildResponseFrontmatter(options) {
   return lines.join("\n");
 }
 function persistPrompt(options) {
+  if (!isPromptPersistenceEnabled()) {
+    return void 0;
+  }
   try {
     const promptsDir = getPromptsDir();
-    (0, import_fs3.mkdirSync)(promptsDir, { recursive: true });
-    const slug = slugify(options.prompt);
+    (0, import_fs4.mkdirSync)(promptsDir, { recursive: true });
+    const sanitizedPrompt = sanitizeForStorage(options.prompt, "prompt");
+    const sanitizedFullPrompt = sanitizeForStorage(
+      options.fullPrompt,
+      "full prompt"
+    );
+    const slug = slugify(sanitizedPrompt);
     const id = generatePromptId();
     const filename = `${options.provider}-prompt-${slug}-${id}.md`;
-    const filePath = (0, import_path3.join)(promptsDir, filename);
+    const filePath = (0, import_path4.join)(promptsDir, filename);
     const frontmatter = buildPromptFrontmatter(options);
     const content = `${frontmatter}
 
-${options.fullPrompt}`;
-    (0, import_fs3.writeFileSync)(filePath, content, "utf-8");
+${sanitizedFullPrompt}`;
+    (0, import_fs4.writeFileSync)(filePath, content, "utf-8");
     return { filePath, id, slug };
   } catch (err) {
-    console.warn(`[prompt-persistence] Failed to persist prompt: ${err.message}`);
+    console.warn(
+      `[prompt-persistence] Failed to persist prompt: ${err.message}`
+    );
     return void 0;
   }
 }
 function getExpectedResponsePath(provider, slug, promptId) {
   const promptsDir = getPromptsDir();
   const filename = `${provider}-response-${slug}-${promptId}.md`;
-  return (0, import_path3.join)(promptsDir, filename);
+  return (0, import_path4.join)(promptsDir, filename);
 }
 function persistResponse(options) {
+  if (!isPromptPersistenceEnabled()) {
+    return void 0;
+  }
   try {
     const promptsDir = getPromptsDir();
-    (0, import_fs3.mkdirSync)(promptsDir, { recursive: true });
+    (0, import_fs4.mkdirSync)(promptsDir, { recursive: true });
     const filename = `${options.provider}-response-${options.slug}-${options.promptId}.md`;
-    const filePath = (0, import_path3.join)(promptsDir, filename);
+    const filePath = (0, import_path4.join)(promptsDir, filename);
     const frontmatter = buildResponseFrontmatter(options);
+    const sanitizedResponse = sanitizeForStorage(options.response, "response");
     const content = `${frontmatter}
 
-${options.response}`;
-    (0, import_fs3.writeFileSync)(filePath, content, "utf-8");
+${sanitizedResponse}`;
+    (0, import_fs4.writeFileSync)(filePath, content, "utf-8");
     return filePath;
   } catch (err) {
-    console.warn(`[prompt-persistence] Failed to persist response: ${err.message}`);
+    console.warn(
+      `[prompt-persistence] Failed to persist response: ${err.message}`
+    );
     return void 0;
   }
 }
 function getStatusFilePath(provider, slug, promptId) {
   const promptsDir = getPromptsDir();
-  return (0, import_path3.join)(promptsDir, `${provider}-status-${slug}-${promptId}.json`);
+  return (0, import_path4.join)(promptsDir, `${provider}-status-${slug}-${promptId}.json`);
 }
 function writeJobStatus(status) {
+  if (!isPromptPersistenceEnabled()) {
+    return;
+  }
   try {
     const promptsDir = getPromptsDir();
-    (0, import_fs3.mkdirSync)(promptsDir, { recursive: true });
-    const statusPath = getStatusFilePath(status.provider, status.slug, status.jobId);
+    (0, import_fs4.mkdirSync)(promptsDir, { recursive: true });
+    const statusPath = getStatusFilePath(
+      status.provider,
+      status.slug,
+      status.jobId
+    );
     const tempPath = statusPath + ".tmp";
-    (0, import_fs3.writeFileSync)(tempPath, JSON.stringify(status, null, 2), "utf-8");
+    (0, import_fs4.writeFileSync)(tempPath, JSON.stringify(status, null, 2), "utf-8");
     renameOverwritingSync(tempPath, statusPath);
   } catch (err) {
-    console.warn(`[prompt-persistence] Failed to write job status: ${err.message}`);
+    console.warn(
+      `[prompt-persistence] Failed to write job status: ${err.message}`
+    );
   }
 }
 
 // src/mcp/codex-core.ts
 var CODEX_DEFAULT_MODEL = process.env.OMC_CODEX_DEFAULT_MODEL || "gpt-5.2";
-var CODEX_TIMEOUT = Math.min(Math.max(5e3, parseInt(process.env.OMC_CODEX_TIMEOUT || "3600000", 10) || 36e5), 36e5);
-var CODEX_VALID_ROLES = ["architect", "planner", "critic", "analyst", "code-reviewer", "security-reviewer", "tdd-guide"];
+var CODEX_TIMEOUT = Math.min(
+  Math.max(
+    5e3,
+    parseInt(process.env.OMC_CODEX_TIMEOUT || "3600000", 10) || 36e5
+  ),
+  36e5
+);
+var CODEX_VALID_ROLES = [
+  "architect",
+  "planner",
+  "critic",
+  "analyst",
+  "code-reviewer",
+  "security-reviewer",
+  "tdd-guide"
+];
 var MAX_CONTEXT_FILES = 20;
 var MAX_FILE_SIZE = 5 * 1024 * 1024;
 function parseCodexOutput(output) {
@@ -14563,7 +14656,7 @@ function executeCodex(prompt, model) {
   return new Promise((resolve4, reject) => {
     let settled = false;
     const args = ["exec", "-m", model, "--json", "--full-auto"];
-    const child = (0, import_child_process3.spawn)("codex", args, {
+    const child = (0, import_child_process4.spawn)("codex", args, {
       stdio: ["pipe", "pipe", "pipe"]
     });
     const timeoutHandle = setTimeout(() => {
@@ -14588,7 +14681,11 @@ function executeCodex(prompt, model) {
         if (code === 0 || stdout.trim()) {
           resolve4(parseCodexOutput(stdout));
         } else {
-          reject(new Error(`Codex exited with code ${code}: ${stderr || "No output"}`));
+          reject(
+            new Error(
+              `Codex exited with code ${code}: ${stderr || "No output"}`
+            )
+          );
         }
       }
     });
@@ -14615,7 +14712,7 @@ function executeCodex(prompt, model) {
 function executeCodexBackground(fullPrompt, model, jobMeta) {
   try {
     const args = ["exec", "-m", model, "--json", "--full-auto"];
-    const child = (0, import_child_process3.spawn)("codex", args, {
+    const child = (0, import_child_process4.spawn)("codex", args, {
       detached: true,
       stdio: ["pipe", "pipe", "pipe"]
     });
@@ -14717,7 +14814,9 @@ function executeCodexBackground(fullPrompt, model, jobMeta) {
     });
     return { pid };
   } catch (err) {
-    return { error: `Failed to start background execution: ${err.message}` };
+    return {
+      error: `Failed to start background execution: ${err.message}`
+    };
   }
 }
 function validateAndReadFile(filePath) {
@@ -14725,19 +14824,19 @@ function validateAndReadFile(filePath) {
     return `--- File: ${filePath} --- (Invalid path type)`;
   }
   try {
-    const resolvedAbs = (0, import_path4.resolve)(filePath);
+    const resolvedAbs = (0, import_path5.resolve)(filePath);
     const cwd = process.cwd();
-    const cwdReal = (0, import_fs4.realpathSync)(cwd);
-    const relAbs = (0, import_path4.relative)(cwdReal, resolvedAbs);
-    if (relAbs === "" || relAbs === ".." || relAbs.startsWith(".." + import_path4.sep)) {
+    const cwdReal = (0, import_fs5.realpathSync)(cwd);
+    const relAbs = (0, import_path5.relative)(cwdReal, resolvedAbs);
+    if (relAbs === "" || relAbs === ".." || relAbs.startsWith(".." + import_path5.sep)) {
       return `[BLOCKED] File '${filePath}' is outside the working directory. Only files within the project are allowed.`;
     }
-    const resolvedReal = (0, import_fs4.realpathSync)(resolvedAbs);
-    const relReal = (0, import_path4.relative)(cwdReal, resolvedReal);
-    if (relReal === "" || relReal === ".." || relReal.startsWith(".." + import_path4.sep)) {
+    const resolvedReal = (0, import_fs5.realpathSync)(resolvedAbs);
+    const relReal = (0, import_path5.relative)(cwdReal, resolvedReal);
+    if (relReal === "" || relReal === ".." || relReal.startsWith(".." + import_path5.sep)) {
       return `[BLOCKED] File '${filePath}' is outside the working directory. Only files within the project are allowed.`;
     }
-    const stats = (0, import_fs4.statSync)(resolvedReal);
+    const stats = (0, import_fs5.statSync)(resolvedReal);
     if (!stats.isFile()) {
       return `--- File: ${filePath} --- (Not a regular file)`;
     }
@@ -14745,31 +14844,40 @@ function validateAndReadFile(filePath) {
       return `--- File: ${filePath} --- (File too large: ${(stats.size / 1024 / 1024).toFixed(1)}MB, max 5MB)`;
     }
     return `--- File: ${filePath} ---
-${(0, import_fs4.readFileSync)(resolvedReal, "utf-8")}`;
+${(0, import_fs5.readFileSync)(resolvedReal, "utf-8")}`;
   } catch {
     return `--- File: ${filePath} --- (Error reading file)`;
   }
 }
 async function handleAskCodex(args) {
-  const { prompt, agent_role, model = CODEX_DEFAULT_MODEL, context_files } = args;
+  const {
+    prompt,
+    agent_role,
+    model = CODEX_DEFAULT_MODEL,
+    context_files
+  } = args;
   if (!agent_role || !CODEX_VALID_ROLES.includes(agent_role)) {
     return {
-      content: [{
-        type: "text",
-        text: `Invalid agent_role: "${agent_role}". Codex requires one of: ${CODEX_VALID_ROLES.join(", ")}`
-      }],
+      content: [
+        {
+          type: "text",
+          text: `Invalid agent_role: "${agent_role}". Codex requires one of: ${CODEX_VALID_ROLES.join(", ")}`
+        }
+      ],
       isError: true
     };
   }
   const detection = detectCodexCli();
   if (!detection.available) {
     return {
-      content: [{
-        type: "text",
-        text: `Codex CLI is not available: ${detection.error}
+      content: [
+        {
+          type: "text",
+          text: `Codex CLI is not available: ${detection.error}
 
 ${detection.installHint}`
-      }],
+        }
+      ],
       isError: true
     };
   }
@@ -14778,16 +14886,22 @@ ${detection.installHint}`
   if (context_files && context_files.length > 0) {
     if (context_files.length > MAX_CONTEXT_FILES) {
       return {
-        content: [{
-          type: "text",
-          text: `Too many context files (max ${MAX_CONTEXT_FILES}, got ${context_files.length})`
-        }],
+        content: [
+          {
+            type: "text",
+            text: `Too many context files (max ${MAX_CONTEXT_FILES}, got ${context_files.length})`
+          }
+        ],
         isError: true
       };
     }
     fileContext = context_files.map((f) => validateAndReadFile(f)).join("\n\n");
   }
-  const fullPrompt = buildPromptWithSystemContext(prompt, fileContext, resolvedSystemPrompt);
+  const fullPrompt = buildPromptWithSystemContext(
+    prompt,
+    fileContext,
+    resolvedSystemPrompt
+  );
   const promptResult = persistPrompt({
     provider: "codex",
     agentRole: agent_role,
@@ -14800,11 +14914,20 @@ ${detection.installHint}`
   if (args.background) {
     if (!promptResult) {
       return {
-        content: [{ type: "text", text: "Failed to persist prompt for background execution" }],
+        content: [
+          {
+            type: "text",
+            text: "Prompt persistence is disabled or failed. Background mode requires prompt persistence. Enable it via ~/.claude/.omc-config.json (promptPersistence.enabled=true)."
+          }
+        ],
         isError: true
       };
     }
-    const statusFilePath = getStatusFilePath("codex", promptResult.slug, promptResult.id);
+    const statusFilePath = getStatusFilePath(
+      "codex",
+      promptResult.slug,
+      promptResult.id
+    );
     const result = executeCodexBackground(fullPrompt, model, {
       provider: "codex",
       jobId: promptResult.id,
@@ -14816,26 +14939,33 @@ ${detection.installHint}`
     });
     if ("error" in result) {
       return {
-        content: [{ type: "text", text: `Failed to spawn background job: ${result.error}` }],
+        content: [
+          {
+            type: "text",
+            text: `Failed to spawn background job: ${result.error}`
+          }
+        ],
         isError: true
       };
     }
     return {
-      content: [{
-        type: "text",
-        text: [
-          `**Mode:** Background (non-blocking)`,
-          `**Job ID:** ${promptResult.id}`,
-          `**Agent Role:** ${agent_role}`,
-          `**Model:** ${model}`,
-          `**PID:** ${result.pid}`,
-          `**Prompt File:** ${promptResult.filePath}`,
-          `**Response File:** ${expectedResponsePath}`,
-          `**Status File:** ${statusFilePath}`,
-          ``,
-          `Job dispatched. Check response file existence or read status file for completion.`
-        ].join("\n")
-      }]
+      content: [
+        {
+          type: "text",
+          text: [
+            `**Mode:** Background (non-blocking)`,
+            `**Job ID:** ${promptResult.id}`,
+            `**Agent Role:** ${agent_role}`,
+            `**Model:** ${model}`,
+            `**PID:** ${result.pid}`,
+            `**Prompt File:** ${promptResult.filePath}`,
+            `**Response File:** ${expectedResponsePath}`,
+            `**Status File:** ${statusFilePath}`,
+            ``,
+            `Job dispatched. Check response file existence or read status file for completion.`
+          ].join("\n")
+        }
+      ]
     };
   }
   const paramLines = [
@@ -14857,25 +14987,29 @@ ${detection.installHint}`
       });
     }
     return {
-      content: [{
-        type: "text",
-        text: `${paramLines}
+      content: [
+        {
+          type: "text",
+          text: `${paramLines}
 
 ---
 
 ${response}`
-      }]
+        }
+      ]
     };
   } catch (err) {
     return {
-      content: [{
-        type: "text",
-        text: `${paramLines}
+      content: [
+        {
+          type: "text",
+          text: `${paramLines}
 
 ---
 
 Codex CLI error: ${err.message}`
-      }],
+        }
+      ],
       isError: true
     };
   }

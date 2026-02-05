@@ -33,9 +33,13 @@ const SECTION_ORDER: Record<string, number> = {
 };
 
 function getPackageDir(): string {
-  const __filename = fileURLToPath(import.meta.url);
-  const __dirname = dirname(__filename);
-  return join(__dirname, "..", "..");
+  // Use CJS globals when available (esbuild CJS output sets __dirname),
+  // fall back to import.meta.url for ESM.
+  const dir =
+    typeof __dirname !== "undefined"
+      ? __dirname
+      : dirname(fileURLToPath(import.meta.url));
+  return join(dir, "..", "..");
 }
 
 function stripFrontmatter(content: string): string {
