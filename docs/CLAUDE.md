@@ -260,17 +260,15 @@ When you detect trigger patterns above, you MUST invoke the corresponding skill 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `agent_role` | string | Yes | Agent perspective (see routing table above) |
-| `prompt_file` | string | No* | Path to file containing prompt (*required if `prompt` not provided) |
-| `output_file` | string | No | Path to write response; fallback: stdout saved to `{output_file}.raw` |
+| `prompt_file` | string | Yes | Required. Path to file containing the prompt. Write prompts under `.omc/prompts/` for audit trail consistency. |
+| `output_file` | string | No | Path to write response; stdout written directly to output_file if CLI doesn't |
 | `files` / `context_files` | array | No | File paths to include as context |
-| `prompt` | string | No* | Inline prompt (*required if `prompt_file` not provided) |
 | `model` | string | No | Model to use (has defaults and fallback chains) |
 | `background` | boolean | No | Run in background (non-blocking) |
 
 **Notes:**
-- `prompt` and `prompt_file` are mutually exclusive — providing both returns an error
+- The `prompt` parameter has been removed. Always write prompts to a file and use `prompt_file`.
 - When `output_file` is specified, the prompt includes an instruction nudging the CLI to write there
-- If the CLI doesn't write to `output_file`, stdout is captured and written to `{output_file}.raw`
 - `prompt_file` must be within the project working directory (security boundary)
 
 ### OMC State Tools

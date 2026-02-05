@@ -14183,54 +14183,56 @@ async function handleAskGemini(args) {
       isError: true
     };
   }
-  if (args.prompt && args.prompt_file) {
+  if ("prompt" in args) {
     return {
-      content: [{ type: "text", text: "Cannot specify both prompt and prompt_file. Use one or the other." }],
+      content: [{ type: "text", text: "The 'prompt' parameter has been removed. Write the prompt to a file (recommended: .omc/prompts/) and pass 'prompt_file' instead." }],
+      isError: true
+    };
+  }
+  if (!args.prompt_file || !args.prompt_file.trim()) {
+    return {
+      content: [{ type: "text", text: "prompt_file is required." }],
       isError: true
     };
   }
   let resolvedPrompt;
-  if (args.prompt_file) {
-    const resolvedPath = (0, import_path4.resolve)(args.prompt_file);
-    const cwd = process.cwd();
-    const cwdReal = (0, import_fs4.realpathSync)(cwd);
-    const relPath = (0, import_path4.relative)(cwdReal, resolvedPath);
-    if (relPath === "" || relPath === ".." || relPath.startsWith(".." + import_path4.sep)) {
-      return {
-        content: [{ type: "text", text: `prompt_file '${args.prompt_file}' is outside the working directory.` }],
-        isError: true
-      };
-    }
-    try {
-      resolvedPrompt = (0, import_fs4.readFileSync)(resolvedPath, "utf-8");
-    } catch (err) {
-      return {
-        content: [{ type: "text", text: `Failed to read prompt_file '${args.prompt_file}': ${err.message}` }],
-        isError: true
-      };
-    }
-    try {
-      const resolvedReal = (0, import_fs4.realpathSync)(resolvedPath);
-      const relReal = (0, import_path4.relative)(cwdReal, resolvedReal);
-      if (relReal === "" || relReal === ".." || relReal.startsWith(".." + import_path4.sep)) {
-        return {
-          content: [{ type: "text", text: `prompt_file '${args.prompt_file}' resolves to a path outside the working directory.` }],
-          isError: true
-        };
-      }
-    } catch {
-    }
-    if (!resolvedPrompt.trim()) {
-      return {
-        content: [{ type: "text", text: `prompt_file '${args.prompt_file}' is empty.` }],
-        isError: true
-      };
-    }
-  } else if (args.prompt) {
-    resolvedPrompt = args.prompt;
-  } else {
+  const resolvedPath = (0, import_path4.resolve)(args.prompt_file);
+  const cwd = process.cwd();
+  const cwdReal = (0, import_fs4.realpathSync)(cwd);
+  const relPath = (0, import_path4.relative)(cwdReal, resolvedPath);
+  if (relPath === "" || relPath === ".." || relPath.startsWith(".." + import_path4.sep)) {
     return {
-      content: [{ type: "text", text: "Either prompt or prompt_file is required." }],
+      content: [{ type: "text", text: `prompt_file '${args.prompt_file}' is outside the working directory.` }],
+      isError: true
+    };
+  }
+  let resolvedReal;
+  try {
+    resolvedReal = (0, import_fs4.realpathSync)(resolvedPath);
+  } catch (err) {
+    return {
+      content: [{ type: "text", text: `Failed to resolve prompt_file '${args.prompt_file}': ${err.message}` }],
+      isError: true
+    };
+  }
+  const relReal = (0, import_path4.relative)(cwdReal, resolvedReal);
+  if (relReal === "" || relReal === ".." || relReal.startsWith(".." + import_path4.sep)) {
+    return {
+      content: [{ type: "text", text: `prompt_file '${args.prompt_file}' resolves to a path outside the working directory.` }],
+      isError: true
+    };
+  }
+  try {
+    resolvedPrompt = (0, import_fs4.readFileSync)(resolvedReal, "utf-8");
+  } catch (err) {
+    return {
+      content: [{ type: "text", text: `Failed to read prompt_file '${args.prompt_file}': ${err.message}` }],
+      isError: true
+    };
+  }
+  if (!resolvedPrompt.trim()) {
+    return {
+      content: [{ type: "text", text: `prompt_file '${args.prompt_file}' is empty.` }],
       isError: true
     };
   }
@@ -14354,16 +14356,16 @@ ${detection.installHint}`
       }
       if (args.output_file) {
         const outputPath = (0, import_path4.resolve)(args.output_file);
-        const cwd = process.cwd();
-        const cwdReal = (0, import_fs4.realpathSync)(cwd);
-        const relOutput = (0, import_path4.relative)(cwdReal, outputPath);
+        const cwd2 = process.cwd();
+        const cwdReal2 = (0, import_fs4.realpathSync)(cwd2);
+        const relOutput = (0, import_path4.relative)(cwdReal2, outputPath);
         if (relOutput === "" || relOutput === ".." || relOutput.startsWith(".." + import_path4.sep)) {
           console.warn(`[gemini-core] output_file '${args.output_file}' is outside the working directory, skipping write.`);
         } else {
           try {
             if (!(0, import_fs4.existsSync)(outputPath)) {
               const outDir = (0, import_path4.dirname)(outputPath);
-              const relOutDir = (0, import_path4.relative)(cwdReal, outDir);
+              const relOutDir = (0, import_path4.relative)(cwdReal2, outDir);
               if (!(relOutDir === "" || relOutDir === ".." || relOutDir.startsWith(".." + import_path4.sep))) {
                 (0, import_fs4.mkdirSync)(outDir, { recursive: true });
                 (0, import_fs4.writeFileSync)(outputPath, response, "utf-8");
@@ -14414,14 +14416,13 @@ var askGeminiTool = {
         enum: GEMINI_VALID_ROLES,
         description: `Required. Agent perspective for Gemini: ${GEMINI_VALID_ROLES.join(", ")}. Gemini is optimized for design/implementation tasks with large context.`
       },
-      prompt_file: { type: "string", description: "Path to file containing the prompt (alternative to prompt parameter)" },
-      output_file: { type: "string", description: "Path to write response. If CLI doesn't write here, stdout is written to {output_file}.raw" },
+      prompt_file: { type: "string", description: "Path to file containing the prompt" },
+      output_file: { type: "string", description: "Path to write response. If CLI doesn't write here, stdout is written directly to output_file" },
       files: { type: "array", items: { type: "string" }, description: "File paths to include as context (contents will be prepended to prompt)" },
-      prompt: { type: "string", description: "The prompt to send to Gemini" },
       model: { type: "string", description: `Gemini model to use (default: ${GEMINI_DEFAULT_MODEL}). Set OMC_GEMINI_DEFAULT_MODEL env var to change default. Auto-fallback chain: ${GEMINI_MODEL_FALLBACKS.join(" \u2192 ")}.` },
       background: { type: "boolean", description: "Run in background (non-blocking). Returns immediately with job metadata and file paths. Check response file for completion." }
     },
-    required: ["agent_role"]
+    required: ["agent_role", "prompt_file"]
   }
 };
 var server = new Server(
@@ -14436,8 +14437,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   if (name !== "ask_gemini") {
     return { content: [{ type: "text", text: `Unknown tool: ${name}` }], isError: true };
   }
-  const { prompt, prompt_file, output_file, agent_role, model, files, background } = args ?? {};
-  return handleAskGemini({ prompt, prompt_file, output_file, agent_role, model, files, background });
+  const { prompt_file, output_file, agent_role, model, files, background } = args ?? {};
+  return handleAskGemini({ prompt_file, output_file, agent_role, model, files, background });
 });
 async function main() {
   const transport = new StdioServerTransport();

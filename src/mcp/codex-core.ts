@@ -300,8 +300,7 @@ export function validateAndReadFile(filePath: string): string {
  * the SDK server and the standalone stdio server.
  */
 export async function handleAskCodex(args: {
-  prompt?: string;
-  prompt_file?: string;
+  prompt_file: string;
   output_file?: string;
   agent_role: string;
   model?: string;
@@ -321,60 +320,64 @@ export async function handleAskCodex(args: {
     };
   }
 
-  // Validate mutual exclusion of prompt and prompt_file
-  if (args.prompt && args.prompt_file) {
+  // Check if deprecated 'prompt' parameter is being used
+  if ('prompt' in (args as Record<string, unknown>)) {
     return {
-      content: [{ type: 'text' as const, text: 'Cannot specify both prompt and prompt_file. Use one or the other.' }],
+      content: [{ type: 'text' as const, text: "The 'prompt' parameter has been removed. Write the prompt to a file (recommended: .omc/prompts/) and pass 'prompt_file' instead." }],
       isError: true
     };
   }
 
-  // Resolve prompt from prompt_file or inline prompt
-  let resolvedPrompt: string;
-  if (args.prompt_file) {
-    const resolvedPath = resolve(args.prompt_file);
-    const cwd = process.cwd();
-    const cwdReal = realpathSync(cwd);
-    const relPath = relative(cwdReal, resolvedPath);
-    if (relPath === '' || relPath === '..' || relPath.startsWith('..' + sep)) {
-      return {
-        content: [{ type: 'text' as const, text: `prompt_file '${args.prompt_file}' is outside the working directory.` }],
-        isError: true
-      };
-    }
-    try {
-      resolvedPrompt = readFileSync(resolvedPath, 'utf-8');
-    } catch (err) {
-      return {
-        content: [{ type: 'text' as const, text: `Failed to read prompt_file '${args.prompt_file}': ${(err as Error).message}` }],
-        isError: true
-      };
-    }
-    // Symlink-safe check: ensure the real path also stays inside the boundary
-    try {
-      const resolvedReal = realpathSync(resolvedPath);
-      const relReal = relative(cwdReal, resolvedReal);
-      if (relReal === '' || relReal === '..' || relReal.startsWith('..' + sep)) {
-        return {
-          content: [{ type: 'text' as const, text: `prompt_file '${args.prompt_file}' resolves to a path outside the working directory.` }],
-          isError: true
-        };
-      }
-    } catch {
-      // If realpathSync fails, the file was already read successfully, so continue
-    }
-    // Check for empty prompt
-    if (!resolvedPrompt.trim()) {
-      return {
-        content: [{ type: 'text' as const, text: `prompt_file '${args.prompt_file}' is empty.` }],
-        isError: true
-      };
-    }
-  } else if (args.prompt) {
-    resolvedPrompt = args.prompt;
-  } else {
+  // Validate prompt_file is provided and not empty
+  if (!args.prompt_file || !args.prompt_file.trim()) {
     return {
-      content: [{ type: 'text' as const, text: 'Either prompt or prompt_file is required.' }],
+      content: [{ type: 'text' as const, text: 'prompt_file is required.' }],
+      isError: true
+    };
+  }
+
+  // Resolve prompt from prompt_file
+  let resolvedPrompt: string;
+  const resolvedPath = resolve(args.prompt_file);
+  const cwd = process.cwd();
+  const cwdReal = realpathSync(cwd);
+  const relPath = relative(cwdReal, resolvedPath);
+  if (relPath === '' || relPath === '..' || relPath.startsWith('..' + sep)) {
+    return {
+      content: [{ type: 'text' as const, text: `prompt_file '${args.prompt_file}' is outside the working directory.` }],
+      isError: true
+    };
+  }
+  // BEFORE reading, resolve symlinks and validate boundary
+  let resolvedReal: string;
+  try {
+    resolvedReal = realpathSync(resolvedPath);
+  } catch (err) {
+    return {
+      content: [{ type: 'text' as const, text: `Failed to resolve prompt_file '${args.prompt_file}': ${(err as Error).message}` }],
+      isError: true
+    };
+  }
+  const relReal = relative(cwdReal, resolvedReal);
+  if (relReal === '' || relReal === '..' || relReal.startsWith('..' + sep)) {
+    return {
+      content: [{ type: 'text' as const, text: `prompt_file '${args.prompt_file}' resolves to a path outside the working directory.` }],
+      isError: true
+    };
+  }
+  // Now safe to read from the validated real path
+  try {
+    resolvedPrompt = readFileSync(resolvedReal, 'utf-8');
+  } catch (err) {
+    return {
+      content: [{ type: 'text' as const, text: `Failed to read prompt_file '${args.prompt_file}': ${(err as Error).message}` }],
+      isError: true
+    };
+  }
+  // Check for empty prompt
+  if (!resolvedPrompt.trim()) {
+    return {
+      content: [{ type: 'text' as const, text: `prompt_file '${args.prompt_file}' is empty.` }],
       isError: true
     };
   }
