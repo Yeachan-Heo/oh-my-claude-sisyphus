@@ -150,7 +150,6 @@ function compareVersions(v1, v2) {
 
 const NOTEPAD_FILENAME = "notepad.md";
 const PRIORITY_HEADER = "## Priority Context";
-const WORKING_MEMORY_HEADER = "## Working Memory";
 
 /**
  * Get notepad path in .omc directory

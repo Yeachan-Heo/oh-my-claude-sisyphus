@@ -5,31 +5,50 @@
  * Enables agents to pass their personality/guidelines when consulting external models.
  */
 
-import { loadAgentPrompt } from '../agents/utils.js';
+import { loadAgentPrompt } from "../agents-v4/compat.js";
 
 /**
  * Valid agent roles that can be used with agent_role parameter.
  * Matches the agent prompt files in agents/*.md
  */
 export const VALID_AGENT_ROLES = [
-  'architect', 'architect-medium', 'architect-low',
-  'analyst', 'critic', 'planner',
-  'executor', 'executor-high', 'executor-low',
-  'deep-executor',
-  'designer', 'designer-low', 'designer-high',
-  'explore', 'explore-medium', 'explore-high',
-  'researcher', 'researcher-low',
-  'writer', 'vision',
-  'qa-tester', 'qa-tester-high',
-  'scientist', 'scientist-low', 'scientist-high',
-  'security-reviewer', 'security-reviewer-low',
-  'build-fixer', 'build-fixer-low',
-  'tdd-guide', 'tdd-guide-low',
-  'code-reviewer', 'code-reviewer-low',
-  'git-master',
+  "architect",
+  "architect-medium",
+  "architect-low",
+  "analyst",
+  "critic",
+  "planner",
+  "executor",
+  "executor-high",
+  "executor-low",
+  "deep-executor",
+  "designer",
+  "designer-low",
+  "designer-high",
+  "explore",
+  "explore-medium",
+  "explore-high",
+  "researcher",
+  "researcher-low",
+  "writer",
+  "vision",
+  "qa-tester",
+  "qa-tester-high",
+  "scientist",
+  "scientist-low",
+  "scientist-high",
+  "security-reviewer",
+  "security-reviewer-low",
+  "build-fixer",
+  "build-fixer-low",
+  "tdd-guide",
+  "tdd-guide-low",
+  "code-reviewer",
+  "code-reviewer-low",
+  "git-master",
 ] as const;
 
-export type AgentRole = typeof VALID_AGENT_ROLES[number];
+export type AgentRole = (typeof VALID_AGENT_ROLES)[number];
 
 /**
  * Resolve the system prompt from either explicit system_prompt or agent_role.
@@ -39,7 +58,7 @@ export type AgentRole = typeof VALID_AGENT_ROLES[number];
  */
 export function resolveSystemPrompt(
   systemPrompt?: string,
-  agentRole?: string
+  agentRole?: string,
 ): string | undefined {
   // Explicit system_prompt takes precedence
   if (systemPrompt && systemPrompt.trim()) {
@@ -52,8 +71,10 @@ export function resolveSystemPrompt(
     // loadAgentPrompt already validates the name and handles errors gracefully
     const prompt = loadAgentPrompt(role);
     // loadAgentPrompt returns "Agent: {name}\n\nPrompt unavailable." on failure
-    if (prompt.includes('Prompt unavailable')) {
-      console.warn(`[prompt-injection] Agent role "${role}" prompt not found, skipping injection`);
+    if (prompt.includes("Prompt unavailable")) {
+      console.warn(
+        `[prompt-injection] Agent role "${role}" prompt not found, skipping injection`,
+      );
       return undefined;
     }
     return prompt;
@@ -72,12 +93,14 @@ export function resolveSystemPrompt(
 export function buildPromptWithSystemContext(
   userPrompt: string,
   fileContext: string | undefined,
-  systemPrompt: string | undefined
+  systemPrompt: string | undefined,
 ): string {
   const parts: string[] = [];
 
   if (systemPrompt) {
-    parts.push(`<system-instructions>\n${systemPrompt}\n</system-instructions>`);
+    parts.push(
+      `<system-instructions>\n${systemPrompt}\n</system-instructions>`,
+    );
   }
 
   if (fileContext) {
@@ -86,5 +109,5 @@ export function buildPromptWithSystemContext(
 
   parts.push(userPrompt);
 
-  return parts.join('\n\n');
+  return parts.join("\n\n");
 }

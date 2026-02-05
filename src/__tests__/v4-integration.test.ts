@@ -344,7 +344,7 @@ describe("V4 Integration — Exhaustive Agent Verification", () => {
     test("architectAgent is valid", () => {
       expect(architectAgent.name).toBeTruthy();
       expect(architectAgent.prompt.length).toBeGreaterThan(0);
-      expect(architectAgent.tools.length).toBeGreaterThan(0);
+      expect(architectAgent.tools?.length).toBeGreaterThan(0);
     });
 
     test("executorAgent is valid", () => {
