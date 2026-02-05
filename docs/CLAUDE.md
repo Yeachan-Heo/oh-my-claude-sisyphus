@@ -255,6 +255,24 @@ When you detect trigger patterns above, you MUST invoke the corresponding skill 
 - For parallel work, delegate to agents via Task tool with `run_in_background: true`
 - Agents calling Codex/Gemini should be spawned in background when orchestrator needs to continue other work
 
+**Tool Parameters (both ask_gemini and ask_codex):**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `agent_role` | string | Yes | Agent perspective (see routing table above) |
+| `prompt_file` | string | No* | Path to file containing prompt (*required if `prompt` not provided) |
+| `output_file` | string | No | Path to write response; fallback: stdout saved to `{output_file}.raw` |
+| `files` / `context_files` | array | No | File paths to include as context |
+| `prompt` | string | No* | Inline prompt (*required if `prompt_file` not provided) |
+| `model` | string | No | Model to use (has defaults and fallback chains) |
+| `background` | boolean | No | Run in background (non-blocking) |
+
+**Notes:**
+- `prompt` and `prompt_file` are mutually exclusive — providing both returns an error
+- When `output_file` is specified, the prompt includes an instruction nudging the CLI to write there
+- If the CLI doesn't write to `output_file`, stdout is captured and written to `{output_file}.raw`
+- `prompt_file` must be within the project working directory (security boundary)
+
 ### OMC State Tools
 
 All state stored at `{worktree}/.omc/state/{mode}-state.json`. Never in `~/.claude/`.

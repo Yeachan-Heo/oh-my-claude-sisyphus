@@ -28,12 +28,14 @@ const askCodexTool = {
         enum: CODEX_VALID_ROLES,
         description: `Required. Agent perspective for Codex: ${CODEX_VALID_ROLES.join(', ')}. Codex is optimized for analytical/planning tasks.`
       },
+      prompt_file: { type: 'string', description: 'Path to file containing the prompt (alternative to prompt parameter)' },
+      output_file: { type: 'string', description: 'Path to write response. If CLI doesn\'t write here, stdout is written to {output_file}.raw' },
       context_files: { type: 'array', items: { type: 'string' }, description: 'File paths to include as context (contents will be prepended to prompt)' },
       prompt: { type: 'string', description: 'The prompt to send to Codex' },
       model: { type: 'string', description: `Codex model to use (default: ${CODEX_DEFAULT_MODEL}). Set OMC_CODEX_DEFAULT_MODEL env var to change default.` },
       background: { type: 'boolean', description: 'Run in background (non-blocking). Returns immediately with job metadata and file paths. Check response file for completion.' },
     },
-    required: ['prompt', 'agent_role'],
+    required: ['agent_role'],
   },
 };
 
@@ -51,14 +53,16 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   if (name !== 'ask_codex') {
     return { content: [{ type: 'text', text: `Unknown tool: ${name}` }], isError: true };
   }
-  const { prompt, agent_role, model, context_files, background } = (args ?? {}) as {
-    prompt: string;
+  const { prompt, prompt_file, output_file, agent_role, model, context_files, background } = (args ?? {}) as {
+    prompt?: string;
+    prompt_file?: string;
+    output_file?: string;
     agent_role: string;
     model?: string;
     context_files?: string[];
     background?: boolean;
   };
-  return handleAskCodex({ prompt, agent_role, model, context_files, background });
+  return handleAskCodex({ prompt, prompt_file, output_file, agent_role, model, context_files, background });
 });
 
 async function main() {

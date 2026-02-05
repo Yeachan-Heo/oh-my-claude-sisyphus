@@ -14187,7 +14187,7 @@ ${(0, import_fs4.readFileSync)(resolvedReal, "utf-8")}`;
   }
 }
 async function handleAskCodex(args) {
-  const { prompt, agent_role, model = CODEX_DEFAULT_MODEL, context_files } = args;
+  const { agent_role, model = CODEX_DEFAULT_MODEL, context_files } = args;
   if (!agent_role || !CODEX_VALID_ROLES.includes(agent_role)) {
     return {
       content: [{
@@ -14196,6 +14196,64 @@ async function handleAskCodex(args) {
       }],
       isError: true
     };
+  }
+  if (args.prompt && args.prompt_file) {
+    return {
+      content: [{ type: "text", text: "Cannot specify both prompt and prompt_file. Use one or the other." }],
+      isError: true
+    };
+  }
+  let resolvedPrompt;
+  if (args.prompt_file) {
+    const resolvedPath = (0, import_path4.resolve)(args.prompt_file);
+    const cwd = process.cwd();
+    const cwdReal = (0, import_fs4.realpathSync)(cwd);
+    const relPath = (0, import_path4.relative)(cwdReal, resolvedPath);
+    if (relPath === "" || relPath === ".." || relPath.startsWith(".." + import_path4.sep)) {
+      return {
+        content: [{ type: "text", text: `prompt_file '${args.prompt_file}' is outside the working directory.` }],
+        isError: true
+      };
+    }
+    try {
+      resolvedPrompt = (0, import_fs4.readFileSync)(resolvedPath, "utf-8");
+    } catch (err) {
+      return {
+        content: [{ type: "text", text: `Failed to read prompt_file '${args.prompt_file}': ${err.message}` }],
+        isError: true
+      };
+    }
+    try {
+      const resolvedReal = (0, import_fs4.realpathSync)(resolvedPath);
+      const relReal = (0, import_path4.relative)(cwdReal, resolvedReal);
+      if (relReal === "" || relReal === ".." || relReal.startsWith(".." + import_path4.sep)) {
+        return {
+          content: [{ type: "text", text: `prompt_file '${args.prompt_file}' resolves to a path outside the working directory.` }],
+          isError: true
+        };
+      }
+    } catch {
+    }
+    if (!resolvedPrompt.trim()) {
+      return {
+        content: [{ type: "text", text: `prompt_file '${args.prompt_file}' is empty.` }],
+        isError: true
+      };
+    }
+  } else if (args.prompt) {
+    resolvedPrompt = args.prompt;
+  } else {
+    return {
+      content: [{ type: "text", text: "Either prompt or prompt_file is required." }],
+      isError: true
+    };
+  }
+  let userPrompt = resolvedPrompt;
+  if (args.output_file) {
+    const outputPath = (0, import_path4.resolve)(args.output_file);
+    userPrompt = `IMPORTANT: Write your complete response to the file: ${outputPath}
+
+${resolvedPrompt}`;
   }
   const detection = detectCodexCli();
   if (!detection.available) {
@@ -14223,13 +14281,13 @@ ${detection.installHint}`
     }
     fileContext = context_files.map((f) => validateAndReadFile(f)).join("\n\n");
   }
-  const fullPrompt = buildPromptWithSystemContext(prompt, fileContext, resolvedSystemPrompt);
+  const fullPrompt = buildPromptWithSystemContext(userPrompt, fileContext, resolvedSystemPrompt);
   const promptResult = persistPrompt({
     provider: "codex",
     agentRole: agent_role,
     model,
     files: context_files,
-    prompt,
+    prompt: resolvedPrompt,
     fullPrompt
   });
   const expectedResponsePath = promptResult ? getExpectedResponsePath("codex", promptResult.slug, promptResult.id) : void 0;
@@ -14292,6 +14350,29 @@ ${detection.installHint}`
         response
       });
     }
+    if (args.output_file) {
+      const outputPath = (0, import_path4.resolve)(args.output_file);
+      const cwd = process.cwd();
+      const cwdReal = (0, import_fs4.realpathSync)(cwd);
+      const relOutput = (0, import_path4.relative)(cwdReal, outputPath);
+      if (relOutput === "" || relOutput === ".." || relOutput.startsWith(".." + import_path4.sep)) {
+        console.warn(`[codex-core] output_file '${args.output_file}' is outside the working directory, skipping write.`);
+      } else {
+        try {
+          if (!(0, import_fs4.existsSync)(outputPath)) {
+            const rawPath = `${outputPath}.raw`;
+            const rawDir = (0, import_path4.dirname)(rawPath);
+            const relRawDir = (0, import_path4.relative)(cwdReal, rawDir);
+            if (!(relRawDir === "" || relRawDir === ".." || relRawDir.startsWith(".." + import_path4.sep))) {
+              (0, import_fs4.mkdirSync)(rawDir, { recursive: true });
+              (0, import_fs4.writeFileSync)(rawPath, response, "utf-8");
+            }
+          }
+        } catch (err) {
+          console.warn(`[codex-core] Failed to write output file: ${err.message}`);
+        }
+      }
+    }
     return {
       content: [{
         type: "text",
@@ -14329,12 +14410,14 @@ var askCodexTool = {
         enum: CODEX_VALID_ROLES,
         description: `Required. Agent perspective for Codex: ${CODEX_VALID_ROLES.join(", ")}. Codex is optimized for analytical/planning tasks.`
       },
+      prompt_file: { type: "string", description: "Path to file containing the prompt (alternative to prompt parameter)" },
+      output_file: { type: "string", description: "Path to write response. If CLI doesn't write here, stdout is written to {output_file}.raw" },
       context_files: { type: "array", items: { type: "string" }, description: "File paths to include as context (contents will be prepended to prompt)" },
       prompt: { type: "string", description: "The prompt to send to Codex" },
       model: { type: "string", description: `Codex model to use (default: ${CODEX_DEFAULT_MODEL}). Set OMC_CODEX_DEFAULT_MODEL env var to change default.` },
       background: { type: "boolean", description: "Run in background (non-blocking). Returns immediately with job metadata and file paths. Check response file for completion." }
     },
-    required: ["prompt", "agent_role"]
+    required: ["agent_role"]
   }
 };
 var server = new Server(
@@ -14349,8 +14432,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   if (name !== "ask_codex") {
     return { content: [{ type: "text", text: `Unknown tool: ${name}` }], isError: true };
   }
-  const { prompt, agent_role, model, context_files, background } = args ?? {};
-  return handleAskCodex({ prompt, agent_role, model, context_files, background });
+  const { prompt, prompt_file, output_file, agent_role, model, context_files, background } = args ?? {};
+  return handleAskCodex({ prompt, prompt_file, output_file, agent_role, model, context_files, background });
 });
 async function main() {
   const transport = new StdioServerTransport();

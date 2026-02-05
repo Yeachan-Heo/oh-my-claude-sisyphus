@@ -9,8 +9,8 @@
  */
 
 import { spawn } from 'child_process';
-import { readFileSync, realpathSync, statSync } from 'fs';
-import { resolve, relative, sep } from 'path';
+import { existsSync, mkdirSync, readFileSync, realpathSync, statSync, writeFileSync } from 'fs';
+import { dirname, resolve, relative, sep } from 'path';
 import { detectCodexCli } from './cli-detection.js';
 import { resolveSystemPrompt, buildPromptWithSystemContext } from './prompt-injection.js';
 import { persistPrompt, persistResponse, getExpectedResponsePath } from './prompt-persistence.js';
@@ -300,13 +300,15 @@ export function validateAndReadFile(filePath: string): string {
  * the SDK server and the standalone stdio server.
  */
 export async function handleAskCodex(args: {
-  prompt: string;
+  prompt?: string;
+  prompt_file?: string;
+  output_file?: string;
   agent_role: string;
   model?: string;
   context_files?: string[];
   background?: boolean;
 }): Promise<{ content: Array<{ type: 'text'; text: string }>; isError?: boolean }> {
-  const { prompt, agent_role, model = CODEX_DEFAULT_MODEL, context_files } = args;
+  const { agent_role, model = CODEX_DEFAULT_MODEL, context_files } = args;
 
   // Validate agent_role
   if (!agent_role || !(CODEX_VALID_ROLES as readonly string[]).includes(agent_role)) {
@@ -317,6 +319,71 @@ export async function handleAskCodex(args: {
       }],
       isError: true
     };
+  }
+
+  // Validate mutual exclusion of prompt and prompt_file
+  if (args.prompt && args.prompt_file) {
+    return {
+      content: [{ type: 'text' as const, text: 'Cannot specify both prompt and prompt_file. Use one or the other.' }],
+      isError: true
+    };
+  }
+
+  // Resolve prompt from prompt_file or inline prompt
+  let resolvedPrompt: string;
+  if (args.prompt_file) {
+    const resolvedPath = resolve(args.prompt_file);
+    const cwd = process.cwd();
+    const cwdReal = realpathSync(cwd);
+    const relPath = relative(cwdReal, resolvedPath);
+    if (relPath === '' || relPath === '..' || relPath.startsWith('..' + sep)) {
+      return {
+        content: [{ type: 'text' as const, text: `prompt_file '${args.prompt_file}' is outside the working directory.` }],
+        isError: true
+      };
+    }
+    try {
+      resolvedPrompt = readFileSync(resolvedPath, 'utf-8');
+    } catch (err) {
+      return {
+        content: [{ type: 'text' as const, text: `Failed to read prompt_file '${args.prompt_file}': ${(err as Error).message}` }],
+        isError: true
+      };
+    }
+    // Symlink-safe check: ensure the real path also stays inside the boundary
+    try {
+      const resolvedReal = realpathSync(resolvedPath);
+      const relReal = relative(cwdReal, resolvedReal);
+      if (relReal === '' || relReal === '..' || relReal.startsWith('..' + sep)) {
+        return {
+          content: [{ type: 'text' as const, text: `prompt_file '${args.prompt_file}' resolves to a path outside the working directory.` }],
+          isError: true
+        };
+      }
+    } catch {
+      // If realpathSync fails, the file was already read successfully, so continue
+    }
+    // Check for empty prompt
+    if (!resolvedPrompt.trim()) {
+      return {
+        content: [{ type: 'text' as const, text: `prompt_file '${args.prompt_file}' is empty.` }],
+        isError: true
+      };
+    }
+  } else if (args.prompt) {
+    resolvedPrompt = args.prompt;
+  } else {
+    return {
+      content: [{ type: 'text' as const, text: 'Either prompt or prompt_file is required.' }],
+      isError: true
+    };
+  }
+
+  // If output_file specified, nudge the prompt to write there
+  let userPrompt = resolvedPrompt;
+  if (args.output_file) {
+    const outputPath = resolve(args.output_file);
+    userPrompt = `IMPORTANT: Write your complete response to the file: ${outputPath}\n\n${resolvedPrompt}`;
   }
 
   // Check CLI availability
@@ -350,7 +417,7 @@ export async function handleAskCodex(args: {
   }
 
   // Combine: system prompt > file context > user prompt
-  const fullPrompt = buildPromptWithSystemContext(prompt, fileContext, resolvedSystemPrompt);
+  const fullPrompt = buildPromptWithSystemContext(userPrompt, fileContext, resolvedSystemPrompt);
 
   // Persist prompt for audit trail
   const promptResult = persistPrompt({
@@ -358,7 +425,7 @@ export async function handleAskCodex(args: {
     agentRole: agent_role,
     model,
     files: context_files,
-    prompt,
+    prompt: resolvedPrompt,
     fullPrompt,
   });
 
@@ -434,6 +501,34 @@ export async function handleAskCodex(args: {
         slug: promptResult.slug,
         response,
       });
+    }
+
+    // Handle output_file: check if CLI wrote it, otherwise write stdout to .raw
+    if (args.output_file) {
+      const outputPath = resolve(args.output_file);
+
+      // Security: validate output_file is within working directory
+      const cwd = process.cwd();
+      const cwdReal = realpathSync(cwd);
+      const relOutput = relative(cwdReal, outputPath);
+      if (relOutput === '' || relOutput === '..' || relOutput.startsWith('..' + sep)) {
+        console.warn(`[codex-core] output_file '${args.output_file}' is outside the working directory, skipping write.`);
+      } else {
+        try {
+          if (!existsSync(outputPath)) {
+            const rawPath = `${outputPath}.raw`;
+            // Only create directories within boundary
+            const rawDir = dirname(rawPath);
+            const relRawDir = relative(cwdReal, rawDir);
+            if (!(relRawDir === '' || relRawDir === '..' || relRawDir.startsWith('..' + sep))) {
+              mkdirSync(rawDir, { recursive: true });
+              writeFileSync(rawPath, response, 'utf-8');
+            }
+          }
+        } catch (err) {
+          console.warn(`[codex-core] Failed to write output file: ${(err as Error).message}`);
+        }
+      }
     }
 
     return {
