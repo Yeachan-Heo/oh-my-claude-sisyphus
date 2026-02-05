@@ -1328,11 +1328,11 @@ var require_errors = __commonJS({
       gen.code((0, codegen_1._)`${names_1.default.errors}++`);
     }
     function returnErrors(it, errs) {
-      const { gen, validateName, schemaEnv } = it;
+      const { gen, validateName: validateName2, schemaEnv } = it;
       if (schemaEnv.$async) {
         gen.throw((0, codegen_1._)`new ${it.ValidationError}(${errs})`);
       } else {
-        gen.assign((0, codegen_1._)`${validateName}.errors`, errs);
+        gen.assign((0, codegen_1._)`${validateName2}.errors`, errs);
         gen.return(false);
       }
     }
@@ -1401,13 +1401,13 @@ var require_boolSchema = __commonJS({
       message: "boolean schema is false"
     };
     function topBoolOrEmptySchema(it) {
-      const { gen, schema, validateName } = it;
+      const { gen, schema, validateName: validateName2 } = it;
       if (schema === false) {
         falseSchemaError(it, false);
       } else if (typeof schema == "object" && schema.$async === true) {
         gen.return(names_1.default.data);
       } else {
-        gen.assign((0, codegen_1._)`${validateName}.errors`, null);
+        gen.assign((0, codegen_1._)`${validateName2}.errors`, null);
         gen.return(true);
       }
     }
@@ -2356,15 +2356,15 @@ var require_validate = __commonJS({
       validateFunction(it, () => (0, boolSchema_1.topBoolOrEmptySchema)(it));
     }
     exports2.validateFunctionCode = validateFunctionCode;
-    function validateFunction({ gen, validateName, schema, schemaEnv, opts }, body) {
+    function validateFunction({ gen, validateName: validateName2, schema, schemaEnv, opts }, body) {
       if (opts.code.es5) {
-        gen.func(validateName, (0, codegen_1._)`${names_1.default.data}, ${names_1.default.valCxt}`, schemaEnv.$async, () => {
+        gen.func(validateName2, (0, codegen_1._)`${names_1.default.data}, ${names_1.default.valCxt}`, schemaEnv.$async, () => {
           gen.code((0, codegen_1._)`"use strict"; ${funcSourceUrl(schema, opts)}`);
           destructureValCxtES5(gen, opts);
           gen.code(body);
         });
       } else {
-        gen.func(validateName, (0, codegen_1._)`${names_1.default.data}, ${destructureValCxt(opts)}`, schemaEnv.$async, () => gen.code(funcSourceUrl(schema, opts)).code(body));
+        gen.func(validateName2, (0, codegen_1._)`${names_1.default.data}, ${destructureValCxt(opts)}`, schemaEnv.$async, () => gen.code(funcSourceUrl(schema, opts)).code(body));
       }
     }
     function destructureValCxt(opts) {
@@ -2403,8 +2403,8 @@ var require_validate = __commonJS({
       return;
     }
     function resetEvaluated(it) {
-      const { gen, validateName } = it;
-      it.evaluated = gen.const("evaluated", (0, codegen_1._)`${validateName}.evaluated`);
+      const { gen, validateName: validateName2 } = it;
+      it.evaluated = gen.const("evaluated", (0, codegen_1._)`${validateName2}.evaluated`);
       gen.if((0, codegen_1._)`${it.evaluated}.dynamicProps`, () => gen.assign((0, codegen_1._)`${it.evaluated}.props`, (0, codegen_1._)`undefined`));
       gen.if((0, codegen_1._)`${it.evaluated}.dynamicItems`, () => gen.assign((0, codegen_1._)`${it.evaluated}.items`, (0, codegen_1._)`undefined`));
     }
@@ -2486,11 +2486,11 @@ var require_validate = __commonJS({
       }
     }
     function returnResults(it) {
-      const { gen, schemaEnv, validateName, ValidationError, opts } = it;
+      const { gen, schemaEnv, validateName: validateName2, ValidationError, opts } = it;
       if (schemaEnv.$async) {
         gen.if((0, codegen_1._)`${names_1.default.errors} === 0`, () => gen.return(names_1.default.data), () => gen.throw((0, codegen_1._)`new ${ValidationError}(${names_1.default.vErrors})`));
       } else {
-        gen.assign((0, codegen_1._)`${validateName}.errors`, names_1.default.vErrors);
+        gen.assign((0, codegen_1._)`${validateName2}.errors`, names_1.default.vErrors);
         if (opts.unevaluated)
           assignEvaluated(it);
         gen.return((0, codegen_1._)`${names_1.default.errors} === 0`);
@@ -2915,8 +2915,8 @@ var require_compile = __commonJS({
           code: (0, codegen_1._)`require("ajv/dist/runtime/validation_error").default`
         });
       }
-      const validateName = gen.scopeName("validate");
-      sch.validateName = validateName;
+      const validateName2 = gen.scopeName("validate");
+      sch.validateName = validateName2;
       const schemaCxt = {
         gen,
         allErrors: this.opts.allErrors,
@@ -2930,7 +2930,7 @@ var require_compile = __commonJS({
         dataTypes: [],
         definedProperties: /* @__PURE__ */ new Set(),
         topSchemaRef: gen.scopeValue("schema", this.opts.code.source === true ? { ref: sch.schema, code: (0, codegen_1.stringify)(sch.schema) } : { ref: sch.schema }),
-        validateName,
+        validateName: validateName2,
         ValidationError: _ValidationError,
         schema: sch.schema,
         schemaEnv: sch,
@@ -2953,14 +2953,14 @@ var require_compile = __commonJS({
           sourceCode = this.opts.code.process(sourceCode, sch);
         const makeValidate = new Function(`${names_1.default.self}`, `${names_1.default.scope}`, sourceCode);
         const validate = makeValidate(this, this.scope.get());
-        this.scope.value(validateName, { ref: validate });
+        this.scope.value(validateName2, { ref: validate });
         validate.errors = null;
         validate.schema = sch.schema;
         validate.schemaEnv = sch;
         if (sch.$async)
           validate.$async = true;
         if (this.opts.code.source === true) {
-          validate.source = { validateName, validateCode, scopeValues: gen._values };
+          validate.source = { validateName: validateName2, validateCode, scopeValues: gen._values };
         }
         if (this.opts.unevaluated) {
           const { props, items } = schemaCxt;
@@ -4487,7 +4487,7 @@ var require_ref = __commonJS({
       schemaType: "string",
       code(cxt) {
         const { gen, schema: $ref, it } = cxt;
-        const { baseId, schemaEnv: env, validateName, opts, self } = it;
+        const { baseId, schemaEnv: env, validateName: validateName2, opts, self } = it;
         const { root } = env;
         if (($ref === "#" || $ref === "#/") && baseId === root.baseId)
           return callRootRef();
@@ -4499,7 +4499,7 @@ var require_ref = __commonJS({
         return inlineRefSchema(schOrEnv);
         function callRootRef() {
           if (env === root)
-            return callRef(cxt, validateName, env, env.$async);
+            return callRef(cxt, validateName2, env, env.$async);
           const rootName = gen.scopeValue("root", { ref: root });
           return callRef(cxt, (0, codegen_1._)`${rootName}.validate`, root, root.$async);
         }
@@ -13744,39 +13744,590 @@ function detectGeminiCli(useCache = true) {
   }
 }
 
-// src/agents/utils.ts
+// src/agents-v4/roles.ts
+var rolePromptPlaceholder = (role) => `Role-specific prompt loaded from agents/roles/${role}.md`;
+var AGENT_ROLES = {
+  architect: {
+    role: "architect",
+    description: "Read-only consultation agent. High-IQ reasoning specialist for debugging hard problems and high-difficulty architecture design.",
+    defaultTier: "HIGH",
+    baseTools: [
+      "Read",
+      "Glob",
+      "Grep",
+      "WebSearch",
+      "WebFetch",
+      "lsp_diagnostics",
+      "lsp_diagnostics_directory",
+      "ast_grep_search"
+    ],
+    category: "advisor",
+    rolePrompt: rolePromptPlaceholder("architect"),
+    readOnly: true
+  },
+  researcher: {
+    role: "researcher",
+    description: "Documentation researcher and external reference finder. Use for official docs, GitHub examples, OSS implementations, API references. Searches EXTERNAL resources, not internal codebase.",
+    defaultTier: "MEDIUM",
+    baseTools: ["Read", "Glob", "Grep", "WebSearch", "WebFetch"],
+    category: "specialist",
+    rolePrompt: rolePromptPlaceholder("researcher"),
+    readOnly: true
+  },
+  explore: {
+    role: "explore",
+    description: "Fast codebase exploration and pattern search. Use for finding files, understanding structure, locating implementations. Searches INTERNAL codebase.",
+    defaultTier: "LOW",
+    baseTools: ["Read", "Glob", "Grep"],
+    category: "exploration",
+    rolePrompt: rolePromptPlaceholder("explore"),
+    readOnly: true
+  },
+  designer: {
+    role: "designer",
+    description: "Designer-turned-developer who crafts stunning UI/UX even without design mockups. Use for VISUAL changes only (styling, layout, animation). Pure logic changes in frontend files should be handled directly.",
+    defaultTier: "MEDIUM",
+    baseTools: ["Read", "Glob", "Grep", "Edit", "Write", "Bash"],
+    category: "specialist",
+    rolePrompt: rolePromptPlaceholder("designer"),
+    readOnly: false
+  },
+  writer: {
+    role: "writer",
+    description: "Technical writer who crafts clear, comprehensive documentation. Specializes in README files, API docs, architecture docs, and user guides.",
+    defaultTier: "LOW",
+    baseTools: ["Read", "Glob", "Grep", "Edit", "Write"],
+    category: "utility",
+    rolePrompt: rolePromptPlaceholder("writer"),
+    readOnly: false
+  },
+  vision: {
+    role: "vision",
+    description: "Analyze media files (PDFs, images, diagrams) that require interpretation beyond raw text. Extracts specific information or summaries from documents, describes visual content.",
+    defaultTier: "MEDIUM",
+    baseTools: ["Read", "Glob", "Grep"],
+    category: "advisor",
+    rolePrompt: rolePromptPlaceholder("vision"),
+    readOnly: true
+  },
+  critic: {
+    role: "critic",
+    description: "Expert reviewer for evaluating work plans against rigorous clarity, verifiability, and completeness standards. Use after planner creates a work plan to validate it before execution.",
+    defaultTier: "HIGH",
+    baseTools: ["Read", "Glob", "Grep"],
+    category: "reviewer",
+    rolePrompt: rolePromptPlaceholder("critic"),
+    readOnly: true
+  },
+  analyst: {
+    role: "analyst",
+    description: "Pre-planning consultant that analyzes requests before implementation to identify hidden requirements, edge cases, and potential risks. Use before creating a work plan.",
+    defaultTier: "HIGH",
+    baseTools: ["Read", "Glob", "Grep", "WebSearch"],
+    category: "planner",
+    rolePrompt: rolePromptPlaceholder("analyst"),
+    readOnly: true
+  },
+  executor: {
+    role: "executor",
+    description: "Focused task executor. Execute tasks directly. NEVER delegate or spawn other agents. Same discipline as Sisyphus, no delegation.",
+    defaultTier: "MEDIUM",
+    baseTools: [
+      "Read",
+      "Glob",
+      "Grep",
+      "Edit",
+      "Write",
+      "Bash",
+      "TodoWrite",
+      "lsp_diagnostics"
+    ],
+    category: "specialist",
+    rolePrompt: rolePromptPlaceholder("executor"),
+    readOnly: false
+  },
+  planner: {
+    role: "planner",
+    description: "Strategic planning consultant. Interviews users to understand requirements, then creates comprehensive work plans. NEVER implements - only plans.",
+    defaultTier: "HIGH",
+    baseTools: ["Read", "Glob", "Grep", "WebSearch"],
+    category: "planner",
+    rolePrompt: rolePromptPlaceholder("planner"),
+    readOnly: true
+  },
+  "qa-tester": {
+    role: "qa-tester",
+    description: "Interactive CLI testing specialist using tmux. Tests CLI applications, background services, and interactive tools. Manages test sessions, sends commands, verifies output, and ensures cleanup.",
+    defaultTier: "MEDIUM",
+    baseTools: ["Bash", "Read", "Grep", "Glob", "TodoWrite", "lsp_diagnostics"],
+    category: "specialist",
+    rolePrompt: rolePromptPlaceholder("qa-tester"),
+    readOnly: false
+  },
+  scientist: {
+    role: "scientist",
+    description: "Data analysis and research execution specialist. Executes Python code for EDA, statistical analysis, and generating data-driven findings. Works with CSV, JSON, Parquet files using pandas, numpy, scipy.",
+    defaultTier: "MEDIUM",
+    baseTools: ["Read", "Glob", "Grep", "Bash", "python_repl"],
+    category: "specialist",
+    rolePrompt: rolePromptPlaceholder("scientist"),
+    readOnly: false
+  }
+};
+function getAgentRole(role) {
+  return AGENT_ROLES[role];
+}
+
+// src/agents-v4/tiers.ts
+var LOW_TIER_INSTRUCTIONS = `**Tier: LOW (Haiku) - Speed-Focused Execution**
+
+- Focus on speed and direct execution
+- Handle simple, well-defined tasks only
+- Limit exploration to 5 files maximum
+- Escalate to MEDIUM tier if:
+  - Task requires analyzing more than 5 files
+  - Complexity is higher than expected
+  - Architectural decisions needed
+- Prefer straightforward solutions over clever ones
+- Skip deep investigation - implement what's asked`.trim();
+var MEDIUM_TIER_INSTRUCTIONS = `**Tier: MEDIUM (Sonnet) - Balanced Execution**
+
+- Balance thoroughness with efficiency
+- Can explore up to 20 files
+- Handle moderate complexity tasks
+- Consult architect agent for architectural decisions
+- Escalate to HIGH tier if:
+  - Task requires deep architectural changes
+  - System-wide refactoring needed
+  - Complex debugging across many components
+- Consider edge cases but don't over-engineer
+- Document non-obvious decisions`.trim();
+var HIGH_TIER_INSTRUCTIONS = `**Tier: HIGH (Opus) - Excellence-Focused Execution**
+
+- Prioritize correctness and code quality above all
+- Full codebase exploration allowed
+- Make architectural decisions confidently
+- Handle complex, ambiguous, or system-wide tasks
+- Consider:
+  - Long-term maintainability
+  - Edge cases and error scenarios
+  - Performance implications
+  - Security considerations
+- Thoroughly document reasoning
+- No escalation needed - you are the top tier`.trim();
+var TIER_OVERLAYS = {
+  LOW: {
+    tier: "LOW",
+    model: "haiku",
+    instructions: LOW_TIER_INSTRUCTIONS,
+    maxFileExploration: 5,
+    canEscalate: true,
+    toolModifiers: {
+      remove: [
+        "WebSearch",
+        "WebFetch",
+        "ast_grep_search",
+        "lsp_diagnostics_directory"
+      ]
+    }
+  },
+  MEDIUM: {
+    tier: "MEDIUM",
+    model: "sonnet",
+    instructions: MEDIUM_TIER_INSTRUCTIONS,
+    maxFileExploration: 20,
+    canEscalate: true
+  },
+  HIGH: {
+    tier: "HIGH",
+    model: "opus",
+    instructions: HIGH_TIER_INSTRUCTIONS,
+    maxFileExploration: Number.POSITIVE_INFINITY,
+    canEscalate: false,
+    toolModifiers: {
+      add: [
+        "WebSearch",
+        "WebFetch",
+        "ast_grep_search",
+        "ast_grep_replace",
+        "lsp_diagnostics_directory",
+        "lsp_find_references"
+      ]
+    }
+  }
+};
+
+// src/agents-v4/composer.ts
+var BASE_PROTOCOL_SECTION_ID = "base-protocol";
+var DEFAULT_BASE_PROTOCOL_SECTION = {
+  id: BASE_PROTOCOL_SECTION_ID,
+  name: "Base Protocol",
+  content: "Base protocol loaded from agents/sections/base-protocol.md",
+  order: 0
+};
+var PROMPT_SECTION_SEPARATOR = "\n\n---\n\n";
+var resolveBaseProtocolSection = (sections) => {
+  const baseSection = sections?.find(
+    (section) => section.id === BASE_PROTOCOL_SECTION_ID
+  );
+  return baseSection ?? DEFAULT_BASE_PROTOCOL_SECTION;
+};
+var resolveAdditionalSections = (role, sections) => {
+  const additionalSectionIds = AGENT_ROLES[role].additionalSections;
+  if (!additionalSectionIds?.length || !sections?.length) {
+    return [];
+  }
+  const sectionMap = new Map(
+    sections.map((section) => [section.id, section])
+  );
+  return additionalSectionIds.map((sectionId) => sectionMap.get(sectionId)).filter((section) => Boolean(section));
+};
+var applyToolModifiers = (baseTools, tier) => {
+  const overlay = TIER_OVERLAYS[tier];
+  const removeTools = new Set(overlay.toolModifiers?.remove ?? []);
+  const tools = baseTools.filter((tool) => !removeTools.has(tool));
+  const addTools = overlay.toolModifiers?.add ?? [];
+  for (const tool of addTools) {
+    if (!tools.includes(tool)) {
+      tools.push(tool);
+    }
+  }
+  return tools;
+};
+function composePrompt(role, tier, sections) {
+  const roleDefinition = AGENT_ROLES[role];
+  if (!roleDefinition) {
+    throw new Error(
+      `Invalid agent role: "${role}". Valid roles are: ${Object.keys(AGENT_ROLES).join(", ")}`
+    );
+  }
+  const baseSection = resolveBaseProtocolSection(sections);
+  const tierSection = {
+    id: `tier-${tier.toLowerCase()}`,
+    name: `${tier} Tier Instructions`,
+    content: TIER_OVERLAYS[tier].instructions,
+    order: baseSection.order + 1
+  };
+  const roleSection = {
+    id: `role-${role}`,
+    name: `${role} Role Instructions`,
+    content: roleDefinition.rolePrompt,
+    order: baseSection.order + 2
+  };
+  const additionalSections = resolveAdditionalSections(role, sections).filter(
+    (section) => section.id !== BASE_PROTOCOL_SECTION_ID
+  );
+  const combinedSections = [
+    baseSection,
+    tierSection,
+    roleSection,
+    ...additionalSections
+  ];
+  const dedupedSections = [];
+  const seen = /* @__PURE__ */ new Set();
+  for (const section of combinedSections) {
+    if (seen.has(section.id)) {
+      continue;
+    }
+    seen.add(section.id);
+    dedupedSections.push(section);
+  }
+  return dedupedSections.slice().sort((first, second) => first.order - second.order).map((section) => section.content.trim()).filter((content) => content.length > 0).join(PROMPT_SECTION_SEPARATOR);
+}
+function composeAgent(role, tier, sections) {
+  const roleDefinition = AGENT_ROLES[role];
+  const tools = applyToolModifiers([...roleDefinition.baseTools], tier);
+  return {
+    name: getAgentName(role, tier),
+    role,
+    tier,
+    prompt: composePrompt(role, tier, sections),
+    tools,
+    model: TIER_OVERLAYS[tier].model,
+    description: roleDefinition.description
+  };
+}
+function getAgentName(role, tier) {
+  const defaultTier = AGENT_ROLES[role].defaultTier;
+  if (tier === defaultTier) {
+    return role;
+  }
+  return `${role}-${tier.toLowerCase()}`;
+}
+
+// src/agents-v4/registry.ts
+var LEGACY_ALIASES = {
+  architect: { role: "architect", tier: "HIGH" },
+  "architect-medium": { role: "architect", tier: "MEDIUM" },
+  "architect-low": { role: "architect", tier: "LOW" },
+  executor: { role: "executor", tier: "MEDIUM" },
+  "executor-high": { role: "executor", tier: "HIGH" },
+  "executor-low": { role: "executor", tier: "LOW" },
+  explore: { role: "explore", tier: "LOW" },
+  "explore-medium": { role: "explore", tier: "MEDIUM" },
+  "explore-high": { role: "explore", tier: "HIGH" },
+  designer: { role: "designer", tier: "MEDIUM" },
+  "designer-low": { role: "designer", tier: "LOW" },
+  "designer-high": { role: "designer", tier: "HIGH" },
+  researcher: { role: "researcher", tier: "MEDIUM" },
+  "researcher-low": { role: "researcher", tier: "LOW" },
+  writer: { role: "writer", tier: "LOW" },
+  vision: { role: "vision", tier: "MEDIUM" },
+  critic: { role: "critic", tier: "HIGH" },
+  analyst: { role: "analyst", tier: "HIGH" },
+  planner: { role: "planner", tier: "HIGH" },
+  "qa-tester": { role: "qa-tester", tier: "MEDIUM" },
+  "qa-tester-high": { role: "qa-tester", tier: "HIGH" },
+  scientist: { role: "scientist", tier: "MEDIUM" },
+  "scientist-low": { role: "scientist", tier: "LOW" },
+  "scientist-high": { role: "scientist", tier: "HIGH" },
+  "security-reviewer": { role: "architect", tier: "HIGH" },
+  "security-reviewer-low": { role: "architect", tier: "LOW" },
+  "build-fixer": { role: "executor", tier: "MEDIUM" },
+  "build-fixer-low": { role: "executor", tier: "LOW" },
+  "tdd-guide": { role: "executor", tier: "MEDIUM" },
+  "tdd-guide-low": { role: "executor", tier: "LOW" },
+  "code-reviewer": { role: "critic", tier: "HIGH" },
+  "code-reviewer-low": { role: "critic", tier: "LOW" },
+  "git-master": { role: "executor", tier: "MEDIUM" },
+  "deep-executor": { role: "executor", tier: "HIGH" }
+};
+function resolveAlias(name) {
+  return LEGACY_ALIASES[name] ?? null;
+}
+
+// src/agents-v4/loader.ts
 var import_fs = require("fs");
 var import_path = require("path");
 var import_url = require("url");
 var import_meta = {};
+var roleCache = /* @__PURE__ */ new Map();
+var sectionCache = /* @__PURE__ */ new Map();
+var SECTION_IDS = [
+  "base-protocol",
+  "tier-low",
+  "tier-medium",
+  "tier-high",
+  "verification-protocol",
+  "escalation-protocol"
+];
+var SECTION_ORDER = {
+  "base-protocol": 0,
+  "tier-low": 10,
+  "tier-medium": 10,
+  "tier-high": 10,
+  "verification-protocol": 20,
+  "escalation-protocol": 30
+};
 function getPackageDir() {
   const __filename = (0, import_url.fileURLToPath)(import_meta.url);
   const __dirname = (0, import_path.dirname)(__filename);
   return (0, import_path.join)(__dirname, "..", "..");
 }
-function loadAgentPrompt(agentName) {
-  if (!/^[a-z0-9-]+$/i.test(agentName)) {
-    throw new Error(`Invalid agent name: contains disallowed characters`);
+function stripFrontmatter(content) {
+  const match = content.match(/^---[\s\S]*?---\s*([\s\S]*)$/);
+  return match ? match[1].trim() : content.trim();
+}
+function formatSectionName(sectionId) {
+  return sectionId.split("-").map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(" ");
+}
+function validateName(name, label) {
+  if (!/^[a-z0-9-]+$/i.test(name)) {
+    console.warn(`[${label}] Invalid name: contains disallowed characters`);
+    return null;
   }
+  return name;
+}
+function readMarkdownFile(baseDir, fileName, label) {
   try {
-    const agentsDir = (0, import_path.join)(getPackageDir(), "agents");
-    const agentPath = (0, import_path.join)(agentsDir, `${agentName}.md`);
-    const resolvedPath = (0, import_path.resolve)(agentPath);
-    const resolvedAgentsDir = (0, import_path.resolve)(agentsDir);
-    const rel = (0, import_path.relative)(resolvedAgentsDir, resolvedPath);
+    const filePath = (0, import_path.join)(baseDir, `${fileName}.md`);
+    const resolvedPath = (0, import_path.resolve)(filePath);
+    const resolvedBase = (0, import_path.resolve)(baseDir);
+    const rel = (0, import_path.relative)(resolvedBase, resolvedPath);
     if (rel.startsWith("..") || (0, import_path.isAbsolute)(rel)) {
-      throw new Error(`Invalid agent name: path traversal detected`);
+      throw new Error("path traversal detected");
     }
-    const content = (0, import_fs.readFileSync)(agentPath, "utf-8");
-    const match = content.match(/^---[\s\S]*?---\s*([\s\S]*)$/);
-    return match ? match[1].trim() : content.trim();
+    const content = (0, import_fs.readFileSync)(filePath, "utf-8");
+    return stripFrontmatter(content);
   } catch (error2) {
-    const message = error2 instanceof Error && error2.message.includes("Invalid agent name") ? error2.message : "Agent prompt file not found";
-    console.warn(`[loadAgentPrompt] ${message}`);
+    const message = error2 instanceof Error && error2.message.includes("path traversal") ? "Invalid name: path traversal detected" : "Markdown file not found";
+    console.warn(`[${label}] ${message}`);
+    return null;
+  }
+}
+function loadRoleMarkdown(role) {
+  const cached2 = roleCache.get(role);
+  if (cached2) {
+    return cached2;
+  }
+  if (!validateName(role, "loadRoleMarkdown")) {
+    return `Role: ${role}
+
+Prompt unavailable.`;
+  }
+  const rolesDir = (0, import_path.join)(getPackageDir(), "agents", "roles");
+  const content = readMarkdownFile(rolesDir, role, "loadRoleMarkdown");
+  const resolved = content ?? `Role: ${role}
+
+Prompt unavailable.`;
+  roleCache.set(role, resolved);
+  return resolved;
+}
+function loadSectionMarkdown(sectionId) {
+  const cached2 = sectionCache.get(sectionId);
+  if (cached2) {
+    return cached2;
+  }
+  if (!validateName(sectionId, "loadSectionMarkdown")) {
+    return `Section: ${sectionId}
+
+Prompt unavailable.`;
+  }
+  const sectionsDir = (0, import_path.join)(getPackageDir(), "agents", "sections");
+  const content = readMarkdownFile(
+    sectionsDir,
+    sectionId,
+    "loadSectionMarkdown"
+  );
+  const resolved = content ?? `Section: ${sectionId}
+
+Prompt unavailable.`;
+  sectionCache.set(sectionId, resolved);
+  return resolved;
+}
+function loadAllSections() {
+  return SECTION_IDS.map((sectionId) => {
+    const content = loadSectionMarkdown(sectionId);
+    return {
+      id: sectionId,
+      name: formatSectionName(sectionId),
+      content,
+      order: SECTION_ORDER[sectionId] ?? 100
+    };
+  });
+}
+
+// src/agents-v4/compat.ts
+var PROMPT_SECTION_SEPARATOR2 = "\n\n---\n\n";
+var mapComposedAgentConfig = (config2) => ({
+  name: config2.name,
+  description: config2.description,
+  prompt: config2.prompt,
+  tools: config2.tools,
+  model: config2.model,
+  defaultModel: config2.model
+});
+var resolveRoleTier = (agentName) => {
+  const alias = resolveAlias(agentName);
+  if (alias) {
+    return alias;
+  }
+  if (Object.prototype.hasOwnProperty.call(AGENT_ROLES, agentName)) {
+    const role = agentName;
+    return { role, tier: getAgentRole(role).defaultTier };
+  }
+  return null;
+};
+var composeLegacyPrompt = (role, tier) => {
+  const sections = loadAllSections();
+  const baseSection = sections.find(
+    (section) => section.id === "base-protocol"
+  );
+  const baseOrder = baseSection?.order ?? 0;
+  const tierSectionId = `tier-${tier.toLowerCase()}`;
+  const tierSection = sections.find((section) => section.id === tierSectionId);
+  const tierFallback = {
+    id: tierSectionId,
+    name: `${tier} Tier Instructions`,
+    content: TIER_OVERLAYS[tier].instructions,
+    order: baseOrder + 1
+  };
+  const roleSection = {
+    id: `role-${role}`,
+    name: `${role} Role Instructions`,
+    content: loadRoleMarkdown(role),
+    order: baseOrder + 2
+  };
+  const promptSections = [
+    baseSection ?? {
+      id: "base-protocol",
+      name: "Base Protocol",
+      content: "",
+      order: 0
+    },
+    tierSection ?? tierFallback,
+    roleSection
+  ];
+  const prompt = promptSections.slice().sort((first, second) => first.order - second.order).map((section) => section.content.trim()).filter((content) => content.length > 0).join(PROMPT_SECTION_SEPARATOR2);
+  return prompt;
+};
+var architectAgent = mapComposedAgentConfig(
+  composeAgent("architect", "HIGH")
+);
+var researcherAgent = mapComposedAgentConfig(
+  composeAgent("researcher", "MEDIUM")
+);
+var exploreAgent = mapComposedAgentConfig(
+  composeAgent("explore", "LOW")
+);
+var executorAgent = mapComposedAgentConfig(
+  composeAgent("executor", "MEDIUM")
+);
+var designerAgent = mapComposedAgentConfig(
+  composeAgent("designer", "MEDIUM")
+);
+var writerAgent = mapComposedAgentConfig(
+  composeAgent("writer", "LOW")
+);
+var visionAgent = mapComposedAgentConfig(
+  composeAgent("vision", "MEDIUM")
+);
+var criticAgent = mapComposedAgentConfig(
+  composeAgent("critic", "HIGH")
+);
+var analystAgent = mapComposedAgentConfig(
+  composeAgent("analyst", "HIGH")
+);
+var plannerAgent = mapComposedAgentConfig(
+  composeAgent("planner", "HIGH")
+);
+var qaTesterAgent = mapComposedAgentConfig(
+  composeAgent("qa-tester", "MEDIUM")
+);
+var scientistAgent = mapComposedAgentConfig(
+  composeAgent("scientist", "MEDIUM")
+);
+var deepExecutorAgent = mapComposedAgentConfig(
+  composeAgent("executor", "HIGH")
+);
+var coordinatorAgent = mapComposedAgentConfig(
+  composeAgent("executor", "MEDIUM")
+);
+var VALID_AGENT_NAME_PATTERN = /^[a-z][a-z0-9-]*$/;
+var validateAgentName = (name) => {
+  if (name.includes("..") || name.includes("/") || name.includes("\\")) {
+    throw new Error("Invalid agent name: path traversal detected");
+  }
+  if (!VALID_AGENT_NAME_PATTERN.test(name)) {
+    throw new Error("Invalid agent name: contains disallowed characters");
+  }
+};
+function loadAgentPrompt(agentName) {
+  validateAgentName(agentName);
+  const alias = resolveRoleTier(agentName);
+  if (!alias) {
     return `Agent: ${agentName}
 
 Prompt unavailable.`;
   }
+  const prompt = composeLegacyPrompt(alias.role, alias.tier);
+  if (prompt.length > 0) {
+    return prompt;
+  }
+  const canonicalName = getAgentName(alias.role, alias.tier);
+  return `Agent: ${canonicalName}
+
+Prompt unavailable.`;
 }
 
 // src/mcp/prompt-injection.ts
@@ -13788,7 +14339,9 @@ function resolveSystemPrompt(systemPrompt, agentRole) {
     const role = agentRole.trim();
     const prompt = loadAgentPrompt(role);
     if (prompt.includes("Prompt unavailable")) {
-      console.warn(`[prompt-injection] Agent role "${role}" prompt not found, skipping injection`);
+      console.warn(
+        `[prompt-injection] Agent role "${role}" prompt not found, skipping injection`
+      );
       return void 0;
     }
     return prompt;
@@ -13798,9 +14351,11 @@ function resolveSystemPrompt(systemPrompt, agentRole) {
 function buildPromptWithSystemContext(userPrompt, fileContext, systemPrompt) {
   const parts = [];
   if (systemPrompt) {
-    parts.push(`<system-instructions>
+    parts.push(
+      `<system-instructions>
 ${systemPrompt}
-</system-instructions>`);
+</system-instructions>`
+    );
   }
   if (fileContext) {
     parts.push(fileContext);
