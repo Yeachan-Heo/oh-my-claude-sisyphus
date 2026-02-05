@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.0.5] - 2026-02-05
+
+### Changed
+
+- **Include dist/ in git** - Compiled output now ships with the repo so users no longer need to rebuild after plugin install/update. Eliminates the most common setup issue.
+- **Simplified update guide** - All 5 README translations updated with streamlined update instructions (no rebuild step needed).
+- **Removed outdated rebuild instructions** - Cleaned up `commands/omc-setup.md`, `commands/hud.md`, and `skills/hud/SKILL.md` to remove the "Verify Plugin Build" step and related dist/ rebuild guidance.
+
 ## [4.0.4] - 2026-02-05
 
 ### Fixed
