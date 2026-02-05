@@ -179,7 +179,7 @@ async function getTokenTrackerFallback(
   }
 
   const totalTokens = stats.totalInputTokens + stats.totalOutputTokens;
-  const totalInput = stats.totalInputTokens + stats.totalCacheCreation;
+  const totalInput = stats.totalInputTokens + stats.totalCacheCreation + stats.totalCacheRead;
   const cacheHitRate =
     totalInput > 0 ? (stats.totalCacheRead / totalInput) * 100 : 0;
   const hours = durationMs / (1000 * 60 * 60);
