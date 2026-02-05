@@ -13,7 +13,6 @@
 
 import {
   readJobStatus,
-  checkResponseReady,
   readCompletedResponse,
   listActiveJobs,
   writeJobStatus,
@@ -22,6 +21,9 @@ import {
 import type { JobStatus } from './prompt-persistence.js';
 import { existsSync, readdirSync, readFileSync } from 'fs';
 import { join } from 'path';
+
+/** Signals allowed for kill_job. SIGKILL excluded - too dangerous for process groups. */
+const ALLOWED_SIGNALS: ReadonlySet<string> = new Set(['SIGTERM', 'SIGINT']);
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -32,6 +34,14 @@ import { join } from 'path';
  */
 function escapeRegex(str: string): string {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/** Standard MCP text result wrapper */
+function textResult(text: string, isError = false): { content: Array<{ type: 'text'; text: string }>; isError?: boolean } {
+  return {
+    content: [{ type: 'text' as const, text }],
+    ...(isError && { isError: true }),
+  };
 }
 
 /**
@@ -47,6 +57,11 @@ export function findJobStatusFile(
   provider: 'codex' | 'gemini',
   jobId: string,
 ): { statusPath: string; slug: string } | undefined {
+  // Validate jobId format: must be 8-char hex (from generatePromptId)
+  if (!/^[0-9a-f]{8}$/i.test(jobId)) {
+    return undefined;
+  }
+
   const promptsDir = getPromptsDir();
   if (!existsSync(promptsDir)) return undefined;
 
@@ -113,6 +128,9 @@ export function findJobStatusFile(
 /**
  * wait_for_job - block (poll) until a background job reaches a terminal state.
  * Uses exponential backoff: 500ms base, 1.5x factor, 2000ms cap.
+ *
+ * WARNING: This function blocks the MCP request handler for the duration of the poll.
+ * For non-blocking checks, use handleCheckJobStatus instead.
  */
 export async function handleWaitForJob(
   provider: 'codex' | 'gemini',
@@ -120,32 +138,24 @@ export async function handleWaitForJob(
   timeoutMs: number = 3600000,
 ): Promise<{ content: Array<{ type: 'text'; text: string }>; isError?: boolean }> {
   if (!jobId || typeof jobId !== 'string') {
-    return {
-      content: [{ type: 'text' as const, text: 'job_id is required.' }],
-      isError: true,
-    };
+    return textResult('job_id is required.', true);
   }
 
-  const deadline = Date.now() + Math.min(timeoutMs, 3_600_000);
+  const effectiveTimeout = Math.max(1000, Math.min(timeoutMs, 3_600_000));
+  const deadline = Date.now() + effectiveTimeout;
   let pollDelay = 500;
 
   while (Date.now() < deadline) {
     const found = findJobStatusFile(provider, jobId);
 
     if (!found) {
-      return {
-        content: [{ type: 'text' as const, text: `No job found with ID: ${jobId}` }],
-        isError: true,
-      };
+      return textResult(`No job found with ID: ${jobId}`, true);
     }
 
     const status = readJobStatus(provider, found.slug, jobId);
 
     if (!status) {
-      return {
-        content: [{ type: 'text' as const, text: `No job found with ID: ${jobId}` }],
-        isError: true,
-      };
+      return textResult(`No job found with ID: ${jobId}`, true);
     }
 
     if (status.status === 'completed' || status.status === 'failed' || status.status === 'timeout') {
@@ -156,38 +166,27 @@ export async function handleWaitForJob(
           ? completed.response.substring(0, 500) + (completed.response.length > 500 ? '...' : '')
           : '(response file not found)';
 
-        return {
-          content: [{
-            type: 'text' as const,
-            text: [
-              `**Job ${jobId} completed.**`,
-              `**Provider:** ${status.provider}`,
-              `**Model:** ${status.model}`,
-              `**Agent Role:** ${status.agentRole}`,
-              `**Response File:** ${status.responseFile}`,
-              status.usedFallback ? `**Fallback Model:** ${status.fallbackModel}` : null,
-              ``,
-              `**Response preview:**`,
-              responseSnippet,
-            ].filter(Boolean).join('\n'),
-          }],
-        };
+        return textResult([
+          `**Job ${jobId} completed.**`,
+          `**Provider:** ${status.provider}`,
+          `**Model:** ${status.model}`,
+          `**Agent Role:** ${status.agentRole}`,
+          `**Response File:** ${status.responseFile}`,
+          status.usedFallback ? `**Fallback Model:** ${status.fallbackModel}` : null,
+          ``,
+          `**Response preview:**`,
+          responseSnippet,
+        ].filter(Boolean).join('\n'));
       }
 
       // failed or timeout
-      return {
-        content: [{
-          type: 'text' as const,
-          text: [
-            `**Job ${jobId} ${status.status}.**`,
-            `**Provider:** ${status.provider}`,
-            `**Model:** ${status.model}`,
-            `**Agent Role:** ${status.agentRole}`,
-            status.error ? `**Error:** ${status.error}` : null,
-          ].filter(Boolean).join('\n'),
-        }],
-        isError: true,
-      };
+      return textResult([
+        `**Job ${jobId} ${status.status}.**`,
+        `**Provider:** ${status.provider}`,
+        `**Model:** ${status.model}`,
+        `**Agent Role:** ${status.agentRole}`,
+        status.error ? `**Error:** ${status.error}` : null,
+      ].filter(Boolean).join('\n'), true);
     }
 
     // Still running - wait with exponential backoff and poll again
@@ -196,13 +195,10 @@ export async function handleWaitForJob(
   }
 
   // Timed out waiting
-  return {
-    content: [{
-      type: 'text' as const,
-      text: `Timed out waiting for job ${jobId} after ${timeoutMs}ms. The job is still running; use check_job_status to poll later.`,
-    }],
-    isError: true,
-  };
+  return textResult(
+    `Timed out waiting for job ${jobId} after ${timeoutMs}ms. The job is still running; use check_job_status to poll later.`,
+    true
+  );
 }
 
 /**
@@ -213,28 +209,19 @@ export async function handleCheckJobStatus(
   jobId: string,
 ): Promise<{ content: Array<{ type: 'text'; text: string }>; isError?: boolean }> {
   if (!jobId || typeof jobId !== 'string') {
-    return {
-      content: [{ type: 'text' as const, text: 'job_id is required.' }],
-      isError: true,
-    };
+    return textResult('job_id is required.', true);
   }
 
   const found = findJobStatusFile(provider, jobId);
 
   if (!found) {
-    return {
-      content: [{ type: 'text' as const, text: `No job found with ID: ${jobId}` }],
-      isError: true,
-    };
+    return textResult(`No job found with ID: ${jobId}`, true);
   }
 
   const status = readJobStatus(provider, found.slug, jobId);
 
   if (!status) {
-    return {
-      content: [{ type: 'text' as const, text: `No job found with ID: ${jobId}` }],
-      isError: true,
-    };
+    return textResult(`No job found with ID: ${jobId}`, true);
   }
 
   const lines = [
@@ -253,12 +240,7 @@ export async function handleCheckJobStatus(
     status.killedByUser ? `**Killed By User:** yes` : null,
   ];
 
-  return {
-    content: [{
-      type: 'text' as const,
-      text: lines.filter(Boolean).join('\n'),
-    }],
-  };
+  return textResult(lines.filter(Boolean).join('\n'));
 }
 
 /**
@@ -267,51 +249,43 @@ export async function handleCheckJobStatus(
 export async function handleKillJob(
   provider: 'codex' | 'gemini',
   jobId: string,
-  signal: NodeJS.Signals = 'SIGTERM',
+  signal: string = 'SIGTERM',
 ): Promise<{ content: Array<{ type: 'text'; text: string }>; isError?: boolean }> {
   if (!jobId || typeof jobId !== 'string') {
-    return {
-      content: [{ type: 'text' as const, text: 'job_id is required.' }],
-      isError: true,
-    };
+    return textResult('job_id is required.', true);
+  }
+
+  if (!ALLOWED_SIGNALS.has(signal)) {
+    return textResult(
+      `Invalid signal: ${signal}. Allowed signals: ${[...ALLOWED_SIGNALS].join(', ')}`,
+      true
+    );
   }
 
   const found = findJobStatusFile(provider, jobId);
 
   if (!found) {
-    return {
-      content: [{ type: 'text' as const, text: `No job found with ID: ${jobId}` }],
-      isError: true,
-    };
+    return textResult(`No job found with ID: ${jobId}`, true);
   }
 
   const status = readJobStatus(provider, found.slug, jobId);
 
   if (!status) {
-    return {
-      content: [{ type: 'text' as const, text: `No job found with ID: ${jobId}` }],
-      isError: true,
-    };
+    return textResult(`No job found with ID: ${jobId}`, true);
   }
 
   if (status.status !== 'spawned' && status.status !== 'running') {
-    return {
-      content: [{
-        type: 'text' as const,
-        text: `Job ${jobId} is already in terminal state: ${status.status}. Cannot kill.`,
-      }],
-      isError: true,
-    };
+    return textResult(
+      `Job ${jobId} is already in terminal state: ${status.status}. Cannot kill.`,
+      true
+    );
   }
 
   if (!status.pid) {
-    return {
-      content: [{
-        type: 'text' as const,
-        text: `Job ${jobId} has no PID recorded. Cannot send signal.`,
-      }],
-      isError: true,
-    };
+    return textResult(
+      `Job ${jobId} has no PID recorded. Cannot send signal.`,
+      true
+    );
   }
 
   // Mark killedByUser before sending signal so the close handler can see it
@@ -325,9 +299,9 @@ export async function handleKillJob(
     // On POSIX, background jobs are spawned detached as process-group leaders.
     // Kill the whole process group so child processes also terminate.
     if (process.platform !== 'win32') {
-      process.kill(-status.pid, signal);
+      process.kill(-status.pid, signal as NodeJS.Signals);
     } else {
-      process.kill(status.pid, signal);
+      process.kill(status.pid, signal as NodeJS.Signals);
     }
 
     // Update status to failed
@@ -339,10 +313,13 @@ export async function handleKillJob(
       error: `Killed by user (signal: ${signal})`,
     });
 
-    // Wait 50ms then re-check - background handler may have overwritten
-    await new Promise(resolve => setTimeout(resolve, 50));
-    const recheckStatus = readJobStatus(provider, found.slug, jobId);
-    if (recheckStatus && recheckStatus.status !== 'failed') {
+    // Retry loop: background handler may overwrite our 'failed' status
+    for (let attempt = 0; attempt < 3; attempt++) {
+      await new Promise(resolve => setTimeout(resolve, 50));
+      const recheckStatus = readJobStatus(provider, found.slug, jobId);
+      if (!recheckStatus || recheckStatus.status === 'failed') {
+        break; // Our write stuck, or status is already what we want
+      }
       // Background handler overwrote - write again
       writeJobStatus({
         ...recheckStatus,
@@ -353,32 +330,33 @@ export async function handleKillJob(
       });
     }
 
-    return {
-      content: [{
-        type: 'text' as const,
-        text: `Sent ${signal} to job ${jobId} (PID ${status.pid}). Job marked as failed.`,
-      }],
-    };
+    return textResult(
+      `Sent ${signal} to job ${jobId} (PID ${status.pid}). Job marked as failed.`
+    );
   } catch (err) {
-    // Process may have already exited
-    const message = (err as NodeJS.ErrnoException).code === 'ESRCH'
-      ? `Process ${status.pid} already exited.`
-      : `Failed to kill process ${status.pid}: ${(err as Error).message}`;
+    const currentStatus = readJobStatus(provider, found.slug, jobId);
+    const isESRCH = (err as NodeJS.ErrnoException).code === 'ESRCH';
 
-    // Still mark as failed if the process is gone
-    if ((err as NodeJS.ErrnoException).code === 'ESRCH') {
-      writeJobStatus({
-        ...updated,
-        status: 'failed',
-        completedAt: new Date().toISOString(),
-        error: `Killed by user (process already exited, signal: ${signal})`,
-      });
+    let message: string;
+    if (isESRCH) {
+      if (currentStatus?.status === 'completed') {
+        message = `Process ${status.pid} already exited. Job ${jobId} completed successfully.`;
+      } else {
+        message = `Process ${status.pid} already exited.`;
+        // Only mark as failed if not already completed
+        writeJobStatus({
+          ...(currentStatus || updated),
+          status: 'failed',
+          killedByUser: true,
+          completedAt: new Date().toISOString(),
+          error: `Killed by user (process already exited, signal: ${signal})`,
+        });
+      }
+    } else {
+      message = `Failed to kill process ${status.pid}: ${(err as Error).message}`;
     }
 
-    return {
-      content: [{ type: 'text' as const, text: message }],
-      isError: (err as NodeJS.ErrnoException).code !== 'ESRCH',
-    };
+    return textResult(message, !isESRCH || currentStatus?.status !== 'completed');
   }
 }
 
@@ -396,12 +374,7 @@ export async function handleListJobs(
     const activeJobs = listActiveJobs(provider);
 
     if (activeJobs.length === 0) {
-      return {
-        content: [{
-          type: 'text' as const,
-          text: `No active ${provider} jobs found.`,
-        }],
-      };
+      return textResult(`No active ${provider} jobs found.`);
     }
 
     // Sort by spawnedAt descending (newest first), apply limit
@@ -417,20 +390,13 @@ export async function handleListJobs(
       return parts.join('\n');
     });
 
-    return {
-      content: [{
-        type: 'text' as const,
-        text: `**${limited.length} active ${provider} job(s):**\n\n${lines.join('\n\n')}`,
-      }],
-    };
+    return textResult(`**${limited.length} active ${provider} job(s):**\n\n${lines.join('\n\n')}`);
   }
 
   // For 'all', 'completed', 'failed': scan all status files for this provider
   const promptsDir = getPromptsDir();
   if (!existsSync(promptsDir)) {
-    return {
-      content: [{ type: 'text' as const, text: `No ${provider} jobs found.` }],
-    };
+    return textResult(`No ${provider} jobs found.`);
   }
 
   try {
@@ -458,12 +424,7 @@ export async function handleListJobs(
 
     if (jobs.length === 0) {
       const filterDesc = statusFilter !== 'all' ? ` with status=${statusFilter}` : '';
-      return {
-        content: [{
-          type: 'text' as const,
-          text: `No ${provider} jobs found${filterDesc}.`,
-        }],
-      };
+      return textResult(`No ${provider} jobs found${filterDesc}.`);
     }
 
     // Sort by spawnedAt descending (newest first), apply limit
@@ -481,20 +442,9 @@ export async function handleListJobs(
       return parts.join('\n');
     });
 
-    return {
-      content: [{
-        type: 'text' as const,
-        text: `**${limited.length} ${provider} job(s) found:**\n\n${lines.join('\n\n')}`,
-      }],
-    };
+    return textResult(`**${limited.length} ${provider} job(s) found:**\n\n${lines.join('\n\n')}`);
   } catch (err) {
-    return {
-      content: [{
-        type: 'text' as const,
-        text: `Error listing jobs: ${(err as Error).message}`,
-      }],
-      isError: true,
-    };
+    return textResult(`Error listing jobs: ${(err as Error).message}`, true);
   }
 }
 
@@ -502,19 +452,13 @@ export async function handleListJobs(
 // Tool Schema Definitions (for both SDK and standalone servers)
 // ---------------------------------------------------------------------------
 
-/**
- * Returns tool definitions for the four job management tools.
- *
- * Each entry has { name, description, inputSchema }.
- * Servers wire handlers themselves - no handler property included.
- * Provider parameter accepted for future extensibility.
- */
+// TODO: _provider parameter reserved for future per-provider schema customization
 export function getJobManagementToolSchemas(_provider?: 'codex' | 'gemini') {
   return [
     {
       name: 'wait_for_job',
       description:
-        'Block (poll) until a background job reaches a terminal state (completed, failed, or timeout). Uses exponential backoff. Returns the response preview on success.',
+        'Block (poll) until a background job reaches a terminal state (completed, failed, or timeout). Uses exponential backoff. Returns the response preview on success. WARNING: This tool blocks the MCP server for the duration of the poll. Prefer check_job_status for non-blocking status checks.',
       inputSchema: {
         type: 'object' as const,
         properties: {
@@ -558,7 +502,8 @@ export function getJobManagementToolSchemas(_provider?: 'codex' | 'gemini') {
           },
           signal: {
             type: 'string',
-            description: 'The signal to send (default: SIGTERM).',
+            enum: ['SIGTERM', 'SIGINT'],
+            description: 'The signal to send (default: SIGTERM). Only SIGTERM and SIGINT are allowed.',
           },
         },
         required: ['job_id'],
