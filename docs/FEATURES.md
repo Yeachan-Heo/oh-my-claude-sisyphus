@@ -3,6 +3,7 @@
 > Internal API documentation for oh-my-claudecode developers and contributors.
 
 ## Table of Contents
+
 1. [Notepad Wisdom System](#notepad-wisdom-system)
 2. [Delegation Categories](#delegation-categories)
 3. [Directory Diagnostics](#directory-diagnostics)
@@ -45,11 +46,11 @@ getWisdomSummary(planName: string, directory?: string): string
 
 ```typescript
 export interface WisdomEntry {
-  timestamp: string;  // ISO 8601: "YYYY-MM-DD HH:MM:SS"
+  timestamp: string; // ISO 8601: "YYYY-MM-DD HH:MM:SS"
   content: string;
 }
 
-export type WisdomCategory = 'learnings' | 'decisions' | 'issues' | 'problems';
+export type WisdomCategory = "learnings" | "decisions" | "issues" | "problems";
 
 export interface PlanWisdom {
   planName: string;
@@ -63,14 +64,21 @@ export interface PlanWisdom {
 ### Usage Example
 
 ```typescript
-import { initPlanNotepad, addLearning, readPlanWisdom } from '@/features/notepad-wisdom';
+import {
+  initPlanNotepad,
+  addLearning,
+  readPlanWisdom,
+} from "@/features/notepad-wisdom";
 
 // Initialize and record
-initPlanNotepad('api-v2-migration');
-addLearning('api-v2-migration', 'API routes use Express Router pattern in src/routes/');
+initPlanNotepad("api-v2-migration");
+addLearning(
+  "api-v2-migration",
+  "API routes use Express Router pattern in src/routes/",
+);
 
 // Read back
-const wisdom = readPlanWisdom('api-v2-migration');
+const wisdom = readPlanWisdom("api-v2-migration");
 console.log(wisdom.learnings[0].content);
 ```
 
@@ -82,15 +90,15 @@ Semantic task classification that automatically determines model tier, temperatu
 
 ### Available Categories
 
-| Category | Tier | Temp | Thinking | Use For |
-|----------|------|------|----------|---------|
-| `visual-engineering` | HIGH | 0.7 | high | UI/UX, frontend, design systems |
-| `ultrabrain` | HIGH | 0.3 | max | Complex reasoning, architecture, debugging |
-| `artistry` | MEDIUM | 0.9 | medium | Creative solutions, brainstorming |
-| `quick` | LOW | 0.1 | low | Simple lookups, basic operations |
-| `writing` | MEDIUM | 0.5 | medium | Documentation, technical writing |
-| `unspecified-low` | LOW | 0.1 | low | Default for simple tasks |
-| `unspecified-high` | HIGH | 0.5 | high | Default for complex tasks |
+| Category             | Tier   | Temp | Thinking | Use For                                    |
+| -------------------- | ------ | ---- | -------- | ------------------------------------------ |
+| `visual-engineering` | HIGH   | 0.7  | high     | UI/UX, frontend, design systems            |
+| `ultrabrain`         | HIGH   | 0.3  | max      | Complex reasoning, architecture, debugging |
+| `artistry`           | MEDIUM | 0.9  | medium   | Creative solutions, brainstorming          |
+| `quick`              | LOW    | 0.1  | low      | Simple lookups, basic operations           |
+| `writing`            | MEDIUM | 0.5  | medium   | Documentation, technical writing           |
+| `unspecified-low`    | LOW    | 0.1  | low      | Default for simple tasks                   |
+| `unspecified-high`   | HIGH   | 0.5  | high     | Default for complex tasks                  |
 
 ### Core Functions
 
@@ -119,15 +127,15 @@ getCategoryPromptAppend(category: DelegationCategory): string
 
 ```typescript
 export type DelegationCategory =
-  | 'visual-engineering'
-  | 'ultrabrain'
-  | 'artistry'
-  | 'quick'
-  | 'writing'
-  | 'unspecified-low'
-  | 'unspecified-high';
+  | "visual-engineering"
+  | "ultrabrain"
+  | "artistry"
+  | "quick"
+  | "writing"
+  | "unspecified-low"
+  | "unspecified-high";
 
-export type ThinkingBudget = 'low' | 'medium' | 'high' | 'max';
+export type ThinkingBudget = "low" | "medium" | "high" | "max";
 
 export interface ResolvedCategory {
   category: DelegationCategory;
@@ -149,15 +157,21 @@ export interface CategoryContext {
 ### Usage Example
 
 ```typescript
-import { getCategoryForTask, enhancePromptWithCategory } from '@/features/delegation-categories';
+import {
+  getCategoryForTask,
+  enhancePromptWithCategory,
+} from "@/features/delegation-categories";
 
-const userRequest = 'Debug the race condition in payment processor';
+const userRequest = "Debug the race condition in payment processor";
 
 const resolved = getCategoryForTask({ taskPrompt: userRequest });
 // resolved.category === 'ultrabrain'
 // resolved.temperature === 0.3
 
-const enhancedPrompt = enhancePromptWithCategory(userRequest, resolved.category);
+const enhancedPrompt = enhancePromptWithCategory(
+  userRequest,
+  resolved.category,
+);
 // Adds: "Think deeply and systematically. Consider all edge cases..."
 ```
 
@@ -182,10 +196,10 @@ runDirectoryDiagnostics(directory: string, strategy?: DiagnosticsStrategy): Prom
 ### Types
 
 ```typescript
-export type DiagnosticsStrategy = 'tsc' | 'lsp' | 'auto';
+export type DiagnosticsStrategy = "tsc" | "lsp" | "auto";
 
 export interface DirectoryDiagnosticResult {
-  strategy: 'tsc' | 'lsp';
+  strategy: "tsc" | "lsp";
   success: boolean;
   errorCount: number;
   warningCount: number;
@@ -197,7 +211,7 @@ export interface DirectoryDiagnosticResult {
 ### Usage Example
 
 ```typescript
-import { runDirectoryDiagnostics } from '@/tools/diagnostics';
+import { runDirectoryDiagnostics } from "@/tools/diagnostics";
 
 const result = await runDirectoryDiagnostics(process.cwd());
 
@@ -207,7 +221,7 @@ if (!result.success) {
   process.exit(1);
 }
 
-console.log('Build quality check passed!');
+console.log("Build quality check passed!");
 ```
 
 ---
@@ -255,12 +269,11 @@ export interface GeneratorOptions {
 ### Usage Example
 
 ```typescript
-import { getAgentDefinitions } from '@/agents/definitions';
-import { generateOrchestratorPrompt, convertDefinitionsToConfigs } from '@/agents/prompt-generator';
+import { getMinimalAgentDefinitions } from "./agents-v4/context-manager";
+import { generateSystemPrompt } from "./agents-v4/system-prompt";
 
-const definitions = getAgentDefinitions();
-const agents = convertDefinitionsToConfigs(definitions);
-const prompt = generateOrchestratorPrompt(agents);
+const agents = getMinimalAgentDefinitions();
+const prompt = generateSystemPrompt();
 ```
 
 ---
@@ -274,6 +287,7 @@ Standardized prompt structures for common task types.
 For exploration, research, or search tasks.
 
 **Sections:**
+
 - **TASK**: What needs to be explored
 - **EXPECTED OUTCOME**: What the orchestrator expects back
 - **CONTEXT**: Background information
@@ -282,13 +296,14 @@ For exploration, research, or search tasks.
 - **REQUIRED SKILLS**: Skills needed
 - **REQUIRED TOOLS**: Tools to use
 
-**Location:** `src/agents/templates/exploration-template.md`
+**Location:** `agents/templates/` (exploration patterns)
 
 ### Implementation Template
 
 For code implementation, refactoring, or modification tasks.
 
 **Sections:**
+
 - **TASK**: Implementation goal
 - **EXPECTED OUTCOME**: Deliverable
 - **CONTEXT**: Project background
@@ -298,7 +313,7 @@ For code implementation, refactoring, or modification tasks.
 - **REQUIRED TOOLS**: Tools to use
 - **VERIFICATION CHECKLIST**: Pre-completion checks
 
-**Location:** `src/agents/templates/implementation-template.md`
+**Location:** `agents/templates/` (implementation patterns)
 
 ---
 
@@ -335,18 +350,20 @@ export interface ResumeSessionOutput {
 ### Usage Example
 
 ```typescript
-import { resumeSession } from '@/tools/resume-session';
+import { resumeSession } from "@/tools/resume-session";
 
-const result = resumeSession({ sessionId: 'ses_abc123' });
+const result = resumeSession({ sessionId: "ses_abc123" });
 
 if (result.success && result.context) {
-  console.log(`Resuming session with ${result.context.toolCallCount} prior tool calls`);
+  console.log(
+    `Resuming session with ${result.context.toolCallCount} prior tool calls`,
+  );
 
   // Continue with Task delegation
   Task({
     subagent_type: "oh-my-claudecode:executor",
     model: "sonnet",
-    prompt: result.context.continuationPrompt
+    prompt: result.context.continuationPrompt,
   });
 }
 ```
@@ -369,13 +386,13 @@ Autonomous execution from idea to validated working code through a 5-phase devel
 
 ```typescript
 export type AutopilotPhase =
-  | 'expansion'
-  | 'planning'
-  | 'execution'
-  | 'qa'
-  | 'validation'
-  | 'complete'
-  | 'failed';
+  | "expansion"
+  | "planning"
+  | "execution"
+  | "qa"
+  | "validation"
+  | "complete"
+  | "failed";
 
 export interface AutopilotState {
   active: boolean;
@@ -399,17 +416,17 @@ export interface AutopilotState {
 }
 
 export interface AutopilotConfig {
-  maxIterations?: number;              // default: 10
-  maxExpansionIterations?: number;     // default: 2
-  maxArchitectIterations?: number;     // default: 5
-  maxQaCycles?: number;                // default: 5
-  maxValidationRounds?: number;        // default: 3
-  parallelExecutors?: number;          // default: 5
-  pauseAfterExpansion?: boolean;       // default: false
-  pauseAfterPlanning?: boolean;        // default: false
-  skipQa?: boolean;                    // default: false
-  skipValidation?: boolean;            // default: false
-  autoCommit?: boolean;                // default: false
+  maxIterations?: number; // default: 10
+  maxExpansionIterations?: number; // default: 2
+  maxArchitectIterations?: number; // default: 5
+  maxQaCycles?: number; // default: 5
+  maxValidationRounds?: number; // default: 3
+  parallelExecutors?: number; // default: 5
+  pauseAfterExpansion?: boolean; // default: false
+  pauseAfterPlanning?: boolean; // default: false
+  skipQa?: boolean; // default: false
+  skipValidation?: boolean; // default: false
+  autoCommit?: boolean; // default: false
   validationArchitects?: ValidationVerdictType[];
 }
 ```
@@ -527,15 +544,15 @@ import {
   transitionRalphToUltraQA,
   getValidationStatus,
   generateSummary,
-  formatSummary
-} from '@/hooks/autopilot';
+  formatSummary,
+} from "@/hooks/autopilot";
 
 // Initialize session
-const idea = 'Create a REST API for todo management with authentication';
-const state = initAutopilot(process.cwd(), idea, 'ses_abc123');
+const idea = "Create a REST API for todo management with authentication";
+const state = initAutopilot(process.cwd(), idea, "ses_abc123");
 
 // Get expansion phase prompt
-const prompt = getPhasePrompt('expansion', { idea });
+const prompt = getPhasePrompt("expansion", { idea });
 
 // Monitor progress
 const currentState = readAutopilotState(process.cwd());
@@ -543,10 +560,13 @@ console.log(`Phase: ${currentState?.phase}`);
 console.log(`Agents spawned: ${currentState?.total_agents_spawned}`);
 
 // Transition phases
-if (currentState?.phase === 'execution' && currentState.execution.ralph_completed_at) {
-  const result = transitionRalphToUltraQA(process.cwd(), 'ses_abc123');
+if (
+  currentState?.phase === "execution" &&
+  currentState.execution.ralph_completed_at
+) {
+  const result = transitionRalphToUltraQA(process.cwd(), "ses_abc123");
   if (result.success) {
-    console.log('Transitioned to QA phase');
+    console.log("Transitioned to QA phase");
   }
 }
 
@@ -579,4 +599,4 @@ All state is persisted to `.omc/state/autopilot-state.json` and includes:
 - [CHANGELOG.md](../CHANGELOG.md) - Version history
 - [ARCHITECTURE.md](./ARCHITECTURE.md) - System architecture
 - [MIGRATION.md](./MIGRATION.md) - Migration guide
-- [Agent Definitions](../src/agents/definitions.ts) - Agent configuration
+- [Agent Definitions](../src/agents-v4/registry.ts) - Agent configuration

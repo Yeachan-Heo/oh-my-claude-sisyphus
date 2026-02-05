@@ -57,7 +57,8 @@ This directory contains all TypeScript source code organized into modules:
    // Main export in index.ts
    export { createSisyphusSession } from "./session";
    export { lspTools, astTools, allCustomTools } from "./tools";
-   export { getAgentDefinitions, omcSystemPrompt } from "./agents/definitions";
+   export { getMinimalAgentDefinitions } from "./agents-v4/context-manager";
+   export { omcSystemPromptV4 } from "./agents-v4/system-prompt";
    ```
 
 3. **Tool Registration**: Custom tools are registered in `tools/index.ts`:
@@ -70,14 +71,14 @@ This directory contains all TypeScript source code organized into modules:
    ];
    ```
 
-4. **Agent Registration**: Agents defined in `agents/definitions.ts`:
+4. **Agent Registration**: Agents defined in `agents-v4/context-manager.ts`:
    ```typescript
-   export function getAgentDefinitions(): Record<string, AgentConfig> {
-     return {
-       architect: architectAgent,
-       executor: executorAgent,
-       // ... all 32 agents
-     };
+   export function getMinimalAgentDefinitions(): Record<
+     string,
+     MinimalAgentDefinition
+   > {
+     // Returns all agents with short prompts (~5 lines each)
+     // Full prompts loaded JIT via getFullAgentPrompt()
    }
    ```
 
@@ -92,11 +93,12 @@ This directory contains all TypeScript source code organized into modules:
 
 #### Creating a New Agent
 
-1. Add agent file in `agents/` (e.g., `new-agent.ts`)
-2. Export from `agents/index.ts`
-3. Add to `getAgentDefinitions()` in `agents/definitions.ts`
-4. Create prompt template in `/agents/new-agent.md`
-5. Update `docs/REFERENCE.md` (Agents section) with new agent
+1. Add role definition in `agents-v4/roles.ts`
+2. Add role type to `agents-v4/types.ts` (`AgentRole` union)
+3. Add valid tier combinations in `agents-v4/composer.ts`
+4. Add legacy aliases in `agents-v4/registry.ts`
+5. Create prompt markdown in `agents/roles/new-agent.md`
+6. Update `docs/REFERENCE.md` (Agents section) with new agent
 
 #### Adding a New Hook
 
@@ -142,7 +144,7 @@ Key packages by module: `zod` (tools, features), `@ast-grep/napi` (tools/ast), `
 
 ```
 index.ts
-├── agents/definitions.ts → agents/*.ts → /agents/*.md (prompts)
+├── agents-v4/context-manager.ts → agents-v4/*.ts → /agents/roles/*.md (prompts)
 ├── tools/index.ts
 │   ├── lsp-tools.ts → lsp/*.ts
 │   ├── ast-tools.ts

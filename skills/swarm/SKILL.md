@@ -62,6 +62,7 @@ User: "/swarm 5:executor fix all TypeScript errors"
 ```
 
 **Key Features:**
+
 - SQLite transactions ensure only one agent can claim a task
 - Lease-based ownership with automatic timeout and recovery
 - Heartbeat monitoring for detecting dead agents
@@ -70,18 +71,21 @@ User: "/swarm 5:executor fix all TypeScript errors"
 ## Workflow
 
 ### 1. Parse Input
+
 - Extract N (agent count)
 - Extract agent-type
 - Extract task description
 - Validate N <= 5
 
 ### 2. Create Task Pool
+
 - Analyze codebase based on task
 - Break into file-specific subtasks
 - Initialize SQLite database with task pool
 - Each task gets: id, description, status (pending), and metadata columns
 
 ### 3. Spawn Agents
+
 - Launch N agents via Task tool
 - Set `run_in_background: true` for all
 - Each agent connects to the SQLite database
@@ -92,7 +96,7 @@ User: "/swarm 5:executor fix all TypeScript errors"
 When spawning swarm agents, ALWAYS wrap the task with the worker preamble to prevent recursive sub-agent spawning:
 
 ```typescript
-import { wrapWithPreamble } from '../agents/preamble.js';
+import { wrapWithPreamble } from "../shared/prompts/preamble.js";
 
 // When spawning each agent:
 const agentPrompt = wrapWithPreamble(`
@@ -104,18 +108,20 @@ Exit when hasPendingWork() returns false
 `);
 
 Task({
-  subagent_type: 'oh-my-claudecode:executor',
+  subagent_type: "oh-my-claudecode:executor",
   prompt: agentPrompt,
-  run_in_background: true
+  run_in_background: true,
 });
 ```
 
 The worker preamble ensures agents:
+
 - Execute tasks directly using tools (Read, Write, Edit, Bash)
 - Do NOT spawn sub-agents (prevents recursive agent storms)
 - Report results with absolute file paths
 
 ### 4. Task Claiming Protocol (SQLite Transactional)
+
 Each agent follows this loop:
 
 ```
@@ -132,6 +138,7 @@ LOOP:
 ```
 
 **Atomic Claiming Details:**
+
 - SQLite `IMMEDIATE` transaction prevents race conditions
 - Only agent updating the row successfully gets the task
 - Heartbeat automatically updated on claim
@@ -140,12 +147,14 @@ LOOP:
 - If timeout exceeded + no heartbeat, cleanupStaleClaims releases task back to pending
 
 ### 5. Heartbeat Protocol
+
 - Agents call `heartbeat(agentId)` every 60 seconds (or custom interval)
 - Heartbeat records: agent_id, last_heartbeat timestamp, current_task_id
 - Orchestrator runs cleanupStaleClaims every 60 seconds
 - If heartbeat is stale (>5 minutes old) and task claimed, task auto-releases
 
 ### 6. Progress Tracking
+
 - Orchestrator monitors via TaskOutput
 - Shows live progress: pending/claimed/done/failed counts
 - Active agent count via getActiveAgents()
@@ -153,7 +162,9 @@ LOOP:
 - Detects idle agents (all tasks claimed by others)
 
 ### 7. Completion
+
 Exit when ANY of:
+
 - isSwarmComplete() returns true (all tasks done or failed)
 - All agents idle (no pending tasks, no claimed tasks)
 - User cancels via `/oh-my-claudecode:cancel`
@@ -163,12 +174,14 @@ Exit when ANY of:
 ### SQLite Database (`.omc/state/swarm.db`)
 
 The swarm uses a single SQLite database stored at `.omc/state/swarm.db`. This provides:
+
 - **ACID compliance** - All task state transitions are atomic
 - **Concurrent access** - Multiple agents query/update safely
 - **Persistence** - State survives agent crashes
 - **Query efficiency** - Fast status lookups and filtering
 
 #### `tasks` Table Schema
+
 ```sql
 CREATE TABLE tasks (
   id TEXT PRIMARY KEY,
@@ -187,6 +200,7 @@ CREATE TABLE tasks (
 ```
 
 #### `heartbeats` Table Schema
+
 ```sql
 CREATE TABLE heartbeats (
   agent_id TEXT PRIMARY KEY,
@@ -196,6 +210,7 @@ CREATE TABLE heartbeats (
 ```
 
 #### `session` Table Schema
+
 ```sql
 CREATE TABLE session (
   id TEXT PRIMARY KEY,
@@ -215,39 +230,46 @@ The core strength of the new implementation is transactional atomicity:
 ```typescript
 function claimTask(agentId: string): ClaimResult {
   // Transaction ensures only ONE agent succeeds
-  const claimTransaction = db.transaction(() => {
-    // Step 1: Find first pending task
-    const task = db.prepare(
-      'SELECT id, description FROM tasks WHERE status = "pending" ORDER BY id LIMIT 1'
-    ).get();
+  const claimTransaction = db
+    .transaction(() => {
+      // Step 1: Find first pending task
+      const task = db
+        .prepare(
+          'SELECT id, description FROM tasks WHERE status = "pending" ORDER BY id LIMIT 1',
+        )
+        .get();
 
-    if (!task) {
-      return { success: false, reason: 'No pending tasks' };
-    }
+      if (!task) {
+        return { success: false, reason: "No pending tasks" };
+      }
 
-    // Step 2: Attempt claim (will only succeed if status is still 'pending')
-    const result = db.prepare(
-      'UPDATE tasks SET status = "claimed", claimed_by = ?, claimed_at = ? WHERE id = ? AND status = "pending"'
-    ).run(agentId, Date.now(), task.id);
+      // Step 2: Attempt claim (will only succeed if status is still 'pending')
+      const result = db
+        .prepare(
+          'UPDATE tasks SET status = "claimed", claimed_by = ?, claimed_at = ? WHERE id = ? AND status = "pending"',
+        )
+        .run(agentId, Date.now(), task.id);
 
-    if (result.changes === 0) {
-      // Another agent claimed it between SELECT and UPDATE - try next
-      return { success: false, reason: 'Task was claimed by another agent' };
-    }
+      if (result.changes === 0) {
+        // Another agent claimed it between SELECT and UPDATE - try next
+        return { success: false, reason: "Task was claimed by another agent" };
+      }
 
-    // Step 3: Update heartbeat to show we're alive and working
-    db.prepare(
-      'INSERT OR REPLACE INTO heartbeats (agent_id, last_heartbeat, current_task_id) VALUES (?, ?, ?)'
-    ).run(agentId, Date.now(), task.id);
+      // Step 3: Update heartbeat to show we're alive and working
+      db.prepare(
+        "INSERT OR REPLACE INTO heartbeats (agent_id, last_heartbeat, current_task_id) VALUES (?, ?, ?)",
+      ).run(agentId, Date.now(), task.id);
 
-    return { success: true, taskId: task.id, description: task.description };
-  }).immediate();  // Explicitly acquire RESERVED lock for immediate transaction
+      return { success: true, taskId: task.id, description: task.description };
+    })
+    .immediate(); // Explicitly acquire RESERVED lock for immediate transaction
 
-  return claimTransaction();  // Atomic execution
+  return claimTransaction(); // Atomic execution
 }
 ```
 
 **Why SQLite Transactions Work:**
+
 - Transactions are called with `.immediate()` to acquire RESERVED lock
 - Prevents other agents from modifying rows between SELECT and UPDATE
 - All-or-nothing atomicity: claim succeeds completely or fails completely
@@ -262,33 +284,41 @@ function cleanupStaleClaims(leaseTimeout: number = 5 * 60 * 1000) {
   // Default 5-minute timeout
   const cutoffTime = Date.now() - leaseTimeout;
 
-  const cleanupTransaction = db.transaction(() => {
-    // Find claimed tasks where:
-    // 1. Claimed longer than timeout, OR
-    // 2. Agent hasn't sent heartbeat in that time
-    const staleTasks = db.prepare(`
+  const cleanupTransaction = db
+    .transaction(() => {
+      // Find claimed tasks where:
+      // 1. Claimed longer than timeout, OR
+      // 2. Agent hasn't sent heartbeat in that time
+      const staleTasks = db
+        .prepare(
+          `
       SELECT t.id
       FROM tasks t
       LEFT JOIN heartbeats h ON t.claimed_by = h.agent_id
       WHERE t.status = 'claimed'
         AND t.claimed_at < ?
         AND (h.last_heartbeat IS NULL OR h.last_heartbeat < ?)
-    `).all(cutoffTime, cutoffTime);
+    `,
+        )
+        .all(cutoffTime, cutoffTime);
 
-    // Release each stale task back to pending
-    for (const staleTask of staleTasks) {
-      db.prepare('UPDATE tasks SET status = "pending", claimed_by = NULL, claimed_at = NULL WHERE id = ?')
-        .run(staleTask.id);
-    }
+      // Release each stale task back to pending
+      for (const staleTask of staleTasks) {
+        db.prepare(
+          'UPDATE tasks SET status = "pending", claimed_by = NULL, claimed_at = NULL WHERE id = ?',
+        ).run(staleTask.id);
+      }
 
-    return staleTasks.length;
-  }).immediate();  // Explicitly acquire RESERVED lock for immediate transaction
+      return staleTasks.length;
+    })
+    .immediate(); // Explicitly acquire RESERVED lock for immediate transaction
 
   return cleanupTransaction();
 }
 ```
 
 **How Recovery Works:**
+
 1. Orchestrator calls cleanupStaleClaims() every 60 seconds
 2. If agent hasn't sent heartbeat in 5 minutes, task is auto-released
 3. Another agent picks up the orphaned task
@@ -325,10 +355,10 @@ import {
   failTask,
   heartbeat,
   hasPendingWork,
-  disconnectFromSwarm
-} from './swarm';
+  disconnectFromSwarm,
+} from "./swarm";
 
-const agentId = 'agent-1';
+const agentId = "agent-1";
 
 // Main work loop
 while (hasPendingWork()) {
@@ -336,7 +366,7 @@ while (hasPendingWork()) {
   const claim = claimTask(agentId);
 
   if (!claim.success) {
-    console.log('No tasks available:', claim.reason);
+    console.log("No tasks available:", claim.reason);
     break;
   }
 
@@ -350,7 +380,6 @@ while (hasPendingWork()) {
     // Mark complete
     completeTask(agentId, taskId, result);
     console.log(`Agent ${agentId} completed task ${taskId}`);
-
   } catch (error) {
     // Mark failed
     failTask(agentId, taskId, error.message);
@@ -368,56 +397,63 @@ disconnectFromSwarm();
 ### Core API Functions
 
 #### `startSwarm(config: SwarmConfig): Promise<boolean>`
+
 Initialize the swarm with task pool and start cleanup timer.
 
 ```typescript
 const success = await startSwarm({
   agentCount: 5,
-  tasks: ['task 1', 'task 2', 'task 3'],
+  tasks: ["task 1", "task 2", "task 3"],
   leaseTimeout: 5 * 60 * 1000,
-  heartbeatInterval: 60 * 1000
+  heartbeatInterval: 60 * 1000,
 });
 ```
 
 #### `stopSwarm(deleteDatabase?: boolean): boolean`
+
 Stop the swarm and optionally delete the database.
 
 ```typescript
-stopSwarm(true);  // Delete database on cleanup
+stopSwarm(true); // Delete database on cleanup
 ```
 
 #### `claimTask(agentId: string): ClaimResult`
+
 Claim the next pending task. Returns `{ success, taskId, description, reason }`.
 
 ```typescript
-const claim = claimTask('agent-1');
+const claim = claimTask("agent-1");
 if (claim.success) {
   console.log(`Claimed: ${claim.description}`);
 }
 ```
 
 #### `completeTask(agentId: string, taskId: string, result?: string): boolean`
+
 Mark a task as done. Only succeeds if agent still owns the task.
 
 ```typescript
-completeTask('agent-1', 'task-1', 'Fixed the bug');
+completeTask("agent-1", "task-1", "Fixed the bug");
 ```
 
 #### `failTask(agentId: string, taskId: string, error: string): boolean`
+
 Mark a task as failed with error details.
 
 ```typescript
-failTask('agent-1', 'task-1', 'Could not compile: missing dependency');
+failTask("agent-1", "task-1", "Could not compile: missing dependency");
 ```
 
 #### `heartbeat(agentId: string): boolean`
+
 Send a heartbeat to indicate agent is alive. Call every 60 seconds during long-running tasks.
 
 ```typescript
-heartbeat('agent-1');
+heartbeat("agent-1");
 ```
 
 #### `cleanupStaleClaims(leaseTimeout?: number): number`
+
 Manually trigger cleanup of expired claims. Called automatically every 60 seconds.
 
 ```typescript
@@ -426,24 +462,27 @@ console.log(`Released ${released} stale tasks`);
 ```
 
 #### `hasPendingWork(): boolean`
+
 Check if there are unclaimed tasks available.
 
 ```typescript
 if (!hasPendingWork()) {
-  console.log('All tasks claimed or completed');
+  console.log("All tasks claimed or completed");
 }
 ```
 
 #### `isSwarmComplete(): boolean`
+
 Check if all tasks are done or failed.
 
 ```typescript
 if (isSwarmComplete()) {
-  console.log('Swarm finished!');
+  console.log("Swarm finished!");
 }
 ```
 
 #### `getSwarmStats(): SwarmStats | null`
+
 Get task counts and timing info.
 
 ```typescript
@@ -452,6 +491,7 @@ console.log(`${stats.doneTasks}/${stats.totalTasks} done`);
 ```
 
 #### `getActiveAgents(): number`
+
 Get count of agents with recent heartbeats.
 
 ```typescript
@@ -460,34 +500,38 @@ console.log(`${active} agents currently active`);
 ```
 
 #### `getAllTasks(): SwarmTask[]`
+
 Get all tasks with current status.
 
 ```typescript
 const tasks = getAllTasks();
-const pending = tasks.filter(t => t.status === 'pending');
+const pending = tasks.filter((t) => t.status === "pending");
 ```
 
 #### `getTasksWithStatus(status: string): SwarmTask[]`
+
 Filter tasks by status: 'pending', 'claimed', 'done', 'failed'.
 
 ```typescript
-const failed = getTasksWithStatus('failed');
+const failed = getTasksWithStatus("failed");
 ```
 
 #### `getAgentTasks(agentId: string): SwarmTask[]`
+
 Get all tasks claimed by a specific agent.
 
 ```typescript
-const myTasks = getAgentTasks('agent-1');
+const myTasks = getAgentTasks("agent-1");
 ```
 
 #### `retryTask(agentId: string, taskId: string): ClaimResult`
+
 Attempt to reclaim a failed task.
 
 ```typescript
-const retry = retryTask('agent-1', 'task-1');
+const retry = retryTask("agent-1", "task-1");
 if (retry.success) {
-  console.log('Task reclaimed, trying again...');
+  console.log("Task reclaimed, trying again...");
 }
 ```
 
@@ -495,12 +539,12 @@ if (retry.success) {
 
 ```typescript
 interface SwarmConfig {
-  agentCount: number;           // Number of agents (1-5)
-  tasks: string[];              // Task descriptions
-  agentType?: string;           // Agent type (default: 'executor')
-  leaseTimeout?: number;        // Milliseconds (default: 5 min)
-  heartbeatInterval?: number;   // Milliseconds (default: 60 sec)
-  cwd?: string;                 // Working directory
+  agentCount: number; // Number of agents (1-5)
+  tasks: string[]; // Task descriptions
+  agentType?: string; // Agent type (default: 'executor')
+  leaseTimeout?: number; // Milliseconds (default: 5 min)
+  heartbeatInterval?: number; // Milliseconds (default: 60 sec)
+  cwd?: string; // Working directory
 }
 ```
 
@@ -510,7 +554,7 @@ interface SwarmConfig {
 interface SwarmTask {
   id: string;
   description: string;
-  status: 'pending' | 'claimed' | 'done' | 'failed';
+  status: "pending" | "claimed" | "done" | "failed";
   claimedBy: string | null;
   claimedAt: number | null;
   completedAt: number | null;
@@ -554,28 +598,33 @@ interface SwarmStats {
 ## Error Handling & Recovery
 
 ### Agent Crash
+
 - Task is claimed but agent stops sending heartbeats
 - After 5 minutes of no heartbeat, cleanupStaleClaims() releases the task
 - Task returns to 'pending' status for another agent to claim
 - Original agent's incomplete work is safely abandoned
 
 ### Task Completion Failure
+
 - Agent calls `completeTask()` but is no longer the owner (was released)
 - The update silently fails (no agent matches in WHERE clause)
 - Agent can detect this by checking return value
 - Agent should log error and continue to next task
 
 ### Database Unavailable
+
 - `startSwarm()` returns false if database initialization fails
 - `claimTask()` returns `{ success: false, reason: 'Database not initialized' }`
 - Check `isSwarmReady()` before proceeding
 
 ### All Agents Idle
+
 - Orchestrator detects via `getActiveAgents() === 0` or `hasPendingWork() === false`
 - Triggers final cleanup and marks swarm as complete
 - Remaining failed tasks are preserved in database
 
 ### No Tasks Available
+
 - `claimTask()` returns success=false with reason 'No pending tasks available'
 - Agent should check `hasPendingWork()` before looping
 - Safe for agent to exit cleanly when no work remains
@@ -583,6 +632,7 @@ interface SwarmStats {
 ## Cancel Swarm
 
 User can cancel via `/oh-my-claudecode:cancel`:
+
 - Stops orchestrator monitoring
 - Signals all background agents to exit
 - Preserves partial progress in SQLite database
@@ -591,52 +641,65 @@ User can cancel via `/oh-my-claudecode:cancel`:
 ## Use Cases
 
 ### 1. Fix All Type Errors
+
 ```
 /swarm 5:executor "fix all TypeScript type errors"
 ```
+
 Spawns 5 executors, each claiming and fixing individual files.
 
 ### 2. Implement UI Components
+
 ```
 /swarm 3:designer "implement Material-UI styling for all components in src/components/"
 ```
+
 Spawns 3 designers, each styling different component files.
 
 ### 3. Security Audit
+
 ```
 /swarm 4:security-reviewer "review all API endpoints for vulnerabilities"
 ```
+
 Spawns 4 security reviewers, each auditing different endpoints.
 
 ### 4. Documentation Sprint
+
 ```
 /swarm 2:writer "add JSDoc comments to all exported functions"
 ```
+
 Spawns 2 writers, each documenting different modules.
 
 ## Benefits of SQLite-Based Implementation
 
 ### Atomicity & Safety
+
 - **Race-Condition Free:** SQLite transactions guarantee only one agent claims each task
 - **No Lost Updates:** ACID compliance means state changes are durable
 - **Orphan Prevention:** Expired claims are automatically released without manual intervention
 
 ### Performance
+
 - **Fast Queries:** Indexed lookups on task status and agent ID
 - **Concurrent Access:** Multiple agents read/write without blocking
 - **Minimal Lock Time:** Transactions are microseconds, not seconds
 
 ### Reliability
+
 - **Crash Recovery:** Database survives agent failures
 - **Automatic Cleanup:** Stale claims don't block progress
 - **Lease-Based:** Time-based expiration prevents indefinite hangs
 
 ### Developer Experience
+
 - **Simple API:** Just `claimTask()`, `completeTask()`, `heartbeat()`
 - **Full Visibility:** Query any task or agent status at any time
 - **Easy Debugging:** SQL queries show exact state without decoding JSON
 
 ### Scalability
+
 - **10s to 1000s of Tasks:** SQLite handles easily
 - **Full Task Retention:** Complete history in database for analysis
 - **Extensible Schema:** Add custom columns for task metadata
@@ -657,6 +720,7 @@ rm -f .omc/state/swarm-claims.json
 ## Implementation Notes
 
 The orchestrator (main skill handler) is responsible for:
+
 1. Initial task decomposition (via explore/architect)
 2. Creating and initializing SQLite database via `startSwarm()`
 3. Spawning N background agents
@@ -666,6 +730,7 @@ The orchestrator (main skill handler) is responsible for:
 7. Reporting final summary from database query
 
 Each agent is a standard Task invocation with:
+
 - `run_in_background: true`
 - Agent-specific prompt with work loop instructions
 - API import: `import { claimTask, completeTask, ... } from './swarm'`

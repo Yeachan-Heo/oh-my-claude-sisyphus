@@ -241,7 +241,7 @@ async function monitorSwarm() {
 **Important:** Use worker preamble when spawning agents to prevent sub-agent recursion:
 
 ```typescript
-import { wrapWithPreamble } from '../agents/preamble.js';
+import { wrapWithPreamble } from '../shared/prompts/preamble.js';
 
 const prompt = wrapWithPreamble(`Your task: ${taskDescription}`);
 ```
