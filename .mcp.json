@@ -11,6 +11,10 @@
     "g": {
       "command": "node",
       "args": ["${CLAUDE_PLUGIN_ROOT}/bridge/gemini-server.cjs"]
+    },
+    "c": {
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/bridge/copilot-server.cjs"]
     }
   }
 }
