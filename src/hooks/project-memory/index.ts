@@ -3,11 +3,16 @@
  * Main orchestrator for auto-detecting and injecting project context
  */
 
-import { contextCollector } from '../../features/context-injector/collector.js';
-import { findProjectRoot } from '../rules-injector/finder.js';
-import { loadProjectMemory, saveProjectMemory, shouldRescan } from './storage.js';
-import { detectProjectEnvironment } from './detector.js';
-import { formatContextSummary } from './formatter.js';
+import { homedir } from "os";
+import { contextCollector } from "../../features/context-injector/collector.js";
+import { findProjectRoot } from "../rules-injector/finder.js";
+import {
+  loadProjectMemory,
+  saveProjectMemory,
+  shouldRescan,
+} from "./storage.js";
+import { detectProjectEnvironment } from "./detector.js";
+import { formatContextSummary } from "./formatter.js";
 
 /**
  * Session caches to prevent duplicate injection
@@ -25,11 +30,11 @@ const sessionCaches = new Map<string, Set<string>>();
  */
 export async function registerProjectMemoryContext(
   sessionId: string,
-  workingDirectory: string
+  workingDirectory: string,
 ): Promise<boolean> {
   // Find project root
   const projectRoot = findProjectRoot(workingDirectory);
-  if (!projectRoot) {
+  if (!projectRoot || projectRoot === homedir()) {
     return false;
   }
 
@@ -64,13 +69,13 @@ export async function registerProjectMemoryContext(
 
     // Register context with high priority
     contextCollector.register(sessionId, {
-      id: 'project-environment',
-      source: 'project-memory',
+      id: "project-environment",
+      source: "project-memory",
       content: formatContextSummary(memory),
-      priority: 'high',
+      priority: "high",
       metadata: {
         projectRoot,
-        languages: memory.techStack.languages.map(l => l.name),
+        languages: memory.techStack.languages.map((l) => l.name),
         lastScanned: memory.lastScanned,
       },
     });
@@ -80,7 +85,7 @@ export async function registerProjectMemoryContext(
     return true;
   } catch (error) {
     // Silently fail - we don't want to break the session
-    console.error('Error registering project memory context:', error);
+    console.error("Error registering project memory context:", error);
     return false;
   }
 }
@@ -101,18 +106,31 @@ export function clearProjectMemorySession(sessionId: string): void {
  *
  * @param projectRoot - Project root directory
  */
-export async function rescanProjectEnvironment(projectRoot: string): Promise<void> {
+export async function rescanProjectEnvironment(
+  projectRoot: string,
+): Promise<void> {
   const memory = await detectProjectEnvironment(projectRoot);
   await saveProjectMemory(projectRoot, memory);
 }
 
 // Re-export utilities for use in other modules
-export { loadProjectMemory, saveProjectMemory } from './storage.js';
-export { detectProjectEnvironment } from './detector.js';
-export { formatContextSummary, formatFullContext } from './formatter.js';
-export { learnFromToolOutput, addCustomNote } from './learner.js';
-export { processPreCompact } from './pre-compact.js';
-export { mapDirectoryStructure, updateDirectoryAccess } from './directory-mapper.js';
-export { trackAccess, getTopHotPaths, decayHotPaths } from './hot-path-tracker.js';
-export { detectDirectivesFromMessage, addDirective, formatDirectivesForContext } from './directive-detector.js';
-export * from './types.js';
+export { loadProjectMemory, saveProjectMemory } from "./storage.js";
+export { detectProjectEnvironment } from "./detector.js";
+export { formatContextSummary, formatFullContext } from "./formatter.js";
+export { learnFromToolOutput, addCustomNote } from "./learner.js";
+export { processPreCompact } from "./pre-compact.js";
+export {
+  mapDirectoryStructure,
+  updateDirectoryAccess,
+} from "./directory-mapper.js";
+export {
+  trackAccess,
+  getTopHotPaths,
+  decayHotPaths,
+} from "./hot-path-tracker.js";
+export {
+  detectDirectivesFromMessage,
+  addDirective,
+  formatDirectivesForContext,
+} from "./directive-detector.js";
+export * from "./types.js";
