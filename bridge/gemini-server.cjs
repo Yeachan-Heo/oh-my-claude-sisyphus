@@ -14187,6 +14187,12 @@ async function handleAskGemini(args) {
       isError: true
     };
   }
+  if (!args.output_file || !args.output_file.trim()) {
+    return {
+      content: [{ type: "text", text: "output_file is required. Specify a path where the response should be written." }],
+      isError: true
+    };
+  }
   if ("prompt" in args) {
     return {
       content: [{ type: "text", text: "The 'prompt' parameter has been removed. Write the prompt to a file (recommended: .omc/prompts/) and pass 'prompt_file' instead." }],
@@ -14417,13 +14423,13 @@ var askGeminiTool = {
         description: `Required. Agent perspective for Gemini: ${GEMINI_VALID_ROLES.join(", ")}. Gemini is optimized for design/implementation tasks with large context.`
       },
       prompt_file: { type: "string", description: "Path to file containing the prompt" },
-      output_file: { type: "string", description: "Strongly recommended. Path to write response. Response content is NOT returned inline - read from this file or the Response File path in output." },
+      output_file: { type: "string", description: "Required. Path to write response. Response content is NOT returned inline - read from this file." },
       files: { type: "array", items: { type: "string" }, description: "File paths to include as context (contents will be prepended to prompt)" },
       model: { type: "string", description: `Gemini model to use (default: ${GEMINI_DEFAULT_MODEL}). Set OMC_GEMINI_DEFAULT_MODEL env var to change default. Auto-fallback chain: ${GEMINI_MODEL_FALLBACKS.join(" \u2192 ")}.` },
       background: { type: "boolean", description: "Run in background (non-blocking). Returns immediately with job metadata and file paths. Check response file for completion." },
       working_directory: { type: "string", description: "Working directory for path resolution and CLI execution. Defaults to process.cwd()." }
     },
-    required: ["agent_role", "prompt_file"]
+    required: ["agent_role", "prompt_file", "output_file"]
   }
 };
 var server = new Server(
