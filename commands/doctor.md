@@ -4,6 +4,36 @@ description: Diagnose and fix oh-my-claudecode installation issues
 
 # Doctor Skill
 
+## Flags
+
+| Flag             | Description                                                               |
+| ---------------- | ------------------------------------------------------------------------- |
+| `--fix-outdated` | Automatically upgrade to latest version if outdated (runs `/omc-upgrade`) |
+| (no flag)        | Run diagnostics and show report                                           |
+
+## Quick Fix: --fix-outdated
+
+If user runs `/oh-my-claudecode:doctor --fix-outdated`:
+
+1. Check if plugin is outdated:
+
+```bash
+CURRENT=$(ls ~/.claude/plugins/cache/omc/oh-my-claudecode/ 2>/dev/null | sort -V | tail -1)
+LATEST=$(npm view oh-my-claude-sisyphus version 2>/dev/null)
+echo "Current: ${CURRENT:-none}"
+echo "Latest: $LATEST"
+```
+
+2. If outdated, run the upgrade flow from `/oh-my-claudecode:omc-upgrade`:
+   - Download latest from npm
+   - Extract to plugin cache
+   - Build
+   - Clean old versions
+
+3. Skip the rest of the diagnostics after upgrade completes.
+
+---
+
 ## Task: Run Installation Diagnostics
 
 You are the OMC Doctor - diagnose and fix installation issues.
@@ -21,6 +51,7 @@ echo "Latest: $LATEST"
 ```
 
 **Diagnosis**:
+
 - If no version installed: CRITICAL - plugin not installed
 - If INSTALLED != LATEST: WARN - outdated plugin
 - If multiple versions exist: WARN - stale cache
@@ -28,11 +59,13 @@ echo "Latest: $LATEST"
 ### Step 2: Check for Legacy Hooks in settings.json
 
 Read `~/.claude/settings.json` and check if there's a `"hooks"` key with entries like:
+
 - `bash $HOME/.claude/hooks/keyword-detector.sh`
 - `bash $HOME/.claude/hooks/persistent-mode.sh`
 - `bash $HOME/.claude/hooks/session-start.sh`
 
 **Diagnosis**:
+
 - If found: CRITICAL - legacy hooks causing duplicates
 
 ### Step 3: Check for Legacy Bash Hook Scripts
@@ -42,6 +75,7 @@ ls -la ~/.claude/hooks/*.sh 2>/dev/null
 ```
 
 **Diagnosis**:
+
 - If `keyword-detector.sh`, `persistent-mode.sh`, `session-start.sh`, or `stop-continuation.sh` exist: WARN - legacy scripts (can cause confusion)
 
 ### Step 4: Check CLAUDE.md
@@ -55,6 +89,7 @@ grep -q "oh-my-claudecode Multi-Agent System" ~/.claude/CLAUDE.md 2>/dev/null &&
 ```
 
 **Diagnosis**:
+
 - If missing: CRITICAL - CLAUDE.md not configured
 - If missing OMC marker: WARN - outdated CLAUDE.md
 
@@ -66,6 +101,7 @@ ls ~/.claude/plugins/cache/omc/oh-my-claudecode/ 2>/dev/null | wc -l
 ```
 
 **Diagnosis**:
+
 - If > 1 version: WARN - multiple cached versions (cleanup recommended)
 
 ### Step 6: Check for Legacy Curl-Installed Content
@@ -84,11 +120,13 @@ ls -la ~/.claude/skills/ 2>/dev/null
 ```
 
 **Diagnosis**:
+
 - If `~/.claude/agents/` exists with oh-my-claudecode-related files: WARN - legacy agents (now provided by plugin)
 - If `~/.claude/commands/` exists with oh-my-claudecode-related files: WARN - legacy commands (now provided by plugin)
 - If `~/.claude/skills/` exists with oh-my-claudecode-related files: WARN - legacy skills (now provided by plugin)
 
 Look for files like:
+
 - `architect.md`, `researcher.md`, `explore.md`, `executor.md`, etc. in agents/
 - `ultrawork.md`, `deepsearch.md`, etc. in commands/
 - Any oh-my-claudecode-related `.md` files in skills/
@@ -135,9 +173,11 @@ If issues found, ask user: "Would you like me to fix these issues automatically?
 If yes, apply fixes:
 
 ### Fix: Legacy Hooks in settings.json
+
 Remove the `"hooks"` section from `~/.claude/settings.json` (keep other settings intact)
 
 ### Fix: Legacy Bash Scripts
+
 ```bash
 rm -f ~/.claude/hooks/keyword-detector.sh
 rm -f ~/.claude/hooks/persistent-mode.sh
@@ -146,12 +186,14 @@ rm -f ~/.claude/hooks/stop-continuation.sh
 ```
 
 ### Fix: Outdated Plugin
+
 ```bash
 rm -rf ~/.claude/plugins/cache/oh-my-claudecode
 echo "Plugin cache cleared. Restart Claude Code to fetch latest version."
 ```
 
 ### Fix: Stale Cache (multiple versions)
+
 ```bash
 # Keep only latest version
 cd ~/.claude/plugins/cache/omc/oh-my-claudecode/
@@ -159,7 +201,9 @@ ls | sort -V | head -n -1 | xargs rm -rf
 ```
 
 ### Fix: Missing/Outdated CLAUDE.md
+
 Fetch latest from GitHub and write to `~/.claude/CLAUDE.md`:
+
 ```
 WebFetch(url: "https://raw.githubusercontent.com/Yeachan-Heo/oh-my-claudecode/main/docs/CLAUDE.md", prompt: "Return the complete raw markdown content exactly as-is")
 ```
@@ -187,4 +231,5 @@ rm -rf ~/.claude/skills
 ## Post-Fix
 
 After applying fixes, inform user:
+
 > Fixes applied. **Restart Claude Code** for changes to take effect.
