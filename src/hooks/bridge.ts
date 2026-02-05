@@ -387,7 +387,7 @@ async function processSessionStart(input: HookInput): Promise<HookOutput> {
   const directory = input.directory || process.cwd();
 
   // Trigger silent auto-update check (non-blocking, checks config internally)
-  initSilentAutoUpdate();
+  initSilentAutoUpdate({ notifyUser: false });
 
   const messages: string[] = [];
 

@@ -555,7 +555,7 @@ export interface SilentUpdateConfig {
   checkIntervalHours?: number;
   /** Whether to auto-apply updates without confirmation (default: true) */
   autoApply?: boolean;
-  /** Whether to show user-facing console notifications (default: true) */
+  /** Whether to show user-facing console notifications (default: false) */
   notifyUser?: boolean;
   /** Log file path for silent update activity (optional) */
   logFile?: string;
@@ -644,18 +644,20 @@ export async function silentAutoUpdate(
   const {
     checkIntervalHours = 24,
     autoApply = true,
-    notifyUser = true,
-    logFile = join(CLAUDE_CONFIG_DIR, ".omc-update.log"),
+    notifyUser = false,
     maxRetries = 3,
   } = config;
+  const logFile = config.logFile ?? join(CLAUDE_CONFIG_DIR, ".omc-update.log");
 
   // SECURITY: Check if silent auto-update is enabled in configuration
   // Default is disabled - users must explicitly opt-in during installation
   if (!isSilentAutoUpdateEnabled()) {
-    silentLog(
-      "Silent auto-update is disabled (run installer to enable, or use /update)",
-      logFile,
-    );
+    if (config.logFile) {
+      silentLog(
+        "Silent auto-update is disabled (run installer to enable, or use /update)",
+        logFile,
+      );
+    }
     return null;
   }
 
@@ -696,7 +698,6 @@ export async function silentAutoUpdate(
         logFile,
       );
       state.consecutiveFailures = 0;
-      state.pendingRestart = false;
       saveSilentUpdateState(state);
       return null;
     }
