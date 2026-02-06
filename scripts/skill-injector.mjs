@@ -258,7 +258,7 @@ async function main() {
     try { data = JSON.parse(input); } catch { /* ignore parse errors */ }
 
     const prompt = data.prompt || '';
-    const sessionId = data.sessionId || 'unknown';
+    const sessionId = data.session_id || data.sessionId || 'unknown';
     const directory = data.cwd || process.cwd();
 
     // Skip if no prompt

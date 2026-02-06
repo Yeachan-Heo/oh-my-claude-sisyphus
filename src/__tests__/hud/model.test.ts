@@ -4,7 +4,7 @@ import { formatModelName, renderModel } from '../../hud/elements/model.js';
 describe('model element', () => {
   describe('formatModelName', () => {
     it('returns Opus for opus model IDs', () => {
-      expect(formatModelName('claude-opus-4-5-20251101')).toBe('Opus');
+      expect(formatModelName('claude-opus-4-6-20260205')).toBe('Opus');
       expect(formatModelName('claude-3-opus-20240229')).toBe('Opus');
     });
 
@@ -30,7 +30,7 @@ describe('model element', () => {
 
   describe('renderModel', () => {
     it('renders formatted model name', () => {
-      const result = renderModel('claude-opus-4-5-20251101');
+      const result = renderModel('claude-opus-4-6-20260205');
       expect(result).toContain('model:');
       expect(result).toContain('Opus');
     });

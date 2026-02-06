@@ -36,6 +36,22 @@ autopilot: build a REST API for managing tasks
 
 就这么简单。其余都是自动的。
 
+### 更新
+
+```bash
+# 1. 更新插件
+/plugin install oh-my-claudecode
+
+# 2. 重新运行设置以刷新配置
+/oh-my-claudecode:omc-setup
+```
+
+如果更新后遇到问题，清除旧的插件缓存：
+
+```bash
+/oh-my-claudecode:doctor
+```
+
 <h1 align="center">你的 Claude 已被注入超能力。</h1>
 
 <p align="center">

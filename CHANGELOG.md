@@ -5,6 +5,45 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.0.6] - 2026-02-06
+
+### Added
+
+- **Codex/GPT/Gemini magic-keyword MCP delegation** - New keyword detection for `ask codex`, `use gpt`, `delegate to gemini` that routes directly to MCP tools instead of skill invocation. Requires intent phrases to avoid false positives.
+- **Codex model fallback chain** - Automatic retry with fallback models (`gpt-5.3-codex` → `gpt-5.3` → `gpt-5.2-codex` → `gpt-5.2`) on model-not-found errors for both blocking and background execution.
+- **Full sanitization pipeline in TypeScript** - Ported XML tag, URL, file path, and code block stripping from runtime .mjs to TypeScript keyword detector for consistent false-positive prevention.
+
+### Fixed
+
+- **Background retry error handling** - Fixed silent error swallowing when model fallback retry fails in background execution, preventing jobs from getting stuck in "running" state.
+- **Redundant sanitization in keyword wrappers** - Removed double-processing where `hasKeyword`, `getAllKeywords`, and `getPrimaryKeyword` called `removeCodeBlocks` before `detectKeywordsWithType` which already calls `sanitizeForKeywordDetection`.
+
+## [4.0.5] - 2026-02-05
+
+### Changed
+
+- **Include dist/ in git** - Compiled output now ships with the repo so users no longer need to rebuild after plugin install/update. Eliminates the most common setup issue.
+- **Simplified update guide** - All 5 README translations updated with streamlined update instructions (no rebuild step needed).
+- **Removed outdated rebuild instructions** - Cleaned up `commands/omc-setup.md`, `commands/hud.md`, and `skills/hud/SKILL.md` to remove the "Verify Plugin Build" step and related dist/ rebuild guidance.
+
+## [4.0.4] - 2026-02-05
+
+### Fixed
+
+- **Hook Field Name Compatibility** - All 11 hook scripts + 5 templates updated to read snake_case field names (`tool_name`, `tool_input`, `tool_response`, `session_id`, `cwd`) with camelCase fallback. Claude Code sends snake_case but hooks were only reading camelCase, causing silent empty values.
+- **Hook Error Display Noise** - PostToolUse hooks now return `suppressOutput: true` when no meaningful message, reducing "hook error" display noise from Claude Code display bug ([#10936](https://github.com/anthropics/claude-code/issues/10936)).
+
+## [4.0.3] - 2026-02-05
+
+### Fixed
+
+- **Hook TaskCreate/TaskUpdate Compatibility** - Fixed PostToolUse and PreToolUse hooks failing on `TaskCreate` and `TaskUpdate` events after Claude Code renamed the Task tool in Feb 2025 update. Updated tool name matching in `post-tool-verifier.mjs`, `pre-tool-enforcer.mjs`, and `post-tool-use.mjs` template.
+
+### Changed
+
+- **Codex Default Model** - Updated default Codex model from `gpt-5.2` to `gpt-5.3`
+- **Claude Opus 4.6 Support** - Updated all model references from `claude-opus-4-5-20251101` to `claude-opus-4-6-20260205` across config, routing, analytics, and tests
+
 ## [4.0.1] - 2026-02-05
 
 ### Fixed

@@ -1,5 +1,5 @@
 <!-- OMC:START -->
-<!-- OMC:VERSION:4.0.2 -->
+<!-- OMC:VERSION:4.0.6 -->
 # oh-my-claudecode - Intelligent Multi-Agent Orchestration
 
 You are enhanced with multi-agent capabilities. **You are a CONDUCTOR, not a performer.**
@@ -189,6 +189,18 @@ Always use `oh-my-claudecode:` prefix when calling via Task tool.
 | `frontend-ui-ux` | UI/component/styling work | Designer-developer for stunning UI/UX |
 | `git-master` | Git/commit work | Git expert for atomic commits, rebasing, history management |
 
+### MCP Delegation Keywords (auto-detected)
+
+| Keyword Pattern | Maps To | MCP Tool |
+|----------------|---------|----------|
+| `ask codex`, `use codex`, `delegate to codex` | Codex | `ask_codex` |
+| `ask gpt`, `use gpt`, `delegate to gpt` | Codex | `ask_codex` |
+| `ask gemini`, `use gemini`, `delegate to gemini` | Gemini | `ask_gemini` |
+
+These keywords trigger MCP delegation instead of skill invocation. When detected, the LLM writes a prompt file and calls the corresponding MCP tool directly.
+
+**Note:** Bare keywords (`codex`, `gpt`, `gemini`) do NOT trigger - an intent phrase (`ask`, `use`, `delegate to`) is required to avoid false positives.
+
 ### Utilities
 
 | Skill | Trigger | Description |
@@ -231,7 +243,7 @@ When you detect trigger patterns above, you MUST invoke the corresponding skill 
 
 | Tool | MCP Name | Provider | Best For |
 |------|----------|----------|----------|
-| Codex | `mcp__x__ask_codex` | OpenAI (gpt-5.2) | Code analysis, planning validation, review |
+| Codex | `mcp__x__ask_codex` | OpenAI (gpt-5.3-codex) | Code analysis, planning validation, review |
 | Gemini | `mcp__g__ask_gemini` | Google (gemini-3-pro-preview) | Design consistency across many files (1M context) |
 
 **MCP-Direct Replacement — Call MCPs directly instead of spawning Claude agents:**

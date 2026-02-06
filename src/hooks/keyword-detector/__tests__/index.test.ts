@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   removeCodeBlocks,
+  sanitizeForKeywordDetection,
   extractPromptText,
   detectKeywordsWithType,
   hasKeyword,
@@ -71,6 +72,43 @@ World`);
     it('should handle code blocks with language specifier', () => {
       const text = '```typescript\nconst x = 1;\n``` done';
       expect(removeCodeBlocks(text)).toBe(' done');
+    });
+  });
+
+  describe('sanitizeForKeywordDetection', () => {
+    it('should strip XML tag blocks', () => {
+      const result = sanitizeForKeywordDetection('<system-reminder>ralph</system-reminder>');
+      expect(result).not.toContain('ralph');
+    });
+
+    it('should strip self-closing XML tags', () => {
+      const result = sanitizeForKeywordDetection('text <br /> more');
+      expect(result).not.toContain('<br');
+    });
+
+    it('should strip URLs', () => {
+      const result = sanitizeForKeywordDetection('see https://example.com/codex/path');
+      expect(result).not.toContain('codex');
+    });
+
+    it('should strip file paths', () => {
+      const result = sanitizeForKeywordDetection('open src/mcp/codex-core.ts');
+      expect(result).not.toContain('codex');
+    });
+
+    it('should strip markdown code blocks', () => {
+      const result = sanitizeForKeywordDetection('```\nask codex\n```');
+      expect(result).not.toContain('codex');
+    });
+
+    it('should strip inline code', () => {
+      const result = sanitizeForKeywordDetection('use `ask codex` command');
+      expect(result).not.toContain('codex');
+    });
+
+    it('should preserve normal text', () => {
+      const result = sanitizeForKeywordDetection('ask codex to review');
+      expect(result).toContain('ask codex');
     });
   });
 
@@ -458,6 +496,115 @@ World`);
         const autopilotMatches = result.filter((r) => r.type === 'autopilot');
         expect(autopilotMatches.length).toBeGreaterThan(0);
       });
+
+      it('should not detect keyword inside XML tags', () => {
+        const text = '<system-reminder>ralph</system-reminder> hello';
+        const result = detectKeywordsWithType(text);
+        const ralphMatch = result.find((r) => r.type === 'ralph');
+        expect(ralphMatch).toBeUndefined();
+      });
+    });
+
+    describe('codex keyword', () => {
+      it('should detect "ask codex"', () => {
+        const result = detectKeywordsWithType('ask codex to review');
+        const codexMatch = result.find((r) => r.type === 'codex');
+        expect(codexMatch).toBeDefined();
+      });
+
+      it('should detect "use gpt"', () => {
+        const result = detectKeywordsWithType('use gpt for review');
+        const codexMatch = result.find((r) => r.type === 'codex');
+        expect(codexMatch).toBeDefined();
+      });
+
+      it('should detect "delegate to codex"', () => {
+        const result = detectKeywordsWithType('delegate to codex');
+        const codexMatch = result.find((r) => r.type === 'codex');
+        expect(codexMatch).toBeDefined();
+      });
+
+      it('should detect "delegate to gpt"', () => {
+        const result = detectKeywordsWithType('delegate to gpt');
+        const codexMatch = result.find((r) => r.type === 'codex');
+        expect(codexMatch).toBeDefined();
+      });
+
+      it('should NOT detect bare codex keyword', () => {
+        const result = detectKeywordsWithType('codex review this');
+        const codexMatch = result.find((r) => r.type === 'codex');
+        expect(codexMatch).toBeUndefined();
+      });
+
+      it('should NOT detect bare gpt keyword', () => {
+        const result = detectKeywordsWithType('gpt is great');
+        const codexMatch = result.find((r) => r.type === 'codex');
+        expect(codexMatch).toBeUndefined();
+      });
+
+      it('should NOT detect gpt model names', () => {
+        const result = detectKeywordsWithType('gpt-5.3 model');
+        const codexMatch = result.find((r) => r.type === 'codex');
+        expect(codexMatch).toBeUndefined();
+      });
+
+      it('should NOT detect chatgpt', () => {
+        const result = detectKeywordsWithType('chatgpt helped');
+        const codexMatch = result.find((r) => r.type === 'codex');
+        expect(codexMatch).toBeUndefined();
+      });
+    });
+
+    describe('gemini keyword', () => {
+      it('should detect "ask gemini"', () => {
+        const result = detectKeywordsWithType('ask gemini to design');
+        const geminiMatch = result.find((r) => r.type === 'gemini');
+        expect(geminiMatch).toBeDefined();
+      });
+
+      it('should detect "use gemini"', () => {
+        const result = detectKeywordsWithType('use gemini for UI');
+        const geminiMatch = result.find((r) => r.type === 'gemini');
+        expect(geminiMatch).toBeDefined();
+      });
+
+      it('should detect "delegate to gemini"', () => {
+        const result = detectKeywordsWithType('delegate to gemini');
+        const geminiMatch = result.find((r) => r.type === 'gemini');
+        expect(geminiMatch).toBeDefined();
+      });
+
+      it('should NOT detect bare gemini keyword', () => {
+        const result = detectKeywordsWithType('gemini constellation');
+        const geminiMatch = result.find((r) => r.type === 'gemini');
+        expect(geminiMatch).toBeUndefined();
+      });
+
+      it('should NOT detect gemini in non-intent context', () => {
+        const result = detectKeywordsWithType('the Gemini project');
+        const geminiMatch = result.find((r) => r.type === 'gemini');
+        expect(geminiMatch).toBeUndefined();
+      });
+    });
+
+    describe('sanitization false-positive prevention', () => {
+      it('should NOT detect codex in URL', () => {
+        const result = detectKeywordsWithType('see https://example.com/gpt');
+        const codexMatch = result.find((r) => r.type === 'codex');
+        expect(codexMatch).toBeUndefined();
+      });
+
+      it('should NOT detect codex in file path', () => {
+        const result = detectKeywordsWithType('open docs/gpt/README.md');
+        const codexMatch = result.find((r) => r.type === 'codex');
+        expect(codexMatch).toBeUndefined();
+      });
+
+      it('should NOT detect codex in inline code', () => {
+        const result = detectKeywordsWithType('`ask codex`');
+        const codexMatch = result.find((r) => r.type === 'codex');
+        expect(codexMatch).toBeUndefined();
+      });
     });
 
     describe('edge cases', () => {
@@ -646,6 +793,27 @@ World`);
       expect(result).toContain('ralph');
       expect(result).toContain('ecomode');
       expect(result).not.toContain('ultrawork');
+    });
+
+    it('should return ralph with codex', () => {
+      const result = getAllKeywords('ralph ask gpt to review');
+      expect(result).toContain('ralph');
+      expect(result).toContain('codex');
+    });
+
+    it('should return both codex and gemini when both present', () => {
+      const result = getAllKeywords('ask codex and ask gemini');
+      expect(result).toContain('codex');
+      expect(result).toContain('gemini');
+    });
+
+    it('should return ralph over codex in priority', () => {
+      const primary = getPrimaryKeyword('ralph ask codex');
+      expect(primary?.type).toBe('ralph');
+    });
+
+    it('should return cancel over codex/gemini', () => {
+      expect(getAllKeywords('cancelomc ask codex')).toEqual(['cancel']);
     });
 
     it('should return empty array for no keywords', () => {

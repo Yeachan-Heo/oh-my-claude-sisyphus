@@ -39,14 +39,42 @@ function validateModelName(model: string): void {
 }
 
 // Default model can be overridden via environment variable
-export const CODEX_DEFAULT_MODEL = process.env.OMC_CODEX_DEFAULT_MODEL || 'gpt-5.2';
+export const CODEX_DEFAULT_MODEL = process.env.OMC_CODEX_DEFAULT_MODEL || 'gpt-5.3-codex';
 export const CODEX_TIMEOUT = Math.min(Math.max(5000, parseInt(process.env.OMC_CODEX_TIMEOUT || '3600000', 10) || 3600000), 3600000);
+
+// Model fallback chain: try each in order if previous fails with model_not_found
+export const CODEX_MODEL_FALLBACKS = [
+  'gpt-5.3-codex',
+  'gpt-5.3',
+  'gpt-5.2-codex',
+  'gpt-5.2',
+];
 
 // Codex is best for analytical/planning tasks
 export const CODEX_VALID_ROLES = ['architect', 'planner', 'critic', 'analyst', 'code-reviewer', 'security-reviewer', 'tdd-guide'] as const;
 
 export const MAX_CONTEXT_FILES = 20;
 export const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB per file
+
+/**
+ * Check if Codex JSONL output contains a model-not-found error
+ */
+export function isModelError(output: string): { isError: boolean; message: string } {
+  const lines = output.trim().split('\n').filter(l => l.trim());
+  for (const line of lines) {
+    try {
+      const event = JSON.parse(line);
+      if (event.type === 'error' || event.type === 'turn.failed') {
+        const msg = typeof event.message === 'string' ? event.message :
+                    typeof event.error?.message === 'string' ? event.error.message : '';
+        if (/model_not_found|model is not supported/i.test(msg)) {
+          return { isError: true, message: msg };
+        }
+      }
+    } catch { /* skip non-JSON lines */ }
+  }
+  return { isError: false, message: '' };
+}
 
 /**
  * Parse Codex JSONL output to extract the final text response
@@ -139,7 +167,12 @@ export function executeCodex(prompt: string, model: string, cwd?: string): Promi
         settled = true;
         clearTimeout(timeoutHandle);
         if (code === 0 || stdout.trim()) {
-          resolve(parseCodexOutput(stdout));
+          const modelErr = isModelError(stdout);
+          if (modelErr.isError) {
+            reject(new Error(`Codex model error: ${modelErr.message}`));
+          } else {
+            resolve(parseCodexOutput(stdout));
+          }
         } else {
           reject(new Error(`Codex exited with code ${code}: ${stderr || 'No output'}`));
         }
@@ -170,139 +203,233 @@ export function executeCodex(prompt: string, model: string, cwd?: string): Promi
 }
 
 /**
- * Execute Codex CLI in background, writing status and response files upon completion
+ * Execute Codex CLI with model fallback chain
+ * Only falls back on model_not_found errors when model was not explicitly provided
+ */
+export async function executeCodexWithFallback(
+  prompt: string,
+  model: string | undefined,
+  cwd?: string
+): Promise<{ response: string; usedFallback: boolean; actualModel: string }> {
+  const modelExplicit = model !== undefined && model !== null && model !== '';
+  const effectiveModel = model || CODEX_DEFAULT_MODEL;
+
+  // If model was explicitly provided, no fallback
+  if (modelExplicit) {
+    const response = await executeCodex(prompt, effectiveModel, cwd);
+    return { response, usedFallback: false, actualModel: effectiveModel };
+  }
+
+  // Try fallback chain
+  const modelsToTry = CODEX_MODEL_FALLBACKS.includes(effectiveModel)
+    ? CODEX_MODEL_FALLBACKS.slice(CODEX_MODEL_FALLBACKS.indexOf(effectiveModel))
+    : [effectiveModel, ...CODEX_MODEL_FALLBACKS];
+
+  let lastError: Error | null = null;
+  for (const tryModel of modelsToTry) {
+    try {
+      const response = await executeCodex(prompt, tryModel, cwd);
+      return {
+        response,
+        usedFallback: tryModel !== effectiveModel,
+        actualModel: tryModel,
+      };
+    } catch (err) {
+      lastError = err as Error;
+      // Only retry on model errors
+      if (!/model error|model_not_found|model is not supported/i.test(lastError.message)) {
+        throw lastError; // Non-model error, don't retry
+      }
+      // Continue to next model in chain
+    }
+  }
+
+  throw lastError || new Error('All Codex models in fallback chain failed');
+}
+
+/**
+ * Execute Codex CLI in background with fallback chain, writing status and response files upon completion
  */
 export function executeCodexBackground(
   fullPrompt: string,
-  model: string,
+  modelInput: string | undefined,
   jobMeta: BackgroundJobMeta,
   workingDirectory?: string
 ): { pid: number } | { error: string } {
   try {
-    validateModelName(model);
-    const args = ['exec', '-m', model, '--json', '--full-auto'];
-    const child = spawn('codex', args, {
-      detached: true,
-      stdio: ['pipe', 'pipe', 'pipe'],
-      ...(workingDirectory ? { cwd: workingDirectory } : {})
-    });
+    const modelExplicit = modelInput !== undefined && modelInput !== null && modelInput !== '';
+    const effectiveModel = modelInput || CODEX_DEFAULT_MODEL;
 
-    if (!child.pid) {
-      return { error: 'Failed to get process ID' };
-    }
+    // Build fallback chain
+    const modelsToTry = modelExplicit
+      ? [effectiveModel] // No fallback if model explicitly provided
+      : (CODEX_MODEL_FALLBACKS.includes(effectiveModel)
+          ? CODEX_MODEL_FALLBACKS.slice(CODEX_MODEL_FALLBACKS.indexOf(effectiveModel))
+          : [effectiveModel, ...CODEX_MODEL_FALLBACKS]);
 
-    const pid = child.pid;
-    spawnedPids.add(pid);
-    child.unref();
+    // Helper to try spawning with a specific model
+    const trySpawnWithModel = (tryModel: string, remainingModels: string[]): { pid: number } | { error: string } => {
+      validateModelName(tryModel);
+      const args = ['exec', '-m', tryModel, '--json', '--full-auto'];
+      const child = spawn('codex', args, {
+        detached: true,
+        stdio: ['pipe', 'pipe', 'pipe'],
+        ...(workingDirectory ? { cwd: workingDirectory } : {})
+      });
 
-    // Write initial spawned status
-    const initialStatus: JobStatus = {
-      provider: 'codex',
-      jobId: jobMeta.jobId,
-      slug: jobMeta.slug,
-      status: 'spawned',
-      pid,
-      promptFile: jobMeta.promptFile,
-      responseFile: jobMeta.responseFile,
-      model,
-      agentRole: jobMeta.agentRole,
-      spawnedAt: new Date().toISOString(),
-    };
-    writeJobStatus(initialStatus, workingDirectory);
+      if (!child.pid) {
+        return { error: 'Failed to get process ID' };
+      }
 
-    let stdout = '';
-    let stderr = '';
-    let settled = false;
+      const pid = child.pid;
+      spawnedPids.add(pid);
+      child.unref();
 
-    const timeoutHandle = setTimeout(() => {
-      if (!settled) {
-        settled = true;
-        try {
-          // Detached children are process-group leaders on POSIX.
-          if (process.platform !== 'win32') process.kill(-pid, 'SIGTERM');
-          else child.kill('SIGTERM');
-        } catch {
-          // ignore
+      // Write initial spawned status
+      const initialStatus: JobStatus = {
+        provider: 'codex',
+        jobId: jobMeta.jobId,
+        slug: jobMeta.slug,
+        status: 'spawned',
+        pid,
+        promptFile: jobMeta.promptFile,
+        responseFile: jobMeta.responseFile,
+        model: tryModel,
+        agentRole: jobMeta.agentRole,
+        spawnedAt: new Date().toISOString(),
+      };
+      writeJobStatus(initialStatus, workingDirectory);
+
+      let stdout = '';
+      let stderr = '';
+      let settled = false;
+
+      const timeoutHandle = setTimeout(() => {
+        if (!settled) {
+          settled = true;
+          try {
+            // Detached children are process-group leaders on POSIX.
+            if (process.platform !== 'win32') process.kill(-pid, 'SIGTERM');
+            else child.kill('SIGTERM');
+          } catch {
+            // ignore
+          }
+          writeJobStatus({
+            ...initialStatus,
+            status: 'timeout',
+            completedAt: new Date().toISOString(),
+            error: `Codex timed out after ${CODEX_TIMEOUT}ms`,
+          }, workingDirectory);
         }
-        writeJobStatus({
-          ...initialStatus,
-          status: 'timeout',
-          completedAt: new Date().toISOString(),
-          error: `Codex timed out after ${CODEX_TIMEOUT}ms`,
-        }, workingDirectory);
-      }
-    }, CODEX_TIMEOUT);
+      }, CODEX_TIMEOUT);
 
-    child.stdout?.on('data', (data: Buffer) => { stdout += data.toString(); });
-    child.stderr?.on('data', (data: Buffer) => { stderr += data.toString(); });
+      child.stdout?.on('data', (data: Buffer) => { stdout += data.toString(); });
+      child.stderr?.on('data', (data: Buffer) => { stderr += data.toString(); });
 
-    // Update to running after stdin write
-    child.stdin?.on('error', (err: Error) => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timeoutHandle);
-      writeJobStatus({
-        ...initialStatus,
-        status: 'failed',
-        completedAt: new Date().toISOString(),
-        error: `Stdin write error: ${err.message}`,
-      }, workingDirectory);
-    });
-    child.stdin?.write(fullPrompt);
-    child.stdin?.end();
-    writeJobStatus({ ...initialStatus, status: 'running' }, workingDirectory);
-
-    child.on('close', (code) => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timeoutHandle);
-      spawnedPids.delete(pid);
-
-      // Check if user killed this job - if so, don't overwrite the killed status
-      const currentStatus = readJobStatus('codex', jobMeta.slug, jobMeta.jobId, workingDirectory);
-      if (currentStatus?.killedByUser) {
-        return; // Status already set by kill_job, don't overwrite
-      }
-
-      if (code === 0 || stdout.trim()) {
-        const response = parseCodexOutput(stdout);
-        persistResponse({
-          provider: 'codex',
-          agentRole: jobMeta.agentRole,
-          model,
-          promptId: jobMeta.jobId,
-          slug: jobMeta.slug,
-          response,
-          workingDirectory,
-        });
-        writeJobStatus({
-          ...initialStatus,
-          status: 'completed',
-          completedAt: new Date().toISOString(),
-        }, workingDirectory);
-      } else {
+      // Update to running after stdin write
+      child.stdin?.on('error', (err: Error) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timeoutHandle);
         writeJobStatus({
           ...initialStatus,
           status: 'failed',
           completedAt: new Date().toISOString(),
-          error: `Codex exited with code ${code}: ${stderr || 'No output'}`,
+          error: `Stdin write error: ${err.message}`,
         }, workingDirectory);
-      }
-    });
+      });
+      child.stdin?.write(fullPrompt);
+      child.stdin?.end();
+      writeJobStatus({ ...initialStatus, status: 'running' }, workingDirectory);
 
-    child.on('error', (err) => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timeoutHandle);
-      writeJobStatus({
-        ...initialStatus,
-        status: 'failed',
-        completedAt: new Date().toISOString(),
-        error: `Failed to spawn Codex CLI: ${err.message}`,
-      }, workingDirectory);
-    });
+      child.on('close', (code) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timeoutHandle);
+        spawnedPids.delete(pid);
 
-    return { pid };
+        // Check if user killed this job - if so, don't overwrite the killed status
+        const currentStatus = readJobStatus('codex', jobMeta.slug, jobMeta.jobId, workingDirectory);
+        if (currentStatus?.killedByUser) {
+          return; // Status already set by kill_job, don't overwrite
+        }
+
+        if (code === 0 || stdout.trim()) {
+          // Check for model errors and retry with fallback if available
+          const modelErr = isModelError(stdout);
+          if (modelErr.isError && remainingModels.length > 0) {
+            // Retry with next model in chain
+            const nextModel = remainingModels[0];
+            const newRemainingModels = remainingModels.slice(1);
+            const retryResult = trySpawnWithModel(nextModel, newRemainingModels);
+            if ('error' in retryResult) {
+              // Retry spawn failed - write failed status
+              writeJobStatus({
+                ...initialStatus,
+                status: 'failed',
+                completedAt: new Date().toISOString(),
+                error: `Fallback spawn failed for model ${nextModel}: ${retryResult.error}`,
+              }, workingDirectory);
+            }
+            return;
+          }
+          if (modelErr.isError) {
+            // No remaining models and current model errored
+            writeJobStatus({
+              ...initialStatus,
+              status: 'failed',
+              completedAt: new Date().toISOString(),
+              error: `All models in fallback chain failed. Last error: ${modelErr.message}`,
+            }, workingDirectory);
+            return;
+          }
+
+          const response = parseCodexOutput(stdout);
+          const usedFallback = tryModel !== effectiveModel;
+          persistResponse({
+            provider: 'codex',
+            agentRole: jobMeta.agentRole,
+            model: tryModel,
+            promptId: jobMeta.jobId,
+            slug: jobMeta.slug,
+            response,
+            workingDirectory,
+            usedFallback,
+            fallbackModel: usedFallback ? tryModel : undefined,
+          });
+          writeJobStatus({
+            ...initialStatus,
+            model: tryModel,
+            status: 'completed',
+            completedAt: new Date().toISOString(),
+          }, workingDirectory);
+        } else {
+          writeJobStatus({
+            ...initialStatus,
+            status: 'failed',
+            completedAt: new Date().toISOString(),
+            error: `Codex exited with code ${code}: ${stderr || 'No output'}`,
+          }, workingDirectory);
+        }
+      });
+
+      child.on('error', (err) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timeoutHandle);
+        writeJobStatus({
+          ...initialStatus,
+          status: 'failed',
+          completedAt: new Date().toISOString(),
+          error: `Failed to spawn Codex CLI: ${err.message}`,
+        }, workingDirectory);
+      });
+
+      return { pid };
+    };
+
+    // Start execution with the first model in the chain
+    return trySpawnWithModel(modelsToTry[0], modelsToTry.slice(1));
   } catch (err) {
     return { error: `Failed to start background execution: ${(err as Error).message}` };
   }
@@ -544,12 +671,12 @@ ${resolvedPrompt}`;
     }
 
     const statusFilePath = getStatusFilePath('codex', promptResult.slug, promptResult.id, baseDir);
-    const result = executeCodexBackground(fullPrompt, model, {
+    const result = executeCodexBackground(fullPrompt, args.model as string | undefined, {
       provider: 'codex',
       jobId: promptResult.id,
       slug: promptResult.slug,
       agentRole: agent_role,
-      model,
+      model: model, // This is the effective model for metadata
       promptFile: promptResult.filePath,
       responseFile: expectedResponsePath!,
     }, baseDir);
@@ -601,18 +728,20 @@ ${resolvedPrompt}`;
   }
 
   try {
-    const response = await executeCodex(fullPrompt, model, baseDir);
+    const { response, usedFallback, actualModel } = await executeCodexWithFallback(fullPrompt, args.model as string | undefined, baseDir);
 
     // Persist response to disk (audit trail)
     if (promptResult) {
       persistResponse({
         provider: 'codex',
         agentRole: agent_role,
-        model,
+        model: actualModel,
         promptId: promptResult.id,
         slug: promptResult.slug,
         response,
         workingDirectory: baseDir,
+        usedFallback,
+        fallbackModel: usedFallback ? actualModel : undefined,
       });
     }
 

@@ -394,11 +394,11 @@ Examples:
   "agents": {
     "sisyphus": {
       // Main orchestrator - uses the most capable model
-      "model": "claude-opus-4-5-20251101"
+      "model": "claude-opus-4-6-20260205"
     },
     "architect": {
       // Architecture and debugging expert
-      "model": "claude-opus-4-5-20251101",
+      "model": "claude-opus-4-6-20260205",
       "enabled": true
     },
     "researcher": {

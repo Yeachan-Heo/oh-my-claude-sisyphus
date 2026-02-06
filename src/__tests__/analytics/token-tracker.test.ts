@@ -28,7 +28,7 @@ describe('TokenTracker.getTopAgents', () => {
 
     await tracker.recordTokenUsage({
       agentName: 'architect',
-      modelName: 'claude-opus-4.5', // More expensive model
+      modelName: 'claude-opus-4.6', // More expensive model
       inputTokens: 2000,
       outputTokens: 1000,
       cacheCreationTokens: 0,
@@ -151,7 +151,7 @@ describe('TokenTracker.getTopAgents', () => {
     // Opus (expensive)
     await tracker.recordTokenUsage({
       agentName: 'expensive-agent',
-      modelName: 'claude-opus-4.5',
+      modelName: 'claude-opus-4.6',
       inputTokens: 1000,
       outputTokens: 500,
       cacheCreationTokens: 0,

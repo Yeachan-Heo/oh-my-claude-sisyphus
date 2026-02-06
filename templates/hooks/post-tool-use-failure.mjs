@@ -126,7 +126,7 @@ async function main() {
     const toolInput = data.tool_input;
     const error = data.error || '';
     const isInterrupt = data.is_interrupt || false;
-    const directory = data.directory || process.cwd();
+    const directory = data.cwd || data.directory || process.cwd();
 
     // Ignore user interrupts
     if (isInterrupt) {

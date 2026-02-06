@@ -51,8 +51,8 @@ async function main() {
     try { data = JSON.parse(input); } catch {}
 
     // Extract directory and session ID
-    const directory = data.directory || process.cwd();
-    const sessionId = data.sessionId || data.session_id || '';
+    const directory = data.cwd || data.directory || process.cwd();
+    const sessionId = data.session_id || data.sessionId || '';
 
     // Register project memory context (skip if module unavailable)
     if (registerProjectMemoryContext) {

@@ -532,7 +532,7 @@ stopping after partial implementation"
 **Mode:** Primary
 
 ### Deep-Executor (OMC)
-**Model:** Opus (Claude Opus 4.5)
+**Model:** Opus (Claude Opus 4.6)
 **Default Model:** Opus
 **Tools:** 11 tools (Read, Write, Edit, Glob, Grep, Bash, TodoWrite, lsp_diagnostics, lsp_diagnostics_directory, ast_grep_search, ast_grep_replace)
 **Cost Category:** EXPENSIVE
@@ -540,7 +540,7 @@ stopping after partial implementation"
 ### Comparison
 | Aspect | Hephaestus | Deep-Executor |
 |--------|------------|---------------|
-| **Model** | GPT 5.2 Codex Medium | Claude Opus 4.5 |
+| **Model** | GPT 5.2 Codex Medium | Claude Opus 4.6 |
 | **Fallback** | None | Default to Opus |
 | **Reasoning** | Medium → High adaptive | Not configurable |
 | **Token limit** | 32k | (Model default) |
@@ -943,11 +943,11 @@ Standardize Hephaestus completion output with markdown templates:
 ### Deep-Executor (OMC)
 **Exploration Phase:**
 - Uses own tools (Glob, Grep, Read, ast_grep_search)
-- All exploration done by Claude Opus 4.5
+- All exploration done by Claude Opus 4.6
 - **Cost**: High (expensive model for all exploration)
 
 **Execution Phase:**
-- Claude Opus 4.5 for all implementation
+- Claude Opus 4.6 for all implementation
 - **Cost**: High (always expensive model)
 
 **Total Typical Cost:** High (no model routing optimization)
@@ -1218,7 +1218,7 @@ BEST OF BOTH WORLDS:
    - Explicitly ported from Hephaestus (PR #1287)
    - Adapted for Claude Code ecosystem
    - Designed as standalone OR delegated agent
-   - Uses Claude Opus 4.5 exclusively
+   - Uses Claude Opus 4.6 exclusively
 
 ---
 

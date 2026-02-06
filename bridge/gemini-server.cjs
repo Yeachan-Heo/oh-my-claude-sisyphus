@@ -14558,7 +14558,7 @@ var spawnedPids2 = /* @__PURE__ */ new Set();
 function isSpawnedPid2(pid) {
   return spawnedPids2.has(pid);
 }
-var CODEX_DEFAULT_MODEL = process.env.OMC_CODEX_DEFAULT_MODEL || "gpt-5.2";
+var CODEX_DEFAULT_MODEL = process.env.OMC_CODEX_DEFAULT_MODEL || "gpt-5.3-codex";
 var CODEX_TIMEOUT = Math.min(Math.max(5e3, parseInt(process.env.OMC_CODEX_TIMEOUT || "3600000", 10) || 36e5), 36e5);
 var MAX_FILE_SIZE2 = 5 * 1024 * 1024;
 

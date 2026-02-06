@@ -36,6 +36,22 @@ autopilot: build a REST API for managing tasks
 
 That's it. Everything else is automatic.
 
+### Updating
+
+```bash
+# 1. Update the plugin
+/plugin install oh-my-claudecode
+
+# 2. Re-run setup to refresh configuration
+/oh-my-claudecode:omc-setup
+```
+
+If you experience issues after updating, clear the old plugin cache:
+
+```bash
+/oh-my-claudecode:doctor
+```
+
 <h1 align="center">Your Claude Just Have been Steroided.</h1>
 
 <p align="center">

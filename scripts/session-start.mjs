@@ -256,8 +256,8 @@ async function main() {
     let data = {};
     try { data = JSON.parse(input); } catch {}
 
-    const directory = data.directory || process.cwd();
-    const sessionId = data.sessionId || data.session_id || '';
+    const directory = data.cwd || data.directory || process.cwd();
+    const sessionId = data.session_id || data.sessionId || '';
     const messages = [];
 
     // Check for version drift between components

@@ -272,8 +272,8 @@ async function main() {
       data = JSON.parse(input);
     } catch {}
 
-    const directory = data.directory || process.cwd();
-    const sessionId = data.sessionId || data.session_id || "";
+    const directory = data.cwd || data.directory || process.cwd();
+    const sessionId = data.session_id || data.sessionId || "";
     const stateDir = join(directory, ".omc", "state");
 
     // CRITICAL: Never block context-limit stops.

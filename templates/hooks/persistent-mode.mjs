@@ -380,8 +380,8 @@ async function main() {
       return;
     }
 
-    const directory = data.directory || process.cwd();
-    const sessionId = data.sessionId || data.session_id || "";
+    const directory = data.cwd || data.directory || process.cwd();
+    const sessionId = data.sessionId || data.session_id || data.sessionid || "";
     const stateDir = join(directory, ".omc", "state");
     const globalStateDir = join(homedir(), ".omc", "state");
 

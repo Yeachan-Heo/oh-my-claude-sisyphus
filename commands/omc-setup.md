@@ -115,50 +115,7 @@ This will:
 2. Configure `statusLine` in `~/.claude/settings.json`
 3. Report status and prompt to restart if needed
 
-## Step 3.5: Verify Plugin Build
-
-The HUD requires the plugin to be built (dist/ directory). The dist/ folder is NOT included in git - it's generated when the plugin is installed via npm.
-
-Check if the plugin is installed and built:
-
-```bash
-# Find the installed plugin version
-PLUGIN_DIR="$HOME/.claude/plugins/cache/omc/oh-my-claudecode"
-if [ -d "$PLUGIN_DIR" ]; then
-  PLUGIN_VERSION=$(ls "$PLUGIN_DIR" 2>/dev/null | sort -V | tail -1)
-  if [ -n "$PLUGIN_VERSION" ]; then
-    # Check if dist/hud/index.js exists
-    if [ ! -f "$PLUGIN_DIR/$PLUGIN_VERSION/dist/hud/index.js" ]; then
-      echo "Plugin not built - building now..."
-      cd "$PLUGIN_DIR/$PLUGIN_VERSION"
-      # Use bun (preferred) or npm for building
-      if command -v bun &> /dev/null; then
-        bun install
-      elif command -v npm &> /dev/null; then
-        npm install
-      else
-        echo "ERROR: Neither bun nor npm found. Please install Node.js or Bun first."
-        exit 1
-      fi
-      if [ -f "dist/hud/index.js" ]; then
-        echo "Build successful - HUD is ready"
-      else
-        echo "Build failed - HUD may not work correctly"
-      fi
-    else
-      echo "Plugin already built - HUD is ready"
-    fi
-  else
-    echo "Plugin version not found"
-  fi
-else
-  echo "Plugin not installed - install with: claude /install-plugin oh-my-claudecode"
-fi
-```
-
-**Note:** The `npm install` command triggers the `prepare` script which runs `npm run build`, creating the dist/ directory with all compiled HUD files.
-
-## Step 3.6: Install CLI Analytics Tools (Optional)
+## Step 3.5: Install CLI Analytics Tools (Optional)
 
 The OMC CLI provides standalone token analytics commands (`omc stats`, `omc agents`, `omc backfill`, `omc tui`).
 

@@ -18,19 +18,19 @@ import type { PluginConfig } from '../shared/types.js';
  */
 export const DEFAULT_CONFIG: PluginConfig = {
   agents: {
-    omc: { model: 'claude-opus-4-5-20251101' },
-    architect: { model: 'claude-opus-4-5-20251101', enabled: true },
+    omc: { model: 'claude-opus-4-6-20260205' },
+    architect: { model: 'claude-opus-4-6-20260205', enabled: true },
     researcher: { model: 'claude-sonnet-4-5-20250929' },
     explore: { model: 'claude-haiku-4-5-20251001' },
     frontendEngineer: { model: 'claude-sonnet-4-5-20250929', enabled: true },
     documentWriter: { model: 'claude-haiku-4-5-20251001', enabled: true },
     multimodalLooker: { model: 'claude-sonnet-4-5-20250929', enabled: true },
     // New agents from oh-my-opencode
-    critic: { model: 'claude-opus-4-5-20251101', enabled: true },
-    analyst: { model: 'claude-opus-4-5-20251101', enabled: true },
+    critic: { model: 'claude-opus-4-6-20260205', enabled: true },
+    analyst: { model: 'claude-opus-4-6-20260205', enabled: true },
     orchestratorSisyphus: { model: 'claude-sonnet-4-5-20250929', enabled: true },
     sisyphusJunior: { model: 'claude-sonnet-4-5-20250929', enabled: true },
-    planner: { model: 'claude-opus-4-5-20251101', enabled: true }
+    planner: { model: 'claude-opus-4-6-20260205', enabled: true }
   },
   features: {
     parallelExecution: true,
@@ -64,7 +64,7 @@ export const DEFAULT_CONFIG: PluginConfig = {
     tierModels: {
       LOW: 'claude-haiku-4-5-20251001',
       MEDIUM: 'claude-sonnet-4-5-20250929',
-      HIGH: 'claude-opus-4-5-20251101'
+      HIGH: 'claude-opus-4-6-20260205'
     },
     agentOverrides: {
       architect: { tier: 'HIGH', reason: 'Advisory agent requires deep reasoning' },
