@@ -25,6 +25,7 @@
     "bridge/codex-server.cjs",
     "bridge/gemini-server.cjs",
     "bridge/openclaw-server.cjs",
+    "bridge/kimi-server.cjs",
     "commands",
     "hooks",
     "scripts",
@@ -37,7 +38,7 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "tsc && node scripts/build-skill-bridge.mjs && node scripts/build-mcp-server.mjs && node scripts/build-codex-server.mjs && node scripts/build-gemini-server.mjs && node scripts/build-openclaw-server.mjs && npm run compose-docs",
+    "build": "tsc && node scripts/build-skill-bridge.mjs && node scripts/build-mcp-server.mjs && node scripts/build-codex-server.mjs && node scripts/build-gemini-server.mjs && node scripts/build-openclaw-server.mjs && node scripts/build-kimi-server.mjs && npm run compose-docs",
     "build:bridge": "node scripts/build-skill-bridge.mjs",
     "build:codex": "node scripts/build-codex-server.mjs",
     "build:gemini": "node scripts/build-gemini-server.mjs",

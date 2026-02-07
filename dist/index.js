@@ -19,6 +19,7 @@ import { omcToolsServer, getOmcToolNames } from './mcp/omc-tools-server.js';
 import { codexMcpServer } from './mcp/codex-server.js';
 import { geminiMcpServer } from './mcp/gemini-server.js';
 import { openclawMcpServer } from './mcp/openclaw-server.js';
+import { kimiMcpServer } from './mcp/kimi-server.js';
 import { createMagicKeywordProcessor, detectMagicKeywords } from './features/magic-keywords.js';
 import { continuationSystemPromptAddition } from './features/continuation-enforcement.js';
 import { createBackgroundTaskManager, shouldRunInBackground as shouldRunInBackgroundFn } from './features/background-tasks.js';
@@ -139,6 +140,7 @@ export function createSisyphusSession(options) {
     allowedTools.push('mcp__x__*');
     allowedTools.push('mcp__g__*');
     allowedTools.push('mcp__oc__*');
+    allowedTools.push('mcp__ki__*');
     // Create magic keyword processor
     const processPrompt = createMagicKeywordProcessor(config.magicKeywords);
     // Initialize session state
@@ -159,7 +161,8 @@ export function createSisyphusSession(options) {
                     't': omcToolsServer,
                     'x': codexMcpServer,
                     'g': geminiMcpServer,
-                    'oc': openclawMcpServer
+                    'oc': openclawMcpServer,
+                    'ki': kimiMcpServer
                 },
                 allowedTools,
                 permissionMode: 'acceptEdits'
