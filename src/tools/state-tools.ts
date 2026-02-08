@@ -17,6 +17,7 @@ import {
   listSessionIds,
   validateSessionId,
   getSessionStateDir,
+  getProcessSessionId,
 } from '../lib/worktree-paths.js';
 import { atomicWriteJsonSync } from '../lib/atomic-write.js';
 import {
@@ -79,7 +80,8 @@ export const stateReadTool: ToolDefinition<{
 
     try {
       const root = validateWorkingDirectory(workingDirectory);
-      const sessionId = session_id as string | undefined;
+      // Auto-inject process session ID when none provided (Issue #456)
+      const sessionId = (session_id as string | undefined) || getProcessSessionId();
 
       // Special handling for swarm (SQLite database - no session support)
       if (mode === 'swarm') {
@@ -255,7 +257,8 @@ export const stateWriteTool: ToolDefinition<{
 
     try {
       const root = validateWorkingDirectory(workingDirectory);
-      const sessionId = session_id as string | undefined;
+      // Auto-inject process session ID when none provided (Issue #456)
+      const sessionId = (session_id as string | undefined) || getProcessSessionId();
 
       // Swarm uses SQLite - cannot be written via this tool
       if (mode === 'swarm') {
@@ -355,7 +358,8 @@ export const stateClearTool: ToolDefinition<{
 
     try {
       const root = validateWorkingDirectory(workingDirectory);
-      const sessionId = session_id as string | undefined;
+      // Auto-inject process session ID when none provided (Issue #456)
+      const sessionId = (session_id as string | undefined) || getProcessSessionId();
 
       // If session_id provided, clear only session-specific state
       if (sessionId) {
@@ -496,7 +500,8 @@ export const stateListActiveTool: ToolDefinition<{
 
     try {
       const root = validateWorkingDirectory(workingDirectory);
-      const sessionId = session_id as string | undefined;
+      // Auto-inject process session ID when none provided (Issue #456)
+      const sessionId = (session_id as string | undefined) || getProcessSessionId();
 
       // If session_id provided, show modes active for that specific session
       if (sessionId) {
@@ -642,7 +647,8 @@ export const stateGetStatusTool: ToolDefinition<{
 
     try {
       const root = validateWorkingDirectory(workingDirectory);
-      const sessionId = session_id as string | undefined;
+      // Auto-inject process session ID when none provided (Issue #456)
+      const sessionId = (session_id as string | undefined) || getProcessSessionId();
 
       if (mode) {
         // Single mode status
