@@ -99,6 +99,8 @@ The tdd-guide agent SHOULD consult Codex for test strategy validation.
 - Small, isolated functionality
 
 ### Tool Usage
+Before first MCP tool use, call `ToolSearch("mcp")` to discover deferred MCP tools.
 Use `mcp__x__ask_codex` with `agent_role: "tdd-guide"`.
+If ToolSearch finds no MCP tools, fall back to the `test-engineer` Claude agent.
 
 **Remember:** The discipline IS the value. Shortcuts destroy the benefit.

@@ -287,6 +287,20 @@ ${notepadContext}
 `);
     }
 
+    // MCP tool discovery reminder (deferred tools need ToolSearch before use)
+    messages.push(`<session-restore>
+
+[MCP TOOL DISCOVERY REQUIRED]
+
+MCP tools (ask_codex, ask_gemini) are deferred and NOT in your tool list yet.
+Before first use, call ToolSearch("mcp") to discover all available MCP tools.
+If ToolSearch returns no results, MCP servers are not configured -- use Claude agent fallbacks instead.
+
+</session-restore>
+
+---
+`);
+
     if (messages.length > 0) {
       console.log(JSON.stringify({
         continue: true,

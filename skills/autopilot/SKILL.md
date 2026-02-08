@@ -68,11 +68,12 @@ Most non-trivial software tasks require coordinated phases: understanding requir
 </Steps>
 
 <Tool_Usage>
+- Before first MCP tool use, call `ToolSearch("mcp")` to discover deferred MCP tools
 - Use `ask_codex` with `agent_role: "architect"` for Phase 4 architecture validation
 - Use `ask_codex` with `agent_role: "security-reviewer"` for Phase 4 security review
 - Use `ask_codex` with `agent_role: "code-reviewer"` for Phase 4 quality review
 - Agents form their own analysis first, then consult Codex for cross-validation
-- If Codex is unavailable, proceed without it -- never block on external tools
+- If ToolSearch finds no MCP tools or Codex is unavailable, proceed without it -- never block on external tools
 </Tool_Usage>
 
 <Examples>

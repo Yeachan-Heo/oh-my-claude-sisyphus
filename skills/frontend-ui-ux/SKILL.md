@@ -16,7 +16,9 @@ Routes to the designer agent or Gemini MCP for frontend work.
 ## Routing
 
 ### Preferred: MCP Direct
+Before first MCP tool use, call `ToolSearch("mcp")` to discover deferred MCP tools.
 Use `mcp__g__ask_gemini` with `agent_role: "designer"` for design tasks.
+If ToolSearch finds no MCP tools, use the Claude agent fallback below.
 
 ### Fallback: Claude Agent
 ```

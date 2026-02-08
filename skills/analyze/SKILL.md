@@ -43,9 +43,10 @@ Deep investigation requires a different approach than quick lookups or code chan
 </Steps>
 
 <Tool_Usage>
+- Before first MCP tool use, call `ToolSearch("mcp")` to discover deferred MCP tools
 - Use `ask_codex` with `agent_role: "architect"` as the preferred analysis route
 - Pass `context_files` with all relevant source files for grounded analysis
-- Use `Task(subagent_type="oh-my-claudecode:architect", model="opus", ...)` as fallback when Codex is unavailable
+- Use `Task(subagent_type="oh-my-claudecode:architect", model="opus", ...)` as fallback when ToolSearch finds no MCP tools or Codex is unavailable
 - For broad analysis, use `explore` agent first to identify relevant files before routing to architect
 </Tool_Usage>
 

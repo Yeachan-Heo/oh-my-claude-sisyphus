@@ -434,9 +434,12 @@ The lead runs #1 (Codex analysis), then #2 and #3 in parallel (Codex refactors b
 
 For large ambiguous tasks, run analysis before team creation:
 
-1. Call `ask_codex` (planner role) with task description + codebase context
-2. Use the analysis to produce better task decomposition
-3. Create team and tasks with enriched context
+1. Call `ToolSearch("mcp")` to discover deferred MCP tools (required before first use)
+2. Call `ask_codex` (planner role) with task description + codebase context
+3. Use the analysis to produce better task decomposition
+4. Create team and tasks with enriched context
+
+If ToolSearch finds no MCP tools, skip MCP pre-flight and use Claude agents instead.
 
 This is especially useful when the task scope is unclear and benefits from external reasoning before committing to a specific decomposition.
 

@@ -88,13 +88,14 @@ Plans are saved to `.omc/plans/`. Drafts go to `.omc/drafts/`.
 </Steps>
 
 <Tool_Usage>
+- Before first MCP tool use, call `ToolSearch("mcp")` to discover deferred MCP tools
 - Use `AskUserQuestion` for preference questions (scope, priority, timeline, risk tolerance) -- provides clickable UI
 - Use plain text for questions needing specific values (port numbers, names, follow-up clarifications)
 - Use `explore` agent (Haiku, 30s timeout) to gather codebase facts before asking the user
 - Use `ask_codex` with `agent_role: "planner"` for planning validation on large-scope plans
 - Use `ask_codex` with `agent_role: "analyst"` for requirements analysis
 - Use `ask_codex` with `agent_role: "critic"` for plan review in consensus and review modes
-- If Codex is unavailable, fall back to equivalent Claude agents -- never block on external tools
+- If ToolSearch finds no MCP tools or Codex is unavailable, fall back to equivalent Claude agents -- never block on external tools
 </Tool_Usage>
 
 <Examples>

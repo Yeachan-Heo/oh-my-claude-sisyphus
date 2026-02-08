@@ -197,18 +197,21 @@ function createMcpDelegation(provider, originalPrompt) {
 You MUST delegate this task to the ${provider === 'codex' ? 'Codex' : 'Gemini'} MCP tool.
 
 Steps:
-1. Write a prompt file to \`.omc/prompts/${provider}-{purpose}-{timestamp}.md\` containing clear task instructions derived from the user's request
-2. Determine the appropriate agent_role from: ${config.roles}
-3. Call the \`${config.tool}\` MCP tool with:
+1. Call ToolSearch("mcp") to discover available MCP tools (required -- they are deferred and not in your tool list by default)
+2. Write a prompt file to \`.omc/prompts/${provider}-{purpose}-{timestamp}.md\` containing clear task instructions derived from the user's request
+3. Determine the appropriate agent_role from: ${config.roles}
+4. Call the \`${config.tool}\` MCP tool with:
    - agent_role: <detected or default "${config.defaultRole}">
    - prompt_file: <path you wrote>
    - output_file: <corresponding -summary.md path>
    - context_files: <relevant files from user's request>
 
+If ToolSearch returns no MCP tools, the MCP server is not configured. Fall back to the equivalent Claude agent instead.
+
 User request:
 ${originalPrompt}
 
-IMPORTANT: Do NOT invoke a skill. Delegate to the MCP tool IMMEDIATELY.`;
+IMPORTANT: Do NOT invoke a skill. Discover MCP tools via ToolSearch first, then delegate IMMEDIATELY.`;
 }
 
 /**
