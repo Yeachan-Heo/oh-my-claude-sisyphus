@@ -7,18 +7,17 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { CallToolRequestSchema, ListToolsRequestSchema, } from '@modelcontextprotocol/sdk/types.js';
-import { GEMINI_VALID_ROLES, GEMINI_DEFAULT_MODEL, GEMINI_MODEL_FALLBACKS, handleAskGemini, } from './gemini-core.js';
+import { GEMINI_RECOMMENDED_ROLES, GEMINI_DEFAULT_MODEL, GEMINI_MODEL_FALLBACKS, handleAskGemini, } from './gemini-core.js';
 import { handleWaitForJob, handleCheckJobStatus, handleKillJob, handleListJobs, getJobManagementToolSchemas, } from './job-management.js';
 const askGeminiTool = {
     name: 'ask_gemini',
-    description: `Send a prompt to Google Gemini CLI for design/implementation tasks. Gemini excels at frontend design review and implementation with its 1M token context window. Requires agent_role (${GEMINI_VALID_ROLES.join(', ')}). Fallback chain: ${GEMINI_MODEL_FALLBACKS.join(' → ')}. Requires Gemini CLI (npm install -g @google/gemini-cli).`,
+    description: `Send a prompt to Google Gemini CLI for design/implementation tasks. Gemini excels at frontend design review and implementation with its 1M token context window. Recommended roles: ${GEMINI_RECOMMENDED_ROLES.join(', ')}. Any valid OMC agent role is accepted. Fallback chain: ${GEMINI_MODEL_FALLBACKS.join(' → ')}. Requires Gemini CLI (npm install -g @google/gemini-cli).`,
     inputSchema: {
         type: 'object',
         properties: {
             agent_role: {
                 type: 'string',
-                enum: GEMINI_VALID_ROLES,
-                description: `Required. Agent perspective for Gemini: ${GEMINI_VALID_ROLES.join(', ')}. Gemini is optimized for design/implementation tasks with large context.`
+                description: `Required. Agent perspective for Gemini. Recommended: ${GEMINI_RECOMMENDED_ROLES.join(', ')}. Any valid OMC agent role is accepted.`
             },
             prompt_file: { type: 'string', description: 'Path to file containing the prompt' },
             output_file: { type: 'string', description: 'Required. Path to write response. Response content is NOT returned inline - read from this file.' },

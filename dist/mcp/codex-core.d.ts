@@ -13,7 +13,7 @@ export declare function clearSpawnedPids(): void;
 export declare const CODEX_DEFAULT_MODEL: string;
 export declare const CODEX_TIMEOUT: number;
 export declare const CODEX_MODEL_FALLBACKS: string[];
-export declare const CODEX_VALID_ROLES: readonly ["architect", "planner", "critic", "analyst", "code-reviewer", "security-reviewer", "tdd-guide"];
+export declare const CODEX_RECOMMENDED_ROLES: readonly ["architect", "planner", "critic", "analyst", "code-reviewer", "security-reviewer", "tdd-guide"];
 export declare const MAX_CONTEXT_FILES = 20;
 export declare const MAX_FILE_SIZE: number;
 /**

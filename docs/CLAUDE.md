@@ -105,16 +105,13 @@ Available MCP providers:
 - Codex (`mcp__x__ask_codex`): OpenAI gpt-5.3-codex -- code analysis, planning validation, review
 - Gemini (`mcp__g__ask_gemini`): Google gemini-3-pro-preview -- design across many files (1M context)
 
-Routing by domain:
-- Architecture/design: `ask_codex` (architect) -- fallback: `architect` agent
-- Planning/strategy/critique: `ask_codex` (planner/critic) -- fallback: `planner`/`critic` agents
-- Code review: `ask_codex` (code-reviewer) -- fallback: `code-reviewer` agent
-- Security review: `ask_codex` (security-reviewer) -- fallback: `security-reviewer` agent
-- Test strategy: `ask_codex` (tdd-guide) -- fallback: `test-engineer` agent
-- UI/UX design: `ask_gemini` (designer) -- fallback: `designer` agent
-- Docs/visual analysis: `ask_gemini` (writer/vision) -- fallback: `writer`/`vision` agents
+Any OMC agent role can be passed as `agent_role` to either provider. The role loads a matching system prompt if one exists; otherwise the task runs without role-specific framing.
 
-Always attach `context_files` when calling MCP tools. MCP output is advisory -- verification (tests, typecheck) should come from tool-using agents.
+Provider strengths (use these to choose the right provider):
+- **Codex excels at**: architecture review, planning validation, critical analysis, code review, security review, test strategy. Recommended roles: architect, planner, critic, analyst, code-reviewer, security-reviewer, tdd-guide.
+- **Gemini excels at**: UI/UX design review, documentation, visual analysis, large-context tasks (1M tokens). Recommended roles: designer, writer, vision.
+
+Always attach `context_files`/`files` when calling MCP tools. MCP output is advisory -- verification (tests, typecheck) should come from tool-using agents.
 
 Background pattern: spawn with `background: true`, check with `check_job_status`, await with `wait_for_job` (up to 1 hour).
 
@@ -127,8 +124,8 @@ Precedence: for documentation lookup, try MCP tools first (faster/cheaper). For 
 
 <tools>
 External AI (MCP providers):
-- Codex: `mcp__x__ask_codex` with `agent_role` (architect/planner/critic/analyst/code-reviewer/security-reviewer/tdd-guide)
-- Gemini: `mcp__g__ask_gemini` with `agent_role` (designer/writer/vision)
+- Codex: `mcp__x__ask_codex` with `agent_role` (any role; best for: architect, planner, critic, analyst, code-reviewer, security-reviewer, tdd-guide)
+- Gemini: `mcp__g__ask_gemini` with `agent_role` (any role; best for: designer, writer, vision)
 - Job management: `check_job_status`, `wait_for_job`, `kill_job`, `list_jobs` (per provider)
 
 OMC State:

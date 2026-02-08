@@ -9,15 +9,15 @@
  */
 
 import { createSdkMcpServer, tool } from "@anthropic-ai/claude-agent-sdk";
-import { handleAskCodex, CODEX_DEFAULT_MODEL, CODEX_VALID_ROLES } from './codex-core.js';
+import { handleAskCodex, CODEX_DEFAULT_MODEL, CODEX_RECOMMENDED_ROLES } from './codex-core.js';
 import { handleWaitForJob, handleCheckJobStatus, handleKillJob, handleListJobs } from './job-management.js';
 
 // Define the ask_codex tool using the SDK tool() helper
 const askCodexTool = tool(
   "ask_codex",
-  `Send a prompt to OpenAI Codex CLI for analytical/planning tasks. Codex excels at architecture review, planning validation, critical analysis, and code/security review validation. Requires agent_role to specify the perspective (${CODEX_VALID_ROLES.join(', ')}). Requires Codex CLI (npm install -g @openai/codex).`,
+  `Send a prompt to OpenAI Codex CLI for analytical/planning tasks. Codex excels at architecture review, planning validation, critical analysis, and code/security review validation. Requires agent_role to specify the perspective. Recommended roles: ${CODEX_RECOMMENDED_ROLES.join(', ')}. Any valid OMC agent role is accepted. Requires Codex CLI (npm install -g @openai/codex).`,
   {
-    agent_role: { type: "string", description: `Required. Agent perspective for Codex: ${CODEX_VALID_ROLES.join(', ')}. Codex is optimized for analytical/planning tasks.` },
+    agent_role: { type: "string", description: `Required. Agent perspective for Codex. Recommended: ${CODEX_RECOMMENDED_ROLES.join(', ')}. Any valid OMC agent role is accepted.` },
     prompt_file: { type: "string", description: "Path to file containing the prompt" },
     output_file: { type: "string", description: "Required. Path to write response. Response content is NOT returned inline - read from this file." },
     context_files: { type: "array", items: { type: "string" }, description: "File paths to include as context (contents will be prepended to prompt)" },

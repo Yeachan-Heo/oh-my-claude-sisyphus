@@ -13803,6 +13803,36 @@ Prompt unavailable.`;
 }
 
 // src/mcp/prompt-injection.ts
+var VALID_AGENT_ROLES = [
+  "architect",
+  "architect-medium",
+  "architect-low",
+  "analyst",
+  "critic",
+  "planner",
+  "executor",
+  "executor-high",
+  "executor-low",
+  "deep-executor",
+  "designer",
+  "designer-low",
+  "designer-high",
+  "explore",
+  "explore-high",
+  "researcher",
+  "writer",
+  "vision",
+  "qa-tester",
+  "scientist",
+  "scientist-high",
+  "security-reviewer",
+  "security-reviewer-low",
+  "build-fixer",
+  "tdd-guide",
+  "tdd-guide-low",
+  "code-reviewer",
+  "git-master"
+];
 function resolveSystemPrompt(systemPrompt, agentRole) {
   if (systemPrompt && systemPrompt.trim()) {
     return systemPrompt.trim();
@@ -14336,7 +14366,7 @@ var GEMINI_MODEL_FALLBACKS = [
   "gemini-2.5-pro",
   "gemini-2.5-flash"
 ];
-var GEMINI_VALID_ROLES = ["designer", "writer", "vision"];
+var GEMINI_RECOMMENDED_ROLES = ["designer", "writer", "vision"];
 var MAX_CONTEXT_FILES = 20;
 var MAX_FILE_SIZE = 5 * 1024 * 1024;
 function isGeminiRetryableError(stdout, stderr = "") {
@@ -14654,11 +14684,20 @@ async function handleAskGemini(args) {
       }
     }
   }
-  if (!agent_role || !GEMINI_VALID_ROLES.includes(agent_role)) {
+  if (!agent_role || !agent_role.trim()) {
     return {
       content: [{
         type: "text",
-        text: `Invalid agent_role: "${agent_role}". Gemini requires one of: ${GEMINI_VALID_ROLES.join(", ")}`
+        text: `agent_role is required. Recommended roles for Gemini: ${GEMINI_RECOMMENDED_ROLES.join(", ")}`
+      }],
+      isError: true
+    };
+  }
+  if (!VALID_AGENT_ROLES.includes(agent_role)) {
+    return {
+      content: [{
+        type: "text",
+        text: `Invalid agent_role: "${agent_role}". Must be one of: ${VALID_AGENT_ROLES.join(", ")}. Recommended for Gemini: ${GEMINI_RECOMMENDED_ROLES.join(", ")}`
       }],
       isError: true
     };
@@ -15468,14 +15507,13 @@ function getJobManagementToolSchemas(_provider) {
 // src/mcp/gemini-standalone-server.ts
 var askGeminiTool = {
   name: "ask_gemini",
-  description: `Send a prompt to Google Gemini CLI for design/implementation tasks. Gemini excels at frontend design review and implementation with its 1M token context window. Requires agent_role (${GEMINI_VALID_ROLES.join(", ")}). Fallback chain: ${GEMINI_MODEL_FALLBACKS.join(" \u2192 ")}. Requires Gemini CLI (npm install -g @google/gemini-cli).`,
+  description: `Send a prompt to Google Gemini CLI for design/implementation tasks. Gemini excels at frontend design review and implementation with its 1M token context window. Recommended roles: ${GEMINI_RECOMMENDED_ROLES.join(", ")}. Any valid OMC agent role is accepted. Fallback chain: ${GEMINI_MODEL_FALLBACKS.join(" \u2192 ")}. Requires Gemini CLI (npm install -g @google/gemini-cli).`,
   inputSchema: {
     type: "object",
     properties: {
       agent_role: {
         type: "string",
-        enum: GEMINI_VALID_ROLES,
-        description: `Required. Agent perspective for Gemini: ${GEMINI_VALID_ROLES.join(", ")}. Gemini is optimized for design/implementation tasks with large context.`
+        description: `Required. Agent perspective for Gemini. Recommended: ${GEMINI_RECOMMENDED_ROLES.join(", ")}. Any valid OMC agent role is accepted.`
       },
       prompt_file: { type: "string", description: "Path to file containing the prompt" },
       output_file: { type: "string", description: "Required. Path to write response. Response content is NOT returned inline - read from this file." },

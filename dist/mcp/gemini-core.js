@@ -16,7 +16,7 @@ import { existsSync, mkdirSync, readFileSync, realpathSync, statSync, writeFileS
 import { dirname, resolve, relative, sep, isAbsolute, basename, join } from 'path';
 import { detectGeminiCli } from './cli-detection.js';
 import { getWorktreeRoot } from '../lib/worktree-paths.js';
-import { resolveSystemPrompt, buildPromptWithSystemContext } from './prompt-injection.js';
+import { resolveSystemPrompt, buildPromptWithSystemContext, VALID_AGENT_ROLES } from './prompt-injection.js';
 import { persistPrompt, persistResponse, getExpectedResponsePath } from './prompt-persistence.js';
 import { writeJobStatus, getStatusFilePath, readJobStatus } from './prompt-persistence.js';
 // Module-scoped PID registry - tracks PIDs spawned by this process
@@ -44,8 +44,8 @@ export const GEMINI_MODEL_FALLBACKS = [
     'gemini-2.5-pro',
     'gemini-2.5-flash',
 ];
-// Gemini is best for design review and implementation tasks (leverages 1M context)
-export const GEMINI_VALID_ROLES = ['designer', 'writer', 'vision'];
+// Gemini is best for design review and implementation tasks (recommended, not enforced)
+export const GEMINI_RECOMMENDED_ROLES = ['designer', 'writer', 'vision'];
 export const MAX_CONTEXT_FILES = 20;
 export const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB per file
 /**
@@ -421,12 +421,21 @@ export async function handleAskGemini(args) {
             }
         }
     }
-    // Validate agent_role
-    if (!agent_role || !GEMINI_VALID_ROLES.includes(agent_role)) {
+    // Validate agent_role against the shared allowed agents list
+    if (!agent_role || !agent_role.trim()) {
         return {
             content: [{
                     type: 'text',
-                    text: `Invalid agent_role: "${agent_role}". Gemini requires one of: ${GEMINI_VALID_ROLES.join(', ')}`
+                    text: `agent_role is required. Recommended roles for Gemini: ${GEMINI_RECOMMENDED_ROLES.join(', ')}`
+                }],
+            isError: true
+        };
+    }
+    if (!VALID_AGENT_ROLES.includes(agent_role)) {
+        return {
+            content: [{
+                    type: 'text',
+                    text: `Invalid agent_role: "${agent_role}". Must be one of: ${VALID_AGENT_ROLES.join(', ')}. Recommended for Gemini: ${GEMINI_RECOMMENDED_ROLES.join(', ')}`
                 }],
             isError: true
         };

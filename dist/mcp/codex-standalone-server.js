@@ -7,18 +7,17 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { CallToolRequestSchema, ListToolsRequestSchema, } from '@modelcontextprotocol/sdk/types.js';
-import { CODEX_VALID_ROLES, CODEX_DEFAULT_MODEL, handleAskCodex, } from './codex-core.js';
+import { CODEX_RECOMMENDED_ROLES, CODEX_DEFAULT_MODEL, handleAskCodex, } from './codex-core.js';
 import { handleWaitForJob, handleCheckJobStatus, handleKillJob, handleListJobs, getJobManagementToolSchemas, } from './job-management.js';
 const askCodexTool = {
     name: 'ask_codex',
-    description: `Send a prompt to OpenAI Codex CLI for analytical/planning tasks. Codex excels at architecture review, planning validation, critical analysis, and code/security review validation. Requires agent_role to specify the perspective (${CODEX_VALID_ROLES.join(', ')}). Requires Codex CLI (npm install -g @openai/codex).`,
+    description: `Send a prompt to OpenAI Codex CLI for analytical/planning tasks. Codex excels at architecture review, planning validation, critical analysis, and code/security review validation. Recommended roles: ${CODEX_RECOMMENDED_ROLES.join(', ')}. Any valid OMC agent role is accepted. Requires Codex CLI (npm install -g @openai/codex).`,
     inputSchema: {
         type: 'object',
         properties: {
             agent_role: {
                 type: 'string',
-                enum: CODEX_VALID_ROLES,
-                description: `Required. Agent perspective for Codex: ${CODEX_VALID_ROLES.join(', ')}. Codex is optimized for analytical/planning tasks.`
+                description: `Required. Agent perspective for Codex. Recommended: ${CODEX_RECOMMENDED_ROLES.join(', ')}. Any valid OMC agent role is accepted.`
             },
             prompt_file: { type: 'string', description: 'Path to file containing the prompt' },
             output_file: { type: 'string', description: 'Required. Path to write response. Response content is NOT returned inline - read from this file.' },

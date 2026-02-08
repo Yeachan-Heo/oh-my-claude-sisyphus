@@ -8,11 +8,11 @@
  * external-process .mcp.json registration with proper stdio transport.
  */
 import { createSdkMcpServer, tool } from "@anthropic-ai/claude-agent-sdk";
-import { GEMINI_DEFAULT_MODEL, GEMINI_MODEL_FALLBACKS, GEMINI_VALID_ROLES, handleAskGemini } from './gemini-core.js';
+import { GEMINI_DEFAULT_MODEL, GEMINI_MODEL_FALLBACKS, GEMINI_RECOMMENDED_ROLES, handleAskGemini } from './gemini-core.js';
 import { handleWaitForJob, handleCheckJobStatus, handleKillJob, handleListJobs } from './job-management.js';
 // Define the ask_gemini tool using the SDK tool() helper
-const askGeminiTool = tool("ask_gemini", "Send a prompt to Google Gemini CLI for design/implementation tasks. Gemini excels at frontend design review and implementation with its 1M token context window. Requires agent_role (designer, writer, vision). Fallback chain: gemini-3-pro-preview → gemini-3-flash-preview → gemini-2.5-pro → gemini-2.5-flash. Requires Gemini CLI (npm install -g @google/gemini-cli).", {
-    agent_role: { type: "string", description: `Required. Agent perspective for Gemini: ${GEMINI_VALID_ROLES.join(', ')}. Gemini is optimized for design/implementation tasks with large context.` },
+const askGeminiTool = tool("ask_gemini", `Send a prompt to Google Gemini CLI for design/implementation tasks. Gemini excels at frontend design review and implementation with its 1M token context window. Recommended roles: ${GEMINI_RECOMMENDED_ROLES.join(', ')}. Any valid OMC agent role is accepted. Fallback chain: ${GEMINI_MODEL_FALLBACKS.join(' → ')}. Requires Gemini CLI (npm install -g @google/gemini-cli).`, {
+    agent_role: { type: "string", description: `Required. Agent perspective for Gemini. Recommended: ${GEMINI_RECOMMENDED_ROLES.join(', ')}. Any valid OMC agent role is accepted.` },
     prompt_file: { type: "string", description: "Path to file containing the prompt" },
     output_file: { type: "string", description: "Required. Path to write response. Response content is NOT returned inline - read from this file." },
     files: { type: "array", items: { type: "string" }, description: "File paths to include as context (contents will be prepended to prompt)" },

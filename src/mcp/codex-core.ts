@@ -13,7 +13,7 @@ import { existsSync, mkdirSync, readFileSync, realpathSync, statSync, writeFileS
 import { dirname, resolve, relative, sep, isAbsolute, basename, join } from 'path';
 import { detectCodexCli } from './cli-detection.js';
 import { getWorktreeRoot } from '../lib/worktree-paths.js';
-import { resolveSystemPrompt, buildPromptWithSystemContext } from './prompt-injection.js';
+import { resolveSystemPrompt, buildPromptWithSystemContext, VALID_AGENT_ROLES } from './prompt-injection.js';
 import { persistPrompt, persistResponse, getExpectedResponsePath } from './prompt-persistence.js';
 import { writeJobStatus, getStatusFilePath, readJobStatus } from './prompt-persistence.js';
 import type { JobStatus, BackgroundJobMeta } from './prompt-persistence.js';
@@ -50,8 +50,8 @@ export const CODEX_MODEL_FALLBACKS = [
   'gpt-5.2',
 ];
 
-// Codex is best for analytical/planning tasks
-export const CODEX_VALID_ROLES = ['architect', 'planner', 'critic', 'analyst', 'code-reviewer', 'security-reviewer', 'tdd-guide'] as const;
+// Codex is best for analytical/planning tasks (recommended, not enforced)
+export const CODEX_RECOMMENDED_ROLES = ['architect', 'planner', 'critic', 'analyst', 'code-reviewer', 'security-reviewer', 'tdd-guide'] as const;
 
 export const MAX_CONTEXT_FILES = 20;
 export const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB per file
@@ -600,12 +600,21 @@ export async function handleAskCodex(args: {
   }
 
 
-  // Validate agent_role
-  if (!agent_role || !(CODEX_VALID_ROLES as readonly string[]).includes(agent_role)) {
+  // Validate agent_role against the shared allowed agents list
+  if (!agent_role || !agent_role.trim()) {
     return {
       content: [{
         type: 'text' as const,
-        text: `Invalid agent_role: "${agent_role}". Codex requires one of: ${CODEX_VALID_ROLES.join(', ')}`
+        text: `agent_role is required. Recommended roles for Codex: ${CODEX_RECOMMENDED_ROLES.join(', ')}`
+      }],
+      isError: true
+    };
+  }
+  if (!(VALID_AGENT_ROLES as readonly string[]).includes(agent_role)) {
+    return {
+      content: [{
+        type: 'text' as const,
+        text: `Invalid agent_role: "${agent_role}". Must be one of: ${VALID_AGENT_ROLES.join(', ')}. Recommended for Codex: ${CODEX_RECOMMENDED_ROLES.join(', ')}`
       }],
       isError: true
     };
