@@ -5,6 +5,8 @@ aliases: [swarm-agents]
 
 # Swarm Command
 
+> **Consolidation Note:** `/swarm` is being consolidated into `/team`. For new multi-agent work, prefer `/oh-my-claudecode:team` which uses native Claude Code coordination (TeamCreate, TaskCreate, SendMessage) instead of SQLite. See `/oh-my-claudecode:team` docs for migration guidance.
+
 [SWARM MODE ACTIVATED]
 
 Spawn N coordinated agents working on a shared task list with SQLite-based atomic claiming. Like a dev team tackling multiple files in parallel—fast, reliable, and with full fault tolerance.

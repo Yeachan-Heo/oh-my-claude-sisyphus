@@ -5,7 +5,7 @@ description: N coordinated agents on shared task list using Claude Code native t
 
 # Team Skill
 
-Spawn N coordinated agents working on a shared task list using Claude Code's native team tools. Replaces the legacy `/swarm` skill (SQLite-based) with built-in team management, inter-agent messaging, and task dependencies -- no external dependencies required.
+Spawn N coordinated agents working on a shared task list using Claude Code's native team tools. The primary multi-agent orchestration surface for OMC, consolidating capabilities from legacy modes (autopilot, ultrapilot, swarm) into a unified workflow with built-in team management, inter-agent messaging, and task dependencies -- no external dependencies required.
 
 ## Usage
 
@@ -27,6 +27,72 @@ Spawn N coordinated agents working on a shared task list using Claude Code's nat
 /team 4:designer "implement responsive layouts for all page components"
 /team 2:executor-low "add JSDoc comments to all exported functions in lib/"
 ```
+
+## Consolidation Strategy
+
+Team is the primary multi-agent orchestration surface for OMC, consolidating capabilities from legacy modes (autopilot, ultrapilot, swarm) into a unified workflow.
+
+### Why Team as Primary
+
+| Capability | Autopilot | Ultrapilot | Swarm | Team |
+|------------|-----------|------------|-------|------|
+| Native coordination | No | No | SQLite | Yes (Claude Code) |
+| Inter-agent messaging | No | No | No | Yes (SendMessage) |
+| Task dependencies | Manual | Manual | No | Yes (blocks/blockedBy) |
+| External dependencies | No | No | better-sqlite3 | None |
+| Graceful shutdown | No | No | Signal-based | Request/response protocol |
+
+### Phase Definitions
+
+**team-plan**: Hiring plan phase
+- Analyze codebase and decompose task into N subtasks
+- Define roles (executor, verifier, designer, etc.)
+- Identify dependencies between tasks
+- Output: Task definitions with pre-assigned owners
+
+**team-exec**: Execution phase
+- TeamCreate → TaskCreate → TaskUpdate (pre-assign) → Task(team_name, name)
+- Teammates claim tasks via TaskList, work, complete, SendMessage to lead
+- Lead monitors via TaskList and inbound messages
+
+**team-verify**: Verification phase
+- Spawn verifier teammates to validate all work
+- Verifiers use same TaskList/claim protocol as execution teammates
+- Gate: All verifications must pass before completion
+
+### Running Verifier Teammates
+
+```typescript
+// After execution phase completes
+Task(
+  subagent_type="oh-my-claudecode:verifier",
+  team_name="fix-issues",
+  name="verifier-1",
+  prompt="Verify all changes pass tests and type checks"
+)
+```
+
+Verifiers follow the same work protocol as execution teammates:
+1. Call TaskList to see assigned verification tasks
+2. Execute verification (run tests, type checks, lint)
+3. Mark task complete via TaskUpdate
+4. SendMessage to lead with results
+
+### Legacy Mode Mapping
+
+| Legacy Mode | Team Equivalent | Key Difference |
+|-------------|-----------------|----------------|
+| `/autopilot` | `/team` with 3-phase workflow | Explicit team-plan → team-exec → team-verify |
+| `/ultrapilot` | `/team` with parallel spawning | Uses `run_in_background` on Task calls |
+| `/swarm` | `/team` with native coordination | TaskCreate dependencies + SendMessage instead of SQLite |
+
+### Wrapper Modes
+
+**Ultrawork (ulw)** and **Ralph** are persistence/throughput wrappers around team:
+- **Ultrawork**: Adds parallel execution with `run_in_background` spawning
+- **Ralph**: Adds self-referential persistence with verifier gate
+
+Both use the same underlying protocol: TeamCreate → TaskCreate → Task → SendMessage → TeamDelete
 
 ## Architecture
 

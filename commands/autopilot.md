@@ -5,6 +5,8 @@ aliases: [ap, autonomous, fullsend]
 
 # Autopilot Command
 
+> **Consolidation Note:** `/autopilot` is being consolidated into `/team`. For new multi-agent work, prefer `/oh-my-claudecode:team` with the `team-plan → team-exec → team-verify` workflow. See `/oh-my-claudecode:team` docs for migration guidance.
+
 [AUTOPILOT ACTIVATED - AUTONOMOUS EXECUTION MODE]
 
 You are now in AUTOPILOT mode. This is a full autonomous execution workflow that takes a brief product idea and delivers working, tested, documented code.

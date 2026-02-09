@@ -141,27 +141,29 @@ Task(
 
 **If ANY verification fails → CONTINUE WORKING until all pass.**
 
-## Workflow
+## Workflow Phases
 
-### 1. Parse Input
+Team workflow follows a structured three-phase approach: **team-plan → team-exec → team-verify**.
 
-From `{{ARGUMENTS}}`, extract:
-- N (agent count, validate <= 5)
-- agent-type (executor, build-fixer, etc.)
-- task description
+### Phase 1: team-plan (Hiring Plan)
 
-### 2. Analyze & Decompose Task
-- Explore codebase to understand scope
-- Break into N independent subtasks
-- Identify file ownership per subtask
+Create a hiring plan before spawning teammates:
 
-### 3. Create Team & Tasks
-- TeamCreate with descriptive name
-- TaskCreate for each subtask (with dependencies if needed)
+1. **Parse Input**: Extract N (agent count, validate <= 5), agent-type, task description
+2. **Analyze & Decompose**: Explore codebase, break into N independent subtasks, identify file ownership
+3. **Define Roles**: Determine which agent types are needed (executor, verifier, designer, etc.)
+4. **Plan Dependencies**: Identify task ordering (which tasks block others)
 
-### 4. Spawn Teammates
-- Launch N agents via Task tool with BOTH `team_name` AND `name` parameters
-- Each teammate: TaskList → claim → work → complete → report
+Output: Task definitions with pre-assigned owners and dependency chains.
+
+### Phase 2: team-exec (Execution)
+
+Execute the hiring plan:
+
+1. **TeamCreate** with descriptive name
+2. **TaskCreate** for each subtask (with `addBlockedBy` dependencies if needed)
+3. **TaskUpdate** to pre-assign owners (avoids race conditions)
+4. **Spawn Teammates**: Launch N agents via Task tool with BOTH `team_name` AND `name` parameters
 
 **Example:**
 ```typescript
@@ -173,15 +175,54 @@ Task(
 )
 ```
 
-### 5. Monitor & Coordinate
+Each teammate follows: TaskList → claim → work → complete → SendMessage to lead
+
+### Phase 3: team-verify (Verification)
+
+Spawn a verifier team to validate all work:
+
+```typescript
+// After all execution tasks complete
+Task(
+  subagent_type="oh-my-claudecode:verifier",
+  team_name="fix-issues",
+  name="verifier-1",
+  prompt="Verify all TypeScript fixes pass tsc --noEmit and tests pass"
+)
+```
+
+Verification teammates use the same TaskList/claim protocol as execution teammates.
+
+### 4. Monitor & Coordinate
 - Track progress via TaskList
 - Receive automatic messages from teammates
 - Send guidance/coordination messages as needed
+- Handle blocked tasks by checking dependency completion
 
-### 6. Completion & Cleanup
-- Verify all tasks completed
-- SendMessage(shutdown_request) to each teammate
-- TeamDelete to clean up
+### 5. Completion & Cleanup
+- Verify all tasks completed via TaskList
+- **SendMessage(shutdown_request)** to each teammate
+- **TeamDelete** to clean up team resources
+- Remove `.omc/state/team-state.json`
+
+## Wrapper Modes
+
+**Ultrawork (ulw)** and **Ralph** act as persistence/throughput wrappers around the team workflow:
+
+- **Ultrawork**: Adds parallel execution with `run_in_background` spawning (up to 5 concurrent)
+- **Ralph**: Adds self-referential persistence with verifier gate before completion
+
+Both use the same underlying team protocol (TeamCreate → TaskCreate → Task → SendMessage → TeamDelete).
+
+## Migration from Legacy Modes
+
+| Legacy Mode | Team Equivalent | Migration |
+|-------------|-----------------|-----------|
+| `/autopilot` | `/team` with 3-phase workflow | Use team-plan → team-exec → team-verify |
+| `/ultrapilot` | `/team` with parallel spawning | Use `run_in_background` on Task calls |
+| `/swarm` | `/team` with native coordination | Use TaskCreate dependencies + SendMessage |
+
+**Why migrate?** Team mode uses Claude Code's native infrastructure, requires no SQLite dependency, supports inter-agent messaging, and has built-in task dependency management.
 
 ## Cancellation
 

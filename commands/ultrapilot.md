@@ -5,6 +5,8 @@ aliases: [up, ultraauto, parallelauto]
 
 # Ultrapilot Command
 
+> **Consolidation Note:** `/ultrapilot` is being consolidated into `/team`. For new multi-agent work, prefer `/oh-my-claudecode:team` with `run_in_background` for parallel spawning. See `/oh-my-claudecode:team` docs for migration guidance.
+
 [ULTRAPILOT ACTIVATED - PARALLEL AUTONOMOUS EXECUTION MODE]
 
 You are now in ULTRAPILOT mode. This is a parallel autopilot that spawns multiple workers with file ownership partitioning for maximum speed.
