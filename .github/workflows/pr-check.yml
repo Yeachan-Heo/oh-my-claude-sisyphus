@@ -18,7 +18,6 @@ jobs:
           fetch-depth: 0
 
       - name: Check PR size
-        continue-on-error: true
         uses: actions/github-script@v7
         with:
           script: |
