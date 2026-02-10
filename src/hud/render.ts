@@ -178,7 +178,7 @@ export async function render(context: HudRenderContext, config: HudConfig): Prom
   if (enabledElements.omcLabel) {
     const versionTag = context.omcVersion ? `#${context.omcVersion}` : '';
     if (context.updateAvailable) {
-      elements.push(bold(`[OMC${versionTag}] -> ${context.updateAvailable} /oh-my-claudecode:update`));
+      elements.push(bold(`[OMC${versionTag}] -> ${context.updateAvailable} omc update`));
     } else {
       elements.push(bold(`[OMC${versionTag}]`));
     }
