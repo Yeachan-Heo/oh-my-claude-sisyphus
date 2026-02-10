@@ -209,6 +209,12 @@ export interface HudRenderContext {
 
   /** Session health metrics */
   sessionHealth: SessionHealth | null;
+
+  /** Installed OMC version (e.g. "4.1.10") */
+  omcVersion: string | null;
+
+  /** Latest available version from npm registry (null if up to date or unknown) */
+  updateAvailable: string | null;
 }
 
 // ============================================================================
