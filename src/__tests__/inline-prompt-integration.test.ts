@@ -238,10 +238,7 @@ describe('inline success response shape contract', () => {
   // While error responses always return exactly 1 block.
 
   describe('handleAskCodex', () => {
-    it('should return two content blocks for inline success', async () => {
-      // This test validates the contract. Since we mock child_process,
-      // we can't get a real success response, so we validate error
-      // responses are single-block instead.
+    it('error responses should be single content block (success shape tested in inline-success-shape.test.ts)', async () => {
       const result = await handleAskCodex({
         prompt: '  ',
         agent_role: 'architect',
@@ -319,5 +316,27 @@ describe('Inline prompt edge cases', () => {
     });
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toContain('exceeds maximum size');
+  });
+
+  it('Codex: non-string output_file in file mode returns output_file error without crash', async () => {
+    const result = await handleAskCodex({
+      agent_role: 'architect',
+      prompt_file: '/tmp/test.md',
+      output_file: 123 as any,
+    });
+    expect(result.isError).toBe(true);
+    expect(result.content).toHaveLength(1);
+    expect(result.content[0].text).toContain('output_file is required');
+  });
+
+  it('Gemini: non-string output_file in file mode returns output_file error without crash', async () => {
+    const result = await handleAskGemini({
+      agent_role: 'designer',
+      prompt_file: '/tmp/test.md',
+      output_file: null as any,
+    });
+    expect(result.isError).toBe(true);
+    expect(result.content).toHaveLength(1);
+    expect(result.content[0].text).toContain('output_file is required');
   });
 });
