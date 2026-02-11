@@ -16,6 +16,7 @@ import { extractTokens, createSnapshot, } from "../analytics/token-extractor.js"
 import { extractSessionId } from "../analytics/output-estimator.js";
 import { getTokenTracker } from "../analytics/token-tracker.js";
 import { getRuntimePackageVersion } from "../lib/version.js";
+import { compareVersions } from "../features/auto-update.js";
 import { existsSync, readFileSync } from "fs";
 import { join } from "path";
 import { homedir } from "os";
@@ -297,7 +298,7 @@ async function main() {
             const updateCacheFile = join(homedir(), '.omc', 'update-check.json');
             if (existsSync(updateCacheFile)) {
                 const cached = JSON.parse(readFileSync(updateCacheFile, 'utf-8'));
-                if (cached?.updateAvailable && cached?.latestVersion && cached.latestVersion !== omcVersion) {
+                if (cached?.latestVersion && omcVersion && compareVersions(omcVersion, cached.latestVersion) < 0) {
                     updateAvailable = cached.latestVersion;
                 }
             }
