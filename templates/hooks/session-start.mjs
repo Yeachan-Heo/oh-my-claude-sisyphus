@@ -196,7 +196,7 @@ async function main() {
 
     // Check for updates (non-blocking)
     // Read version from OMC's own package.json, not the project's (fixes #516)
-    let currentVersion = '3.8.4'; // fallback
+    let currentVersion = null;
     for (let i = 1; i <= 4; i++) {
       const candidate = join(__dirname, ...Array(i).fill('..'), 'package.json');
       const pkg = readJsonFile(candidate);
@@ -206,7 +206,7 @@ async function main() {
       }
     }
 
-    const updateInfo = await checkForUpdates(currentVersion);
+    const updateInfo = currentVersion ? await checkForUpdates(currentVersion) : null;
     if (updateInfo) {
       messages.push(`<session-restore>
 
