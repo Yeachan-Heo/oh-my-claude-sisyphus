@@ -19,6 +19,38 @@ export const REPO_OWNER = 'Yeachan-Heo';
 export const REPO_NAME = 'oh-my-claudecode';
 export const GITHUB_API_URL = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}`;
 export const GITHUB_RAW_URL = `https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}`;
+/**
+ * Best-effort sync of the Claude Code marketplace clone.
+ * The marketplace clone at ~/.claude/plugins/marketplaces/omc/ is used by
+ * Claude Code to populate the plugin cache. If it's stale, `/plugin install`
+ * and cache rebuilds reinstall old versions. (See #506)
+ */
+function syncMarketplaceClone(verbose = false) {
+    const marketplacePath = join(homedir(), '.claude', 'plugins', 'marketplaces', 'omc');
+    if (!existsSync(marketplacePath)) {
+        return { ok: true, message: 'Marketplace clone not found; skipping' };
+    }
+    const stdio = verbose ? 'inherit' : 'pipe';
+    const execOpts = { encoding: 'utf-8', stdio: stdio, timeout: 60000 };
+    try {
+        execSync(`git -C "${marketplacePath}" fetch --all --prune`, execOpts);
+    }
+    catch (err) {
+        return { ok: false, message: `Failed to fetch marketplace clone: ${err instanceof Error ? err.message : err}` };
+    }
+    // Ensure we're on main (ignore errors for older clones on different branches)
+    try {
+        execSync(`git -C "${marketplacePath}" checkout main`, { ...execOpts, timeout: 15000 });
+    }
+    catch { }
+    try {
+        execSync(`git -C "${marketplacePath}" pull --ff-only origin main`, execOpts);
+    }
+    catch (err) {
+        return { ok: false, message: `Failed to update marketplace clone: ${err instanceof Error ? err.message : err}` };
+    }
+    return { ok: true, message: 'Marketplace clone updated' };
+}
 /** Installation paths */
 export const CLAUDE_CONFIG_DIR = join(homedir(), '.claude');
 export const VERSION_FILE = join(CLAUDE_CONFIG_DIR, '.omc-version.json');
@@ -274,6 +306,11 @@ export async function performUpdate(options) {
                 timeout: 120000, // 2 minute timeout for npm
                 ...(process.platform === 'win32' ? { windowsHide: true } : {})
             });
+            // Sync Claude Code marketplace clone so plugin cache picks up new version (#506)
+            const marketplaceSync = syncMarketplaceClone(options?.verbose ?? false);
+            if (!marketplaceSync.ok && options?.verbose) {
+                console.warn(`[omc update] ${marketplaceSync.message}`);
+            }
             const reconcileResult = reconcileUpdateRuntime({ verbose: options?.verbose });
             if (!reconcileResult.success) {
                 return {
