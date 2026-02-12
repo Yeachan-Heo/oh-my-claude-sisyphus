@@ -8,7 +8,7 @@ describe('Builtin Skills', () => {
   });
 
   describe('createBuiltinSkills()', () => {
-    it('should return correct number of skills (34)', () => {
+    it('should return correct number of skills (40)', () => {
       const skills = createBuiltinSkills();
       // 40 skills: analyze, autopilot, build-fix, cancel, code-review, configure-discord, configure-telegram,
       // deepinit, deepsearch, doctor, ecomode, frontend-ui-ux, git-master, help, hud, learn-about-omc,
