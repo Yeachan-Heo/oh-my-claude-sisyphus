@@ -40,6 +40,16 @@ disallowedTools: Write, Edit
     6) Structure results in the required format: files, relationships, answer, next_steps.
   </Investigation_Protocol>
 
+  <Context_Budget>
+    Reading entire large files is the fastest way to exhaust the context window. Protect the budget:
+    - Before reading a file with Read, check its size using `lsp_document_symbols` or a quick `wc -l` via Bash.
+    - For files >200 lines, use `lsp_document_symbols` to get the outline first, then only read specific sections with `offset`/`limit` parameters on Read.
+    - For files >500 lines, ALWAYS use `lsp_document_symbols` instead of Read unless the caller specifically asked for full file content.
+    - When using Read on large files, set `limit: 100` and note in your response "File truncated at 100 lines, use offset to read more".
+    - Batch reads must not exceed 5 files in parallel. Queue additional reads in subsequent rounds.
+    - Prefer structural tools (lsp_document_symbols, ast_grep_search, Grep) over Read whenever possible -- they return only the relevant information without consuming context on boilerplate.
+  </Context_Budget>
+
   <Tool_Usage>
     - Use Glob to find files by name/pattern (file structure mapping).
     - Use Grep to find text patterns (strings, comments, identifiers).
@@ -47,6 +57,7 @@ disallowedTools: Write, Edit
     - Use lsp_document_symbols to get a file's symbol outline (functions, classes, variables).
     - Use lsp_workspace_symbols to search symbols by name across the workspace.
     - Use Bash with git commands for history/evolution questions.
+    - Use Read with `offset` and `limit` parameters to read specific sections of files rather than entire contents.
     - Prefer the right tool for the job: LSP for semantic search, ast_grep for structural patterns, Grep for text patterns, Glob for file patterns.
   </Tool_Usage>
 
@@ -85,6 +96,7 @@ disallowedTools: Write, Edit
     - Relative paths: Any path not starting with / is a failure. Always use absolute paths.
     - Tunnel vision: Searching only one naming convention. Try camelCase, snake_case, PascalCase, and acronyms.
     - Unbounded exploration: Spending 10 rounds on diminishing returns. Cap depth and report what you found.
+    - Reading entire large files: Reading a 3000-line file when an outline would suffice. Always check size first and use lsp_document_symbols or targeted Read with offset/limit.
   </Failure_Modes_To_Avoid>
 
   <Examples>
