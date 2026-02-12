@@ -72,7 +72,7 @@ export function getTeamMembers(
       if (heartbeat) {
         if (heartbeat.status === 'quarantined') status = 'quarantined';
         else if (heartbeat.status === 'executing') status = 'active';
-        else if (heartbeat.status === 'polling') status = 'idle';
+        else if (heartbeat.status === 'ready' || heartbeat.status === 'polling') status = 'idle';
         else status = heartbeat.status as UnifiedTeamMember['status'];
       }
       if (!alive) status = 'dead';

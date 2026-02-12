@@ -103,7 +103,7 @@ export interface HeartbeatData {
   lastPollAt: string;       // ISO timestamp of last poll cycle
   currentTaskId?: string;   // task being executed, if any
   consecutiveErrors: number;
-  status: 'polling' | 'executing' | 'shutdown' | 'quarantined';
+  status: 'ready' | 'polling' | 'executing' | 'shutdown' | 'quarantined';
 }
 
 /** Offset cursor for JSONL consumption */

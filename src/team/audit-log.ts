@@ -14,6 +14,7 @@ import { appendFileWithMode, ensureDirWithMode, validateResolvedPath } from './f
 export type AuditEventType =
   | 'bridge_start'
   | 'bridge_shutdown'
+  | 'worker_ready'
   | 'task_claimed'
   | 'task_started'
   | 'task_completed'

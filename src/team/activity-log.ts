@@ -23,6 +23,7 @@ export interface ActivityEntry {
 const CATEGORY_MAP: Record<AuditEventType, ActivityEntry['category']> = {
   bridge_start: 'lifecycle',
   bridge_shutdown: 'lifecycle',
+  worker_ready: 'lifecycle',
   task_claimed: 'task',
   task_started: 'task',
   task_completed: 'task',
@@ -46,6 +47,7 @@ function describeEvent(event: AuditEvent): string {
   switch (event.eventType) {
     case 'bridge_start': return 'Started bridge daemon';
     case 'bridge_shutdown': return 'Shut down bridge daemon';
+    case 'worker_ready': return 'Worker ready and accepting tasks';
     case 'task_claimed': return `Claimed task ${event.taskId || '(unknown)'}`;
     case 'task_started': return `Started working on task ${event.taskId || '(unknown)'}`;
     case 'task_completed': return `Completed task ${event.taskId || '(unknown)'}`;
