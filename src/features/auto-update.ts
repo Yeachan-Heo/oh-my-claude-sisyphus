@@ -140,6 +140,8 @@ export interface OMCConfig {
   stopHookCallbacks?: StopHookCallbacksConfig;
   /** Multi-platform lifecycle notification configuration */
   notifications?: NotificationConfig;
+  /** Whether HUD statusline is enabled (default: true). Set to false to skip HUD installation. */
+  hudEnabled?: boolean;
 }
 
 /**
@@ -166,6 +168,7 @@ export function getOMCConfig(): OMCConfig {
       setupVersion: config.setupVersion,
       stopHookCallbacks: config.stopHookCallbacks,
       notifications: config.notifications,
+      hudEnabled: config.hudEnabled,
     };
   } catch {
     // If config file is invalid, default to disabled for security

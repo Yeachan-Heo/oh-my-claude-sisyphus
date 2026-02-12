@@ -89,6 +89,26 @@ export interface InstallOptions {
   skipClaudeCheck?: boolean;
   forceHooks?: boolean;
   refreshHooksInPlugin?: boolean;
+  skipHud?: boolean;
+}
+
+/**
+ * Read hudEnabled from .omc-config.json without importing auto-update
+ * (avoids circular dependency since auto-update imports from installer)
+ */
+export function isHudEnabledInConfig(): boolean {
+  const configPath = join(CLAUDE_CONFIG_DIR, '.omc-config.json');
+  if (!existsSync(configPath)) {
+    return true; // default: enabled
+  }
+  try {
+    const content = readFileSync(configPath, 'utf-8');
+    const config = JSON.parse(content);
+    // Only disable if explicitly set to false
+    return config.hudEnabled !== false;
+  } catch {
+    return true; // default: enabled on parse error
+  }
 }
 
 /**
@@ -538,15 +558,21 @@ export function install(options: InstallOptions = {}): InstallResult {
       log('Skipping agent/command/hook files (managed by plugin system)');
     }
 
-    // Install HUD statusline (skip for project-scoped plugins to avoid affecting global settings)
-    // Project-scoped plugins should not modify ~/.claude/settings.json
+    // Install HUD statusline (skip for project-scoped plugins, skipHud option, or hudEnabled config)
     let hudScriptPath: string | null = null;
+    const hudDisabledByOption = options.skipHud === true;
+    const hudDisabledByConfig = !isHudEnabledInConfig();
+    const skipHud = projectScoped || hudDisabledByOption || hudDisabledByConfig;
     if (projectScoped) {
       log('Skipping HUD statusline (project-scoped plugin should not modify global settings)');
+    } else if (hudDisabledByOption) {
+      log('Skipping HUD statusline (user opted out)');
+    } else if (hudDisabledByConfig) {
+      log('Skipping HUD statusline (hudEnabled is false in .omc-config.json)');
     } else {
       log('Installing HUD statusline...');
     }
-    if (!projectScoped) try {
+    if (!skipHud) try {
       if (!existsSync(HUD_DIR)) {
         mkdirSync(HUD_DIR, { recursive: true });
       }
