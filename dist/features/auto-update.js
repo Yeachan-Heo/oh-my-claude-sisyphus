@@ -290,6 +290,7 @@ export function reconcileUpdateRuntime(options) {
             skipClaudeCheck: true,
             forceHooks: true,
             refreshHooksInPlugin: !projectScopedPlugin,
+            version: options?.version,
         });
         if (!installResult.success) {
             errors.push(...installResult.errors);
@@ -343,7 +344,7 @@ export async function performUpdate(options) {
             if (!marketplaceSync.ok && options?.verbose) {
                 console.warn(`[omc update] ${marketplaceSync.message}`);
             }
-            const reconcileResult = reconcileUpdateRuntime({ verbose: options?.verbose });
+            const reconcileResult = reconcileUpdateRuntime({ verbose: options?.verbose, version: newVersion });
             if (!reconcileResult.success) {
                 return {
                     success: false,

@@ -90,6 +90,8 @@ export interface InstallOptions {
   forceHooks?: boolean;
   refreshHooksInPlugin?: boolean;
   skipHud?: boolean;
+  /** Override the version written to CLAUDE.md and metadata (used by omc update to avoid stale module-level VERSION) */
+  version?: string;
 }
 
 /**
@@ -520,7 +522,7 @@ export function install(options: InstallOptions = {}): InstallResult {
         }
 
         // Merge OMC content with existing content
-        const mergedContent = mergeClaudeMd(existingContent, omcContent, VERSION);
+        const mergedContent = mergeClaudeMd(existingContent, omcContent, options.version ?? VERSION);
         writeFileSync(claudeMdPath, mergedContent);
 
         if (existingContent) {

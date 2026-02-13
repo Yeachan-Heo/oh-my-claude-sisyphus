@@ -439,7 +439,7 @@ export async function checkForUpdates(): Promise<UpdateCheckResult> {
  * This is safe to run repeatedly and refreshes local runtime artifacts that may
  * lag behind an updated package or plugin cache.
  */
-export function reconcileUpdateRuntime(options?: { verbose?: boolean }): UpdateReconcileResult {
+export function reconcileUpdateRuntime(options?: { verbose?: boolean; version?: string }): UpdateReconcileResult {
   const errors: string[] = [];
 
   const projectScopedPlugin = isProjectScopedPlugin();
@@ -461,6 +461,7 @@ export function reconcileUpdateRuntime(options?: { verbose?: boolean }): UpdateR
       skipClaudeCheck: true,
       forceHooks: true,
       refreshHooksInPlugin: !projectScopedPlugin,
+      version: options?.version,
     });
 
     if (!installResult.success) {
@@ -526,7 +527,7 @@ export async function performUpdate(options?: {
         console.warn(`[omc update] ${marketplaceSync.message}`);
       }
 
-      const reconcileResult = reconcileUpdateRuntime({ verbose: options?.verbose });
+      const reconcileResult = reconcileUpdateRuntime({ verbose: options?.verbose, version: newVersion });
       if (!reconcileResult.success) {
         return {
           success: false,

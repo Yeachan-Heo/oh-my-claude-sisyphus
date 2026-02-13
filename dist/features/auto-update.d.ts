@@ -209,6 +209,7 @@ export declare function checkForUpdates(): Promise<UpdateCheckResult>;
  */
 export declare function reconcileUpdateRuntime(options?: {
     verbose?: boolean;
+    version?: string;
 }): UpdateReconcileResult;
 /**
  * Download and execute the install script to perform an update

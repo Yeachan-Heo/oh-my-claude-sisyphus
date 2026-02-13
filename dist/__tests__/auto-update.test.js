@@ -140,6 +140,7 @@ describe('auto-update reconciliation', () => {
             skipClaudeCheck: true,
             forceHooks: true,
             refreshHooksInPlugin: true,
+            version: '4.1.5',
         });
     });
     it('does not persist metadata when reconciliation fails', async () => {
@@ -247,6 +248,37 @@ describe('auto-update reconciliation', () => {
             expect(writtenSettings.hooks.UserPromptSubmit[0].hooks[0].command).toBe('node $HOME/.claude/hooks/other-plugin.mjs');
         }
         expect(result.hooksConfigured).toBe(true);
+    });
+    it('threads version option from reconcileUpdateRuntime to install', () => {
+        const result = reconcileUpdateRuntime({ verbose: false, version: '9.9.9' });
+        expect(result.success).toBe(true);
+        expect(mockedInstall).toHaveBeenCalledWith(expect.objectContaining({ version: '9.9.9' }));
+    });
+    it('passes undefined version when not provided (backward compat)', () => {
+        const result = reconcileUpdateRuntime({ verbose: false });
+        expect(result.success).toBe(true);
+        // version should be undefined, meaning install() will fall back to module-level VERSION
+        const callArgs = mockedInstall.mock.calls[0]?.[0];
+        expect(callArgs?.version).toBeUndefined();
+    });
+    it('threads newVersion from performUpdate through reconcile to install', async () => {
+        vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+            ok: true,
+            json: async () => ({
+                tag_name: 'v5.0.0',
+                name: '5.0.0',
+                published_at: '2026-02-13T00:00:00.000Z',
+                html_url: 'https://example.com/release',
+                body: 'notes',
+                prerelease: false,
+                draft: false,
+            }),
+        }));
+        mockedExecSync.mockReturnValue('');
+        const result = await performUpdate({ verbose: false });
+        expect(result.success).toBe(true);
+        expect(result.newVersion).toBe('5.0.0');
+        expect(mockedInstall).toHaveBeenCalledWith(expect.objectContaining({ version: '5.0.0' }));
     });
 });
 //# sourceMappingURL=auto-update.test.js.map

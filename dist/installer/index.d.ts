@@ -46,6 +46,8 @@ export interface InstallOptions {
     forceHooks?: boolean;
     refreshHooksInPlugin?: boolean;
     skipHud?: boolean;
+    /** Override the version written to CLAUDE.md and metadata (used by omc update to avoid stale module-level VERSION) */
+    version?: string;
 }
 /**
  * Read hudEnabled from .omc-config.json without importing auto-update
