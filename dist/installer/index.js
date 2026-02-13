@@ -463,7 +463,7 @@ export function install(options = {}) {
                     log(`Backed up existing CLAUDE.md to ${backupPath}`);
                 }
                 // Merge OMC content with existing content
-                const mergedContent = mergeClaudeMd(existingContent, omcContent, VERSION);
+                const mergedContent = mergeClaudeMd(existingContent, omcContent, options.version ?? VERSION);
                 writeFileSync(claudeMdPath, mergedContent);
                 if (existingContent) {
                     log('Updated CLAUDE.md (merged with existing content)');
@@ -740,7 +740,7 @@ export function install(options = {}) {
         // Save version metadata (skip for project-scoped plugins)
         if (!projectScoped) {
             const versionMetadata = {
-                version: VERSION,
+                version: options.version ?? VERSION,
                 installedAt: new Date().toISOString(),
                 installMethod: 'npm',
                 lastCheckAt: new Date().toISOString()

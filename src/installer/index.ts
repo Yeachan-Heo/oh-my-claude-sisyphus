@@ -85,6 +85,7 @@ export interface InstallResult {
 /** Installation options */
 export interface InstallOptions {
   force?: boolean;
+  version?: string;
   verbose?: boolean;
   skipClaudeCheck?: boolean;
   forceHooks?: boolean;
@@ -538,7 +539,7 @@ export function install(options: InstallOptions = {}): InstallResult {
         }
 
         // Merge OMC content with existing content
-        const mergedContent = mergeClaudeMd(existingContent, omcContent, VERSION);
+        const mergedContent = mergeClaudeMd(existingContent, omcContent, options.version ?? VERSION);
         writeFileSync(claudeMdPath, mergedContent);
 
         if (existingContent) {
@@ -812,7 +813,7 @@ export function install(options: InstallOptions = {}): InstallResult {
     // Save version metadata (skip for project-scoped plugins)
     if (!projectScoped) {
       const versionMetadata = {
-        version: VERSION,
+        version: options.version ?? VERSION,
         installedAt: new Date().toISOString(),
         installMethod: 'npm' as const,
         lastCheckAt: new Date().toISOString()

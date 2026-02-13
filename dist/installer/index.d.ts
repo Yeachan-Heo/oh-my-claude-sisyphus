@@ -41,6 +41,7 @@ export interface InstallResult {
 /** Installation options */
 export interface InstallOptions {
     force?: boolean;
+    version?: string;
     verbose?: boolean;
     skipClaudeCheck?: boolean;
     forceHooks?: boolean;
