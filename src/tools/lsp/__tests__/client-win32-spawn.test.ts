@@ -11,12 +11,13 @@ vi.mock('../servers.js', () => ({
 // immediately so connect() rejects fast, but spawn args are still recorded.
 vi.mock('child_process', () => ({
   spawn: vi.fn(() => {
-    const handlers: Record<string, Function> = {};
+    type EventHandler = (...args: unknown[]) => void;
+    const handlers: Record<string, EventHandler> = {};
     const proc = {
       stdin: { write: vi.fn() },
       stdout: { on: vi.fn() },
       stderr: { on: vi.fn() },
-      on: vi.fn((event: string, cb: Function) => {
+      on: vi.fn((event: string, cb: EventHandler) => {
         handlers[event] = cb;
         // Fire error asynchronously so spawn() returns first
         if (event === 'error') {

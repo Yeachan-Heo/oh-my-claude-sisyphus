@@ -495,6 +495,19 @@ async function main() {
           );
           return;
         }
+
+        // Do not silently stop Ralph once it hits max iterations; extend and keep going.
+        ralph.state.max_iterations = maxIter + 10;
+        ralph.state.last_checked_at = new Date().toISOString();
+        writeJsonFile(ralph.path, ralph.state);
+
+        console.log(
+          JSON.stringify({
+            decision: "block",
+            reason: `[RALPH LOOP - EXTENDED] Max iterations reached; extending to ${ralph.state.max_iterations} and continuing. When FULLY complete (after Architect verification), run /oh-my-claudecode:cancel (or --force).`,
+          }),
+        );
+        return;
       }
     }
 
