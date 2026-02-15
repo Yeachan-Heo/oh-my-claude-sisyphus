@@ -37,7 +37,7 @@ const KEYWORD_PATTERNS = {
     autopilot: /\b(autopilot|auto pilot|auto-pilot|autonomous|full auto|fullsend)\b/i,
     ultrapilot: /\b(ultrapilot|ultra-pilot)\b|\bparallel\s+build\b|\bswarm\s+build\b/i,
     ultrawork: /\b(ultrawork|ulw|uw)\b/i,
-    ecomode: /\b(eco|ecomode|eco-mode|efficient|save-tokens|budget)\b/i,
+    ecomode: /\b(ecomode|eco-mode|eco\s+mode|save-tokens)\b/i,
     swarm: /\bswarm\s+\d+\s+agents?\b|\bcoordinated\s+agents\b|\bteam\s+mode\b/i,
     team: /(?<!\b(?:my|the|our|a|his|her|their|its)\s)\bteam\b|\bcoordinated\s+team\b/i,
     pipeline: /\b(pipeline)\b|\bchain\s+agents\b/i,
