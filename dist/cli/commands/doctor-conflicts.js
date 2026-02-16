@@ -8,11 +8,10 @@ import { getClaudeConfigDir } from '../../utils/paths.js';
 import { isOmcHook } from '../../installer/index.js';
 import { colors } from '../utils/formatting.js';
 /**
- * Check for hook conflicts in ~/.claude/settings.json
+ * Collect hook entries from a single settings.json file.
  */
-export function checkHookConflicts() {
+function collectHooksFromSettings(settingsPath) {
     const conflicts = [];
-    const settingsPath = join(getClaudeConfigDir(), 'settings.json');
     if (!existsSync(settingsPath)) {
         return conflicts;
     }
@@ -47,6 +46,30 @@ export function checkHookConflicts() {
         // Ignore parse errors, will be reported separately
     }
     return conflicts;
+}
+/**
+ * Check for hook conflicts in both profile-level (~/.claude/settings.json)
+ * and project-level (./.claude/settings.json).
+ *
+ * Claude Code settings precedence: project > profile > defaults.
+ * We check both levels so the diagnostic is complete.
+ */
+export function checkHookConflicts() {
+    const profileSettingsPath = join(getClaudeConfigDir(), 'settings.json');
+    const projectSettingsPath = join(process.cwd(), '.claude', 'settings.json');
+    const profileHooks = collectHooksFromSettings(profileSettingsPath);
+    const projectHooks = collectHooksFromSettings(projectSettingsPath);
+    // Deduplicate by event+command (same hook in both levels should appear once)
+    const seen = new Set();
+    const merged = [];
+    for (const hook of [...projectHooks, ...profileHooks]) {
+        const key = `${hook.event}::${hook.command}`;
+        if (!seen.has(key)) {
+            seen.add(key);
+            merged.push(hook);
+        }
+    }
+    return merged;
 }
 /**
  * Check CLAUDE.md for OMC markers and user content

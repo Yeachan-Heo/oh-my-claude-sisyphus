@@ -30,7 +30,7 @@ echo "Latest: $LATEST"
 
 ### Step 2: Check for Legacy Hooks in settings.json
 
-Read `~/.claude/settings.json` and check if there's a `"hooks"` key with entries like:
+Read both `~/.claude/settings.json` (profile-level) and `./.claude/settings.json` (project-level) and check if there's a `"hooks"` key with entries like:
 - `bash $HOME/.claude/hooks/keyword-detector.sh`
 - `bash $HOME/.claude/hooks/persistent-mode.sh`
 - `bash $HOME/.claude/hooks/session-start.sh`

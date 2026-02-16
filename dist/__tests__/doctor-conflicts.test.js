@@ -9,6 +9,8 @@ import { existsSync, mkdirSync, writeFileSync, rmSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
 const TEST_CLAUDE_DIR = join(homedir(), '.claude-test-doctor-conflicts');
+const TEST_PROJECT_DIR = join(homedir(), '.claude-test-doctor-project');
+const TEST_PROJECT_CLAUDE_DIR = join(TEST_PROJECT_DIR, '.claude');
 // Mock getClaudeConfigDir before importing the module under test
 vi.mock('../utils/paths.js', () => ({
     getClaudeConfigDir: () => TEST_CLAUDE_DIR,
@@ -16,15 +18,23 @@ vi.mock('../utils/paths.js', () => ({
 // Import after mock setup
 import { checkHookConflicts, runConflictCheck } from '../cli/commands/doctor-conflicts.js';
 describe('doctor-conflicts: hook ownership classification', () => {
+    let cwdSpy;
     beforeEach(() => {
-        if (existsSync(TEST_CLAUDE_DIR)) {
-            rmSync(TEST_CLAUDE_DIR, { recursive: true, force: true });
+        for (const dir of [TEST_CLAUDE_DIR, TEST_PROJECT_DIR]) {
+            if (existsSync(dir)) {
+                rmSync(dir, { recursive: true, force: true });
+            }
         }
         mkdirSync(TEST_CLAUDE_DIR, { recursive: true });
+        mkdirSync(TEST_PROJECT_CLAUDE_DIR, { recursive: true });
+        cwdSpy = vi.spyOn(process, 'cwd').mockReturnValue(TEST_PROJECT_DIR);
     });
     afterEach(() => {
-        if (existsSync(TEST_CLAUDE_DIR)) {
-            rmSync(TEST_CLAUDE_DIR, { recursive: true, force: true });
+        cwdSpy.mockRestore();
+        for (const dir of [TEST_CLAUDE_DIR, TEST_PROJECT_DIR]) {
+            if (existsSync(dir)) {
+                rmSync(dir, { recursive: true, force: true });
+            }
         }
     });
     it('classifies real OMC hook commands as OMC-owned (issue #606)', () => {
@@ -145,6 +155,74 @@ describe('doctor-conflicts: hook ownership classification', () => {
         // hasConflicts should be false when all hooks are OMC-owned
         expect(omcReport.hookConflicts.every(h => h.isOmc)).toBe(true);
         expect(omcReport.hookConflicts.some(h => !h.isOmc)).toBe(false);
+    });
+    it('detects hooks from project-level settings.json (issue #669)', () => {
+        // Only project-level settings, no profile-level
+        const projectSettings = {
+            hooks: {
+                PreToolUse: [{
+                        hooks: [{
+                                type: 'command',
+                                command: 'node "$HOME/.claude/hooks/pre-tool-use.mjs"',
+                            }],
+                    }],
+            },
+        };
+        writeFileSync(join(TEST_PROJECT_CLAUDE_DIR, 'settings.json'), JSON.stringify(projectSettings));
+        const conflicts = checkHookConflicts();
+        expect(conflicts).toHaveLength(1);
+        expect(conflicts[0].event).toBe('PreToolUse');
+        expect(conflicts[0].isOmc).toBe(true);
+    });
+    it('merges hooks from both profile and project settings (issue #669)', () => {
+        const profileSettings = {
+            hooks: {
+                SessionStart: [{
+                        hooks: [{
+                                type: 'command',
+                                command: 'node "$HOME/.claude/hooks/session-start.mjs"',
+                            }],
+                    }],
+            },
+        };
+        const projectSettings = {
+            hooks: {
+                PreToolUse: [{
+                        hooks: [{
+                                type: 'command',
+                                command: 'python ~/my-project/hooks/lint.py',
+                            }],
+                    }],
+            },
+        };
+        writeFileSync(join(TEST_CLAUDE_DIR, 'settings.json'), JSON.stringify(profileSettings));
+        writeFileSync(join(TEST_PROJECT_CLAUDE_DIR, 'settings.json'), JSON.stringify(projectSettings));
+        const conflicts = checkHookConflicts();
+        expect(conflicts).toHaveLength(2);
+        const sessionStart = conflicts.find(c => c.event === 'SessionStart');
+        const preTool = conflicts.find(c => c.event === 'PreToolUse');
+        expect(sessionStart?.isOmc).toBe(true);
+        expect(preTool?.isOmc).toBe(false);
+    });
+    it('deduplicates identical hooks present in both levels (issue #669)', () => {
+        const sharedHook = {
+            hooks: {
+                PreToolUse: [{
+                        hooks: [{
+                                type: 'command',
+                                command: 'node "$HOME/.claude/hooks/pre-tool-use.mjs"',
+                            }],
+                    }],
+            },
+        };
+        // Same hook in both profile and project settings
+        writeFileSync(join(TEST_CLAUDE_DIR, 'settings.json'), JSON.stringify(sharedHook));
+        writeFileSync(join(TEST_PROJECT_CLAUDE_DIR, 'settings.json'), JSON.stringify(sharedHook));
+        const conflicts = checkHookConflicts();
+        // Should appear only once, not twice
+        expect(conflicts).toHaveLength(1);
+        expect(conflicts[0].event).toBe('PreToolUse');
+        expect(conflicts[0].isOmc).toBe(true);
     });
 });
 //# sourceMappingURL=doctor-conflicts.test.js.map

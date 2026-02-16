@@ -23,7 +23,11 @@ export interface ConflictReport {
     hasConflicts: boolean;
 }
 /**
- * Check for hook conflicts in ~/.claude/settings.json
+ * Check for hook conflicts in both profile-level (~/.claude/settings.json)
+ * and project-level (./.claude/settings.json).
+ *
+ * Claude Code settings precedence: project > profile > defaults.
+ * We check both levels so the diagnostic is complete.
  */
 export declare function checkHookConflicts(): ConflictReport['hookConflicts'];
 /**
