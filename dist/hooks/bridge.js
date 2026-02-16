@@ -203,7 +203,6 @@ async function processKeywordDetector(input) {
             case "cancel":
             case "autopilot":
             case "team":
-            case "ecomode":
             case "pipeline":
             case "ralplan":
             case "plan":
@@ -607,65 +606,18 @@ function processPreToolUse(input) {
     if (input.toolName === "Task") {
         const dashboard = getAgentDashboard(directory);
         if (dashboard) {
-            const messageParts = [enforcementResult.message, lowTierRewrite.message].filter((part) => typeof part === "string" && part.length > 0);
-            const baseMessage = messageParts.join("\n\n");
-            const combined = baseMessage
-                ? `${baseMessage}\n\n${dashboard}`
+            const combined = enforcementResult.message
+                ? `${enforcementResult.message}\n\n${dashboard}`
                 : dashboard;
             return {
                 continue: true,
                 message: combined,
-                ...(lowTierRewrite.modifiedInput !== undefined
-                    ? { modifiedInput: lowTierRewrite.modifiedInput }
-                    : {}),
             };
         }
     }
-    const messageParts = [enforcementResult.message, lowTierRewrite.message].filter((part) => typeof part === "string" && part.length > 0);
     return {
         continue: true,
-        ...(messageParts.length > 0 ? { message: messageParts.join("\n\n") } : {}),
-        ...(lowTierRewrite.modifiedInput !== undefined
-            ? { modifiedInput: lowTierRewrite.modifiedInput }
-            : {}),
-    };
-}
-function rewriteLowTierAgentInput(toolName, toolInput) {
-    if (!toolName || (toolName !== "Task" && toolName !== "Agent")) {
-        return {};
-    }
-    if (isLowTierAgentsEnabled()) {
-        return {};
-    }
-    if (!toolInput || typeof toolInput !== "object") {
-        return {};
-    }
-    const input = toolInput;
-    const rawSubagent = input.subagent_type;
-    if (typeof rawSubagent !== "string" || rawSubagent.length === 0) {
-        return {};
-    }
-    const hasPrefix = rawSubagent.startsWith("oh-my-claudecode:");
-    const normalized = rawSubagent.replace(/^oh-my-claudecode:/, "");
-    const rewrittenBase = LOW_TIER_AGENT_REWRITES[normalized];
-    if (!rewrittenBase) {
-        return {};
-    }
-    const rewrittenSubagent = hasPrefix ? `oh-my-claudecode:${rewrittenBase}` : rewrittenBase;
-    const modifiedInput = {
-        ...input,
-        subagent_type: rewrittenSubagent,
-    };
-    let modelUpgradeNote = "";
-    if (input.model === "haiku") {
-        modifiedInput.model = "sonnet";
-        modelUpgradeNote = " and model=haiku -> sonnet";
-    }
-    return {
-        modifiedInput,
-        message: process.env.OMC_DEBUG === "true"
-            ? `Low-tier agents disabled via config: rewrote ${rawSubagent} -> ${rewrittenSubagent}${modelUpgradeNote}.`
-            : undefined,
+        ...(enforcementResult.message ? { message: enforcementResult.message } : {}),
     };
 }
 /**

@@ -31,7 +31,6 @@ describe('omc config-stop-callback tag options', () => {
         mkdirSync(join(homeDir, '.claude'), { recursive: true });
         writeFileSync(configPath, JSON.stringify({
             silentAutoUpdate: false,
-            defaultExecutionMode: 'ecomode',
             taskTool: 'task',
             stopHookCallbacks: {
                 telegram: {
@@ -45,7 +44,6 @@ describe('omc config-stop-callback tag options', () => {
         const replace = runCli(['config-stop-callback', 'telegram', '--tag-list', '@alice,bob'], homeDir);
         expect(replace.status).toBe(0);
         let config = readConfig(configPath);
-        expect(config.defaultExecutionMode).toBe('ecomode');
         expect(config.taskTool).toBe('task');
         expect(config.stopHookCallbacks?.telegram?.tagList).toEqual(['@alice', 'bob']);
         const add = runCli(['config-stop-callback', 'telegram', '--add-tag', 'charlie'], homeDir);

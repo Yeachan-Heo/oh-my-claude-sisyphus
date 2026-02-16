@@ -39,15 +39,26 @@ export function routeTask(context, config = {}) {
     const score = calculateComplexityScore(signals);
     const scoreTier = scoreToTier(score);
     const confidence = calculateConfidence(score, ruleResult.tier);
+    let finalTier = ruleResult.tier;
     const reasons = [
         ruleResult.reason,
         `Rule: ${ruleResult.ruleName}`,
         `Score: ${score} (${scoreTier} tier by score)`,
     ];
+    // Enforce minTier if configured
+    if (mergedConfig.minTier) {
+        const tierOrder = ['LOW', 'MEDIUM', 'HIGH'];
+        const currentIdx = tierOrder.indexOf(finalTier);
+        const minIdx = tierOrder.indexOf(mergedConfig.minTier);
+        if (currentIdx < minIdx) {
+            finalTier = mergedConfig.minTier;
+            reasons.push(`Min tier enforced: ${ruleResult.tier} -> ${finalTier}`);
+        }
+    }
     return {
-        model: mergedConfig.tierModels[ruleResult.tier],
-        modelType: TIER_TO_MODEL_TYPE[ruleResult.tier],
-        tier: ruleResult.tier,
+        model: mergedConfig.tierModels[finalTier],
+        modelType: TIER_TO_MODEL_TYPE[finalTier],
+        tier: finalTier,
         confidence,
         reasons,
         escalated: false,

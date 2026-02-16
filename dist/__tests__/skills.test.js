@@ -66,7 +66,6 @@ describe('Builtin Skills', () => {
                 'deepinit',
                 'deepsearch',
                 'omc-doctor',
-                'ecomode',
                 'external-context',
                 'frontend-ui-ux',
                 'git-master',
@@ -133,7 +132,7 @@ describe('Builtin Skills', () => {
     describe('listBuiltinSkillNames()', () => {
         it('should return all skill names', () => {
             const names = listBuiltinSkillNames();
-            expect(names).toHaveLength(41);
+            expect(names).toHaveLength(40);
             expect(names).toContain('autopilot');
             expect(names).toContain('cancel');
             expect(names).toContain('ralph');

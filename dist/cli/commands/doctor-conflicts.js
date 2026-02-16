@@ -123,7 +123,6 @@ export function checkConfigIssues() {
             'taskToolConfig',
             'defaultExecutionMode',
             'bashHistory',
-            'ecomode',
             'agentTiers',
             'setupCompleted',
             'setupVersion',

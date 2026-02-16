@@ -172,14 +172,14 @@ describe('Session-Scoped State Isolation', () => {
             expect(isModeActive('ultrawork', tempDir, 'session-A')).toBe(false);
         });
         it('hasModeState with sessionId should check session path only', () => {
-            createLegacyState('ecomode', { active: true });
+            createLegacyState('ultrawork', { active: true });
             // Without sessionId, legacy file is found
-            expect(hasModeState(tempDir, 'ecomode')).toBe(true);
+            expect(hasModeState(tempDir, 'ultrawork')).toBe(true);
             // With sessionId, only session-scoped path is checked (doesn't exist)
-            expect(hasModeState(tempDir, 'ecomode', 'session-X')).toBe(false);
+            expect(hasModeState(tempDir, 'ultrawork', 'session-X')).toBe(false);
             // Create session-scoped file, now it should be found
-            createSessionState('session-X', 'ecomode', { active: true });
-            expect(hasModeState(tempDir, 'ecomode', 'session-X')).toBe(true);
+            createSessionState('session-X', 'ultrawork', { active: true });
+            expect(hasModeState(tempDir, 'ultrawork', 'session-X')).toBe(true);
         });
         it('cross-session: Session A active, Session B check returns false', () => {
             createSessionState('session-A', 'ralph', { active: true, session_id: 'session-A' });
