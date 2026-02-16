@@ -10,7 +10,7 @@
 
 import { spawn } from 'child_process';
 import { mkdirSync, readFileSync, realpathSync, statSync, writeFileSync } from 'fs';
-import { resolve, relative, sep, isAbsolute, basename, join } from 'path';
+import { resolve, relative, sep, isAbsolute, join } from 'path';
 import { createStdoutCollector, safeWriteOutputFile } from './shared-exec.js';
 import type { CliDetectionResult } from './cli-detection.js';
 import { getWorktreeRoot } from '../lib/worktree-paths.js';
@@ -69,8 +69,8 @@ export function validateModelName(model: string): void {
  */
 export function computeBackoffDelay(
   attempt: number,
-  initialDelay: number,
-  maxDelay: number,
+  initialDelay: number = 5000,
+  maxDelay: number = 60000,
 ): number {
   const exponential = initialDelay * Math.pow(2, attempt);
   const capped = Math.min(exponential, maxDelay);
@@ -270,7 +270,9 @@ export async function executeCliWithFallback(
   const exec = overrides?.executor ?? executeCli;
   const sleepFn = overrides?.sleepFn ?? sleep;
   const modelExplicit = model !== undefined && model !== null && model !== '';
-  const effectiveModel = model || config.defaultModel;
+  // Use the first entry of the provided fallback chain (built from the resolved
+  // policy model) so we honour policy even when args.model is unset.
+  const effectiveModel = model || fallbackChain?.[0] || config.defaultModel;
   const rlConfig = config.rateLimitConfig;
 
   // Explicit model with rate-limit config: retry same model with backoff
@@ -306,7 +308,7 @@ export async function executeCliWithFallback(
     } catch (err) {
       lastError = err as Error;
       // Non-retryable error: throw immediately
-      if (!/model error|model_not_found|model is not supported|429|rate.?limit|too many requests|quota.?exceeded|resource.?exhausted/i.test(lastError.message)) {
+      if (!/model error|model_not_found|model is not supported|does not exist|do not have access|429|rate.?limit|too many requests|quota.?exceeded|resource.?exhausted/i.test(lastError.message)) {
         throw lastError;
       }
       // Add backoff delay for rate limit errors before trying next model
@@ -333,7 +335,8 @@ export function executeCliBackground(
 ): { pid: number } | { error: string } {
   try {
     const modelExplicit = modelInput !== undefined && modelInput !== null && modelInput !== '';
-    const effectiveModel = modelInput || config.defaultModel;
+    // Use the job metadata's resolved model (from policy) as fallback, not config.defaultModel
+    const effectiveModel = modelInput || jobMeta.model || config.defaultModel;
     const rlConfig = config.rateLimitConfig;
 
     const modelsToTry = modelExplicit

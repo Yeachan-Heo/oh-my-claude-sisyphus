@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeAll, beforeEach, afterEach } from 'vitest';
 import {
   computeBackoffDelay,
   RATE_LIMIT_RETRY_COUNT,
@@ -55,7 +55,7 @@ describe('Codex Background Retry / Backoff', () => {
     });
 
     it('should use defaults from module constants', () => {
-      const delay = computeBackoffDelay(0, RATE_LIMIT_INITIAL_DELAY, RATE_LIMIT_MAX_DELAY);
+      const delay = computeBackoffDelay(0);
       const expected = Math.round(RATE_LIMIT_INITIAL_DELAY * 0.75);
       expect(delay).toBe(expected);
     });
@@ -165,5 +165,43 @@ describe('Codex Background Retry / Backoff', () => {
       expect(Number.isFinite(totalDelay)).toBe(true);
       expect(totalDelay).toBeLessThanOrEqual(RATE_LIMIT_RETRY_COUNT * RATE_LIMIT_MAX_DELAY);
     });
+  });
+});
+
+describe('provider-core computeBackoffDelay defaults', () => {
+  // Import from provider-core to verify its default parameters (5000/60000)
+  // independently of codex-core's re-export
+  let providerBackoff: typeof computeBackoffDelay;
+
+  beforeAll(async () => {
+    const mod = await import('../mcp/provider-core.js');
+    providerBackoff = mod.computeBackoffDelay;
+  });
+
+  beforeEach(() => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.5);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('should accept 1-arg call with default initialDelay=5000 and maxDelay=60000', () => {
+    const delay = providerBackoff(0);
+    // exponential = 5000 * 2^0 = 5000, jitter = 5000 * 0.75 = 3750
+    expect(delay).toBe(3750);
+  });
+
+  it('should accept 2-arg call with default maxDelay=60000', () => {
+    const delay = providerBackoff(0, 10000);
+    // exponential = 10000 * 2^0 = 10000, jitter = 10000 * 0.75 = 7500
+    expect(delay).toBe(7500);
+  });
+
+  it('default values should match codex-core constants', () => {
+    // Ensure provider-core defaults stay in sync with codex-core's defaults
+    const providerResult = providerBackoff(0);
+    const codexResult = computeBackoffDelay(0, RATE_LIMIT_INITIAL_DELAY, RATE_LIMIT_MAX_DELAY);
+    expect(providerResult).toBe(codexResult);
   });
 });

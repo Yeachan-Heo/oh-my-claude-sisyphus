@@ -19,7 +19,7 @@ export declare function validateModelName(model: string): void;
  * Compute exponential backoff delay with jitter for rate limit retries.
  * Returns delay in ms: min(initialDelay * 2^attempt, maxDelay) * random(0.5, 1.0)
  */
-export declare function computeBackoffDelay(attempt: number, initialDelay: number, maxDelay: number): number;
+export declare function computeBackoffDelay(attempt: number, initialDelay?: number, maxDelay?: number): number;
 /** Sleep for the specified duration. Exported for test mockability. */
 export declare function sleep(ms: number): Promise<void>;
 export interface PidRegistry {

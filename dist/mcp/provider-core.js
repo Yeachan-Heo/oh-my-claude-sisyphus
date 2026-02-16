@@ -33,7 +33,7 @@ export function validateModelName(model) {
  * Compute exponential backoff delay with jitter for rate limit retries.
  * Returns delay in ms: min(initialDelay * 2^attempt, maxDelay) * random(0.5, 1.0)
  */
-export function computeBackoffDelay(attempt, initialDelay, maxDelay) {
+export function computeBackoffDelay(attempt, initialDelay = 5000, maxDelay = 60000) {
     const exponential = initialDelay * Math.pow(2, attempt);
     const capped = Math.min(exponential, maxDelay);
     const jitter = capped * (0.5 + Math.random() * 0.5);
@@ -158,7 +158,9 @@ export async function executeCliWithFallback(config, prompt, model, cwd, fallbac
     const exec = overrides?.executor ?? executeCli;
     const sleepFn = overrides?.sleepFn ?? sleep;
     const modelExplicit = model !== undefined && model !== null && model !== '';
-    const effectiveModel = model || config.defaultModel;
+    // Use the first entry of the provided fallback chain (built from the resolved
+    // policy model) so we honour policy even when args.model is unset.
+    const effectiveModel = model || fallbackChain?.[0] || config.defaultModel;
     const rlConfig = config.rateLimitConfig;
     // Explicit model with rate-limit config: retry same model with backoff
     if (modelExplicit && rlConfig) {
@@ -194,7 +196,7 @@ export async function executeCliWithFallback(config, prompt, model, cwd, fallbac
         catch (err) {
             lastError = err;
             // Non-retryable error: throw immediately
-            if (!/model error|model_not_found|model is not supported|429|rate.?limit|too many requests|quota.?exceeded|resource.?exhausted/i.test(lastError.message)) {
+            if (!/model error|model_not_found|model is not supported|does not exist|do not have access|429|rate.?limit|too many requests|quota.?exceeded|resource.?exhausted/i.test(lastError.message)) {
                 throw lastError;
             }
             // Add backoff delay for rate limit errors before trying next model
@@ -210,7 +212,8 @@ export async function executeCliWithFallback(config, prompt, model, cwd, fallbac
 export function executeCliBackground(config, pidRegistry, fullPrompt, modelInput, jobMeta, workingDirectory, extra) {
     try {
         const modelExplicit = modelInput !== undefined && modelInput !== null && modelInput !== '';
-        const effectiveModel = modelInput || config.defaultModel;
+        // Use the job metadata's resolved model (from policy) as fallback, not config.defaultModel
+        const effectiveModel = modelInput || jobMeta.model || config.defaultModel;
         const rlConfig = config.rateLimitConfig;
         const modelsToTry = modelExplicit
             ? [effectiveModel]
