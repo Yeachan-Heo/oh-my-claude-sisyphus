@@ -527,6 +527,7 @@ async function pollDiscord(
               },
               body: JSON.stringify({
                 content: `${mentionPrefix}Injected into Claude Code session.`,
+                message_reference: { message_id: msg.id },
                 allowed_mentions: feedbackAllowedMentions,
               }),
               signal: AbortSignal.timeout(5000),
