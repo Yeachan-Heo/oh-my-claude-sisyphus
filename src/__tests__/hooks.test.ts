@@ -1,8 +1,18 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { mkdirSync, writeFileSync, readFileSync, rmSync, existsSync } from 'fs';
 import { join } from 'path';
 import { tmpdir, homedir } from 'os';
 import { execSync } from 'child_process';
+
+// Mock isTeamEnabled so team/ultrapilot/swarm keywords are detected in CI
+vi.mock('../features/auto-update.js', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
+  return {
+    ...actual,
+    isTeamEnabled: () => true,
+  };
+});
+
 import {
   extractPromptText,
   removeCodeBlocks,
