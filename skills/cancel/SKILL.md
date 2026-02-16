@@ -1,6 +1,6 @@
 ---
 name: cancel
-description: Cancel any active OMC mode (autopilot, ralph, ultrawork, ultraqa, swarm, ultrapilot, pipeline, team)
+description: Cancel any active OMC mode (autopilot, ralph, ultrawork, ecomode, ultraqa, swarm, ultrapilot, pipeline, team)
 ---
 
 # Cancel Skill
@@ -81,7 +81,7 @@ Legacy compatibility list (removed only under `--force`/`--all`):
 - `.omc/state/ralph-plan-state.json`
 - `.omc/state/ralph-verification.json`
 - `.omc/state/ultrawork-state.json`
-- `.omc/state/-state.json`
+- `.omc/state/ecomode-state.json`
 - `.omc/state/ultraqa-state.json`
 - `.omc/state/swarm.db`
 - `.omc/state/swarm.db-wal`

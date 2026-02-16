@@ -76,6 +76,12 @@ const MODE_CONFIGS: Record<ExecutionMode, ModeConfig> = {
     name: 'UltraQA',
     stateFile: 'ultraqa-state.json',
     activeProperty: 'active'
+  },
+  ecomode: {
+    name: 'Ecomode',
+    stateFile: 'ecomode-state.json',
+    activeProperty: 'active',
+    hasGlobalState: false
   }
 };
 

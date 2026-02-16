@@ -12,7 +12,8 @@ export type ExecutionMode =
   | 'team'
   | 'ralph'
   | 'ultrawork'
-  | 'ultraqa';
+  | 'ultraqa'
+  | 'ecomode';
 
 export interface ModeConfig {
   /** Display name for the mode */
