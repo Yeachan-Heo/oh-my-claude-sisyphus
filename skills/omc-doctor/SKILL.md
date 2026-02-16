@@ -14,13 +14,9 @@ You are the OMC Doctor - diagnose and fix installation issues.
 ### Step 1: Check Plugin Version
 
 ```bash
-# Get installed version
-INSTALLED=$(ls ~/.claude/plugins/cache/omc/oh-my-claudecode/ 2>/dev/null | sort -V | tail -1)
-echo "Installed: $INSTALLED"
-
-# Get latest from npm
-LATEST=$(npm view oh-my-claude-sisyphus version 2>/dev/null)
-echo "Latest: $LATEST"
+# Get installed and latest versions (cross-platform)
+node -e "const p=require('path'),f=require('fs'),h=require('os').homedir(),d=process.env.CLAUDE_CONFIG_DIR||p.join(h,'.claude'),b=p.join(d,'plugins','cache','omc','oh-my-claudecode');try{const v=f.readdirSync(b).filter(x=>/^\d/.test(x)).sort((a,c)=>a.localeCompare(c,void 0,{numeric:true}));console.log('Installed:',v.length?v[v.length-1]:'(none)')}catch{console.log('Installed: (none)')}"
+npm view oh-my-claude-sisyphus version 2>/dev/null || echo "Latest: (unavailable)"
 ```
 
 **Diagnosis**:
@@ -64,8 +60,8 @@ grep -q "oh-my-claudecode Multi-Agent System" ~/.claude/CLAUDE.md 2>/dev/null &&
 ### Step 5: Check for Stale Plugin Cache
 
 ```bash
-# Count versions in cache
-ls ~/.claude/plugins/cache/omc/oh-my-claudecode/ 2>/dev/null | wc -l
+# Count versions in cache (cross-platform)
+node -e "const p=require('path'),f=require('fs'),h=require('os').homedir(),d=process.env.CLAUDE_CONFIG_DIR||p.join(h,'.claude'),b=p.join(d,'plugins','cache','omc','oh-my-claudecode');try{const v=f.readdirSync(b).filter(x=>/^\d/.test(x));console.log(v.length+' version(s):',v.join(', '))}catch{console.log('0 versions')}"
 ```
 
 **Diagnosis**:
@@ -150,15 +146,14 @@ rm -f ~/.claude/hooks/stop-continuation.sh
 
 ### Fix: Outdated Plugin
 ```bash
-rm -rf ~/.claude/plugins/cache/oh-my-claudecode
-echo "Plugin cache cleared. Restart Claude Code to fetch latest version."
+# Clear plugin cache (cross-platform)
+node -e "const p=require('path'),f=require('fs'),d=process.env.CLAUDE_CONFIG_DIR||p.join(require('os').homedir(),'.claude'),b=p.join(d,'plugins','cache','omc','oh-my-claudecode');try{f.rmSync(b,{recursive:true,force:true});console.log('Plugin cache cleared. Restart Claude Code to fetch latest version.')}catch{console.log('No plugin cache found')}"
 ```
 
 ### Fix: Stale Cache (multiple versions)
 ```bash
-# Keep only latest version
-cd ~/.claude/plugins/cache/omc/oh-my-claudecode/
-ls | sort -V | head -n -1 | xargs rm -rf
+# Keep only latest version (cross-platform)
+node -e "const p=require('path'),f=require('fs'),h=require('os').homedir(),d=process.env.CLAUDE_CONFIG_DIR||p.join(h,'.claude'),b=p.join(d,'plugins','cache','omc','oh-my-claudecode');try{const v=f.readdirSync(b).filter(x=>/^\d/.test(x)).sort((a,c)=>a.localeCompare(c,void 0,{numeric:true}));v.slice(0,-1).forEach(x=>f.rmSync(p.join(b,x),{recursive:true,force:true}));console.log('Removed',v.length-1,'old version(s)')}catch(e){console.log('No cache to clean')}"
 ```
 
 ### Fix: Missing/Outdated CLAUDE.md

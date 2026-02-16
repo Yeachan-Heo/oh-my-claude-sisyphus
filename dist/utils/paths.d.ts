@@ -31,6 +31,13 @@ export declare function getDataDir(): string;
  */
 export declare function getConfigDir(): string;
 /**
+ * Get the plugin cache base directory for oh-my-claudecode.
+ * This is the directory containing version subdirectories.
+ *
+ * Structure: <configDir>/plugins/cache/omc/oh-my-claudecode/
+ */
+export declare function getPluginCacheBase(): string;
+/**
  * Safely delete a file, ignoring ENOENT errors.
  * Prevents crashes when cleaning up files that may not exist (Bug #13 fix).
  */

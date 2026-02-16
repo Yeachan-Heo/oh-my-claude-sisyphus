@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync, existsSync } from 'fs';
-import { join, dirname } from 'path';
+import { join, dirname, sep } from 'path';
 import { fileURLToPath, pathToFileURL } from 'url';
+import { getPluginCacheBase, getClaudeConfigDir } from '../utils/paths.js';
 
 /**
  * HUD Windows Compatibility Tests
@@ -10,8 +11,9 @@ import { fileURLToPath, pathToFileURL } from 'url';
  * - File naming (omc-hud.mjs)
  * - Windows dynamic import() requires file:// URLs (pathToFileURL)
  * - Version sorting (numeric vs lexicographic)
+ * - Cross-platform plugin cache path resolution (#670)
  *
- * Related: GitHub Issue #138, PR #139, PR #140
+ * Related: GitHub Issue #138, PR #139, PR #140, Issue #670
  */
 
 const __filename = fileURLToPath(import.meta.url);
@@ -120,6 +122,76 @@ describe('HUD Windows Compatibility', () => {
         a.localeCompare(b, undefined, { numeric: true })
       ).reverse();
       expect(sorted).toEqual(['1.0.10', '1.0.9', '1.0.2', '1.0.1']);
+    });
+  });
+
+  describe('Cross-Platform Plugin Cache Path (#670)', () => {
+    it('getPluginCacheBase should return path with correct segments', () => {
+      const cachePath = getPluginCacheBase();
+      // Should contain the expected path segments regardless of separator
+      const normalized = cachePath.replace(/\\/g, '/');
+      expect(normalized).toContain('plugins/cache/omc/oh-my-claudecode');
+    });
+
+    it('getPluginCacheBase should use platform-native separators', () => {
+      const cachePath = getPluginCacheBase();
+      // On Windows: backslashes, on Unix: forward slashes
+      expect(cachePath).toContain(`plugins${sep}cache${sep}omc${sep}oh-my-claudecode`);
+    });
+
+    it('getPluginCacheBase should be under claude config dir', () => {
+      const cachePath = getPluginCacheBase();
+      const configDir = getClaudeConfigDir();
+      expect(cachePath.startsWith(configDir)).toBe(true);
+    });
+
+    it('plugin-setup.mjs should use pathToFileURL for dynamic imports', () => {
+      const setupPath = join(packageRoot, 'scripts', 'plugin-setup.mjs');
+      const content = readFileSync(setupPath, 'utf-8');
+
+      // Should import pathToFileURL
+      expect(content).toContain('import { pathToFileURL } from "node:url"');
+      // Should use pathToFileURL for the dynamic import
+      expect(content).toContain('pathToFileURL(pluginPath).href');
+    });
+
+    it('plugin-setup.mjs should use path.join for plugin cache base', () => {
+      const setupPath = join(packageRoot, 'scripts', 'plugin-setup.mjs');
+      const content = readFileSync(setupPath, 'utf-8');
+
+      // The generated HUD wrapper should use join() for path construction
+      expect(content).toContain('join(home, ".claude/plugins/cache/omc/oh-my-claudecode")');
+    });
+
+    it('omc-doctor skill should use cross-platform Node.js commands', () => {
+      const doctorPath = join(packageRoot, 'skills', 'omc-doctor', 'SKILL.md');
+      const content = readFileSync(doctorPath, 'utf-8');
+
+      // Should NOT use ~ for plugin cache paths in bash commands
+      expect(content).not.toMatch(/ls ~\/\.claude\/plugins\/cache/);
+      // Should use node -e for cross-platform compatibility
+      expect(content).toContain("node -e");
+      // Should use path.join for constructing paths
+      expect(content).toContain("p.join(d,'plugins','cache','omc','oh-my-claudecode')");
+    });
+
+    it('hud skill should use cross-platform Node.js commands for plugin detection', () => {
+      const hudPath = join(packageRoot, 'skills', 'hud', 'SKILL.md');
+      const content = readFileSync(hudPath, 'utf-8');
+
+      // Step 1 and Step 2 should use node -e instead of ls/sort -V
+      expect(content).not.toMatch(/ls ~\/\.claude\/plugins\/cache/);
+      expect(content).not.toMatch(/sort -V/);
+      // Should use node for cross-platform path resolution
+      expect(content).toContain("node -e");
+    });
+
+    it('usage-api should use path.join with separate segments', () => {
+      const usageApiPath = join(packageRoot, 'src', 'hud', 'usage-api.ts');
+      const content = readFileSync(usageApiPath, 'utf-8');
+
+      // Should use join() with separate segments, not forward-slash literals
+      expect(content).toContain("'plugins', 'oh-my-claudecode', '.usage-cache.json'");
     });
   });
 });

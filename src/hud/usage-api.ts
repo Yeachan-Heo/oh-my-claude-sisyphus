@@ -87,7 +87,7 @@ export function isZaiHost(urlString: string): boolean {
  * Get the cache file path
  */
 function getCachePath(): string {
-  return join(getClaudeConfigDir(), 'plugins/oh-my-claudecode/.usage-cache.json');
+  return join(getClaudeConfigDir(), 'plugins', 'oh-my-claudecode', '.usage-cache.json');
 }
 
 /**
