@@ -1,0 +1,84 @@
+/**
+ * Reply Listener Daemon
+ *
+ * Background daemon that polls Discord and Telegram for replies to notification messages,
+ * sanitizes input, verifies the target pane, and injects reply text via sendToPane().
+ *
+ * Security considerations:
+ * - State/PID/log files use restrictive permissions (0600)
+ * - Bot tokens stored in state file, NOT in environment variables
+ * - Two-layer input sanitization (sanitizeReplyInput + sanitizeForTmux)
+ * - Pane verification via analyzePaneContent before every injection
+ * - Authorization: only configured user IDs (Discord) / chat ID (Telegram) can inject
+ * - Rate limiting to prevent spam/abuse
+ *
+ * Follows the daemon pattern from src/features/rate-limit-wait/daemon.ts
+ */
+import type { ReplyConfig } from './types.js';
+/** Reply listener daemon state */
+export interface ReplyListenerState {
+    isRunning: boolean;
+    pid: number | null;
+    startedAt: string | null;
+    lastPollAt: string | null;
+    telegramLastUpdateId: number | null;
+    discordLastMessageId: string | null;
+    messagesInjected: number;
+    errors: number;
+    lastError?: string;
+}
+/** Daemon configuration (written to state file) */
+export interface ReplyListenerDaemonConfig extends ReplyConfig {
+    telegramBotToken?: string;
+    telegramChatId?: string;
+    discordBotToken?: string;
+    discordChannelId?: string;
+}
+/** Response from daemon operations */
+export interface DaemonResponse {
+    success: boolean;
+    message: string;
+    state?: ReplyListenerState;
+    error?: string;
+}
+/**
+ * Check if daemon is currently running
+ */
+export declare function isDaemonRunning(): boolean;
+/**
+ * Sanitize reply input from Discord/Telegram before tmux injection.
+ * Applied BEFORE sendToPane()'s own sanitizeForTmux().
+ *
+ * Defenses:
+ * - Newlines replaced with spaces (prevents multi-command injection)
+ * - Backticks escaped (prevents command substitution in some shells)
+ * - $() and ${} patterns escaped (prevents command substitution)
+ * - Backslashes escaped (prevents escape sequence injection)
+ * - Control characters stripped
+ */
+export declare function sanitizeReplyInput(text: string): string;
+/**
+ * Main daemon polling loop
+ */
+declare function pollLoop(): Promise<void>;
+/**
+ * Start the reply listener daemon.
+ *
+ * Writes bot tokens to the state file (0600 permissions), then forks
+ * the daemon process with minimal env (no tokens in env).
+ *
+ * Idempotent: if daemon is already running, returns success.
+ *
+ * @param config - Daemon config including bot tokens and reply settings
+ */
+export declare function startReplyListener(config: ReplyListenerDaemonConfig): DaemonResponse;
+/**
+ * Stop the reply listener daemon
+ */
+export declare function stopReplyListener(): DaemonResponse;
+/**
+ * Get daemon status
+ */
+export declare function getReplyListenerStatus(): DaemonResponse;
+export { pollLoop };
+//# sourceMappingURL=reply-listener.d.ts.map

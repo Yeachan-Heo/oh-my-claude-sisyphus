@@ -133,6 +133,8 @@ export interface OMCConfig {
   stopHookCallbacks?: StopHookCallbacksConfig;
   /** Multi-platform lifecycle notification configuration */
   notifications?: NotificationConfig;
+  /** Named notification profiles (keyed by profile name) */
+  notificationProfiles?: Record<string, NotificationConfig>;
   /** Whether HUD statusline is enabled (default: true). Set to false to skip HUD installation. */
   hudEnabled?: boolean;
   /** Whether to prompt for upgrade at session start when a new version is available (default: true).
@@ -162,6 +164,7 @@ export function getOMCConfig(): OMCConfig {
       setupVersion: config.setupVersion,
       stopHookCallbacks: config.stopHookCallbacks,
       notifications: config.notifications,
+      notificationProfiles: config.notificationProfiles,
       hudEnabled: config.hudEnabled,
       autoUpgradePrompt: config.autoUpgradePrompt,
     };

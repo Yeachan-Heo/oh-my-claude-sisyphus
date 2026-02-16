@@ -163,6 +163,9 @@ export interface NotificationPayload {
   tmuxPaneId?: string;
 }
 
+/** Named notification profiles (keyed by profile name) */
+export type NotificationProfilesConfig = Record<string, NotificationConfig>;
+
 /** Result of a notification send attempt */
 export interface NotificationResult {
   platform: NotificationPlatform;

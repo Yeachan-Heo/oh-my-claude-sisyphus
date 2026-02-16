@@ -202,16 +202,60 @@ function mergeEnvIntoFileConfig(fileConfig, envConfig) {
     return merged;
 }
 /**
+ * Apply env-var mention patching and platform merge to a notification config.
+ * Shared logic used by both profile and default config resolution paths.
+ */
+function applyEnvMerge(config) {
+    // Deep-merge: env platforms fill missing blocks in file config
+    const envConfig = buildConfigFromEnv();
+    if (envConfig) {
+        return mergeEnvIntoFileConfig(config, envConfig);
+    }
+    // Even without full env platform config, apply env mention to file discord configs
+    const envMention = validateMention(process.env.OMC_DISCORD_MENTION);
+    if (envMention) {
+        const patched = { ...config };
+        if (patched["discord-bot"] && patched["discord-bot"].mention === undefined) {
+            patched["discord-bot"] = { ...patched["discord-bot"], mention: envMention };
+        }
+        if (patched.discord && patched.discord.mention === undefined) {
+            patched.discord = { ...patched.discord, mention: envMention };
+        }
+        return patched;
+    }
+    return config;
+}
+/**
  * Get the notification configuration.
+ *
+ * When a profile name is provided (or set via OMC_NOTIFY_PROFILE env var),
+ * the corresponding named profile from `notificationProfiles` is used.
+ * Falls back to the default `notifications` config if the profile is not found.
  *
  * Reads from .omc-config.json, looking for the `notifications` key.
  * When file config exists, env-derived platforms are merged in to fill
  * missing platform blocks (file fields take precedence).
  * Falls back to migrating old `stopHookCallbacks` if present.
  * Returns null if no notification config is found.
+ *
+ * @param profileName - Optional profile name (overrides OMC_NOTIFY_PROFILE env var)
  */
-export function getNotificationConfig() {
+export function getNotificationConfig(profileName) {
     const raw = readRawConfig();
+    const effectiveProfile = profileName || process.env.OMC_NOTIFY_PROFILE;
+    // Priority 0: Named profile from notificationProfiles
+    if (effectiveProfile && raw) {
+        const profiles = raw.notificationProfiles;
+        if (profiles && profiles[effectiveProfile]) {
+            const profileConfig = profiles[effectiveProfile];
+            if (typeof profileConfig.enabled !== "boolean") {
+                return null;
+            }
+            return applyEnvMerge(profileConfig);
+        }
+        // Profile requested but not found — warn and fall through to default
+        console.warn(`[notifications] Profile "${effectiveProfile}" not found, using default`);
+    }
     // Priority 1: Explicit notifications config in .omc-config.json
     if (raw) {
         const notifications = raw.notifications;
@@ -219,24 +263,7 @@ export function getNotificationConfig() {
             if (typeof notifications.enabled !== "boolean") {
                 return null;
             }
-            // Deep-merge: env platforms fill missing blocks in file config
-            const envConfig = buildConfigFromEnv();
-            if (envConfig) {
-                return mergeEnvIntoFileConfig(notifications, envConfig);
-            }
-            // Even without full env platform config, apply env mention to file discord configs
-            const envMention = validateMention(process.env.OMC_DISCORD_MENTION);
-            if (envMention) {
-                const patched = { ...notifications };
-                if (patched["discord-bot"] && patched["discord-bot"].mention === undefined) {
-                    patched["discord-bot"] = { ...patched["discord-bot"], mention: envMention };
-                }
-                if (patched.discord && patched.discord.mention === undefined) {
-                    patched.discord = { ...patched.discord, mention: envMention };
-                }
-                return patched;
-            }
-            return notifications;
+            return applyEnvMerge(notifications);
         }
     }
     // Priority 2: Environment variables (zero-config)
@@ -318,5 +345,128 @@ export function getEnabledPlatforms(config, event) {
     checkPlatform("slack");
     checkPlatform("webhook");
     return platforms;
+}
+/**
+ * Events checked when resolving reply-capable platform config.
+ * Order matters for deterministic fallback when only event-level config exists.
+ */
+const REPLY_PLATFORM_EVENTS = [
+    "session-start",
+    "ask-user-question",
+    "session-stop",
+    "session-idle",
+    "session-end",
+];
+/**
+ * Resolve the effective enabled platform config for reply-listener bootstrap.
+ *
+ * Priority:
+ * 1) Top-level platform config when enabled
+ * 2) First enabled event-level platform config (deterministic event order)
+ */
+function getEnabledReplyPlatformConfig(config, platform) {
+    const topLevel = config[platform];
+    if (topLevel?.enabled) {
+        return topLevel;
+    }
+    for (const event of REPLY_PLATFORM_EVENTS) {
+        const eventConfig = config.events?.[event];
+        const eventPlatform = eventConfig?.[platform];
+        if (eventPlatform &&
+            typeof eventPlatform === "object" &&
+            "enabled" in eventPlatform &&
+            eventPlatform.enabled) {
+            return eventPlatform;
+        }
+    }
+    return undefined;
+}
+/**
+ * Resolve bot credentials used by the reply listener daemon.
+ * Supports both top-level and event-level platform configs.
+ */
+export function getReplyListenerPlatformConfig(config) {
+    if (!config)
+        return {};
+    const telegramConfig = getEnabledReplyPlatformConfig(config, "telegram");
+    const discordBotConfig = getEnabledReplyPlatformConfig(config, "discord-bot");
+    return {
+        telegramBotToken: telegramConfig?.botToken || config.telegram?.botToken,
+        telegramChatId: telegramConfig?.chatId || config.telegram?.chatId,
+        discordBotToken: discordBotConfig?.botToken || config["discord-bot"]?.botToken,
+        discordChannelId: discordBotConfig?.channelId || config["discord-bot"]?.channelId,
+    };
+}
+/**
+ * Parse Discord user IDs from environment variable or config array.
+ * Returns empty array if neither is valid.
+ */
+function parseDiscordUserIds(envValue, configValue) {
+    // Try env var first (comma-separated list)
+    if (envValue) {
+        const ids = envValue
+            .split(",")
+            .map((id) => id.trim())
+            .filter((id) => /^\d{17,20}$/.test(id));
+        if (ids.length > 0)
+            return ids;
+    }
+    // Try config array
+    if (Array.isArray(configValue)) {
+        const ids = configValue
+            .filter((id) => typeof id === "string" && /^\d{17,20}$/.test(id));
+        if (ids.length > 0)
+            return ids;
+    }
+    return [];
+}
+/**
+ * Get reply injection configuration.
+ *
+ * Returns null when:
+ * - Reply listening is disabled
+ * - No reply-capable bot platform (discord-bot or telegram) is configured
+ * - Notifications are globally disabled
+ *
+ * Reads from .omc-config.json notifications.reply section.
+ * Environment variables override config file values:
+ * - OMC_REPLY_ENABLED: enable reply listening (default: false)
+ * - OMC_REPLY_POLL_INTERVAL_MS: polling interval in ms (default: 3000)
+ * - OMC_REPLY_RATE_LIMIT: max messages per minute (default: 10)
+ * - OMC_REPLY_DISCORD_USER_IDS: comma-separated authorized Discord user IDs
+ * - OMC_REPLY_INCLUDE_PREFIX: include visual prefix (default: true)
+ *
+ * SECURITY: Logs warning when Discord bot is enabled but authorizedDiscordUserIds is empty.
+ */
+export function getReplyConfig() {
+    const notifConfig = getNotificationConfig();
+    if (!notifConfig?.enabled)
+        return null;
+    // Check if any reply-capable platform (discord-bot or telegram) is enabled.
+    // Supports event-level platform config (not just top-level defaults).
+    const hasDiscordBot = !!getEnabledReplyPlatformConfig(notifConfig, "discord-bot");
+    const hasTelegram = !!getEnabledReplyPlatformConfig(notifConfig, "telegram");
+    if (!hasDiscordBot && !hasTelegram)
+        return null;
+    // Read reply-specific config
+    const raw = readRawConfig();
+    const replyRaw = raw?.notifications?.reply;
+    const enabled = process.env.OMC_REPLY_ENABLED === "true" || replyRaw?.enabled === true;
+    if (!enabled)
+        return null;
+    const authorizedDiscordUserIds = parseDiscordUserIds(process.env.OMC_REPLY_DISCORD_USER_IDS, replyRaw?.authorizedDiscordUserIds);
+    // SECURITY: If Discord bot is enabled but no authorized user IDs, log warning
+    if (hasDiscordBot && authorizedDiscordUserIds.length === 0) {
+        console.warn("[notifications] Discord reply listening disabled: authorizedDiscordUserIds is empty. " +
+            "Set OMC_REPLY_DISCORD_USER_IDS or add to .omc-config.json notifications.reply.authorizedDiscordUserIds");
+    }
+    return {
+        enabled: true,
+        pollIntervalMs: parseInt(process.env.OMC_REPLY_POLL_INTERVAL_MS || "") || replyRaw?.pollIntervalMs || 3000,
+        maxMessageLength: replyRaw?.maxMessageLength || 500,
+        rateLimitPerMinute: parseInt(process.env.OMC_REPLY_RATE_LIMIT || "") || replyRaw?.rateLimitPerMinute || 10,
+        includePrefix: process.env.OMC_REPLY_INCLUDE_PREFIX !== "false" && (replyRaw?.includePrefix !== false),
+        authorizedDiscordUserIds,
+    };
 }
 //# sourceMappingURL=config.js.map

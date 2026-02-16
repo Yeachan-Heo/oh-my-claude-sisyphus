@@ -12,6 +12,15 @@ vi.mock("https", () => {
                 res.statusCode = 200;
                 res.resume = vi.fn();
                 callback(res);
+                // Emit response data with message_id
+                setImmediate(() => {
+                    const responseBody = JSON.stringify({
+                        ok: true,
+                        result: { message_id: 12345 },
+                    });
+                    res.emit("data", Buffer.from(responseBody));
+                    res.emit("end");
+                });
             });
             req.destroy = vi.fn();
             return req;
@@ -203,7 +212,11 @@ describe("sendDiscord", () => {
 });
 describe("sendDiscordBot", () => {
     beforeEach(() => {
-        vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, status: 200 }));
+        vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+            ok: true,
+            status: 200,
+            json: async () => ({ id: "1234567890" }),
+        }));
     });
     afterEach(() => {
         vi.restoreAllMocks();
@@ -243,7 +256,11 @@ describe("sendDiscordBot", () => {
             channelId: "999888777",
         };
         const result = await sendDiscordBot(config, basePayload);
-        expect(result).toEqual({ platform: "discord-bot", success: true });
+        expect(result).toEqual({
+            platform: "discord-bot",
+            success: true,
+            messageId: "1234567890",
+        });
         expect(fetch).toHaveBeenCalledOnce();
         const call = vi.mocked(fetch).mock.calls[0];
         expect(call[0]).toBe("https://discord.com/api/v10/channels/999888777/messages");
@@ -262,6 +279,38 @@ describe("sendDiscordBot", () => {
         expect(body.allowed_mentions).toBeDefined();
         expect(body.allowed_mentions.parse).toEqual([]);
         expect(body.allowed_mentions.users).toEqual(["12345678901234567"]);
+    });
+    it("returns success with messageId when response JSON is valid", async () => {
+        vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+            ok: true,
+            status: 200,
+            json: async () => ({ id: "9876543210" }),
+        }));
+        const config = {
+            enabled: true,
+            botToken: "test-bot-token",
+            channelId: "999888777",
+        };
+        const result = await sendDiscordBot(config, basePayload);
+        expect(result.success).toBe(true);
+        expect(result.messageId).toBe("9876543210");
+    });
+    it("returns success without messageId when response JSON parse fails", async () => {
+        vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+            ok: true,
+            status: 200,
+            json: async () => {
+                throw new Error("Invalid JSON");
+            },
+        }));
+        const config = {
+            enabled: true,
+            botToken: "test-bot-token",
+            channelId: "999888777",
+        };
+        const result = await sendDiscordBot(config, basePayload);
+        expect(result.success).toBe(true);
+        expect(result.messageId).toBeUndefined();
     });
 });
 describe("sendTelegram", () => {
@@ -307,7 +356,97 @@ describe("sendTelegram", () => {
             chatId: "999",
         };
         const result = await sendTelegram(config, basePayload);
-        expect(result).toEqual({ platform: "telegram", success: true });
+        expect(result).toEqual({
+            platform: "telegram",
+            success: true,
+            messageId: "12345",
+        });
+    });
+    it("uses httpsRequest with family:4 for IPv4", async () => {
+        const { request } = await import("https");
+        const config = {
+            enabled: true,
+            botToken: "123456:ABCdef",
+            chatId: "999",
+        };
+        await sendTelegram(config, basePayload);
+        expect(request).toHaveBeenCalled();
+        const callArgs = vi.mocked(request).mock.calls[0][0];
+        expect(callArgs).toHaveProperty("family", 4);
+    });
+    it("handles response parse failure gracefully", async () => {
+        const { request } = await import("https");
+        const EventEmitter = require("events");
+        // Mock request to return invalid JSON
+        vi.mocked(request).mockImplementationOnce((...args) => {
+            const callback = args[args.length - 1];
+            const req = new EventEmitter();
+            req.write = vi.fn();
+            req.end = vi.fn(() => {
+                const res = new EventEmitter();
+                res.statusCode = 200;
+                callback(res);
+                setImmediate(() => {
+                    res.emit("data", Buffer.from("invalid json"));
+                    res.emit("end");
+                });
+            });
+            req.destroy = vi.fn();
+            return req;
+        });
+        const config = {
+            enabled: true,
+            botToken: "123456:ABCdef",
+            chatId: "999",
+        };
+        const result = await sendTelegram(config, basePayload);
+        // Should still succeed, just without messageId
+        expect(result.success).toBe(true);
+        expect(result.messageId).toBeUndefined();
+    });
+    it("collects response chunks using data/end events", async () => {
+        const { request } = await import("https");
+        const EventEmitter = require("events");
+        // Verify that chunk collection pattern is used (not res.resume())
+        let dataHandlerRegistered = false;
+        let endHandlerRegistered = false;
+        vi.mocked(request).mockImplementationOnce((...args) => {
+            const callback = args[args.length - 1];
+            const req = new EventEmitter();
+            req.write = vi.fn();
+            req.end = vi.fn(() => {
+                const res = new EventEmitter();
+                res.statusCode = 200;
+                // Override on() to detect handler registration
+                const originalOn = res.on.bind(res);
+                res.on = (event, handler) => {
+                    if (event === "data")
+                        dataHandlerRegistered = true;
+                    if (event === "end")
+                        endHandlerRegistered = true;
+                    return originalOn(event, handler);
+                };
+                callback(res);
+                setImmediate(() => {
+                    const responseBody = JSON.stringify({
+                        ok: true,
+                        result: { message_id: 99999 },
+                    });
+                    res.emit("data", Buffer.from(responseBody));
+                    res.emit("end");
+                });
+            });
+            req.destroy = vi.fn();
+            return req;
+        });
+        const config = {
+            enabled: true,
+            botToken: "123456:ABCdef",
+            chatId: "999",
+        };
+        await sendTelegram(config, basePayload);
+        expect(dataHandlerRegistered).toBe(true);
+        expect(endHandlerRegistered).toBe(true);
     });
 });
 describe("sendSlack", () => {

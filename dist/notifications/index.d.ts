@@ -9,10 +9,10 @@
  *   import { notify } from '../notifications/index.js';
  *   await notify('session-start', { sessionId, projectPath, ... });
  */
-export type { NotificationEvent, NotificationPlatform, NotificationConfig, NotificationPayload, NotificationResult, DispatchResult, DiscordNotificationConfig, DiscordBotNotificationConfig, TelegramNotificationConfig, SlackNotificationConfig, WebhookNotificationConfig, EventNotificationConfig, } from "./types.js";
+export type { NotificationEvent, NotificationPlatform, NotificationConfig, NotificationProfilesConfig, NotificationPayload, NotificationResult, DispatchResult, DiscordNotificationConfig, DiscordBotNotificationConfig, TelegramNotificationConfig, SlackNotificationConfig, WebhookNotificationConfig, EventNotificationConfig, } from "./types.js";
 export { dispatchNotifications, sendDiscord, sendDiscordBot, sendTelegram, sendSlack, sendWebhook, } from "./dispatcher.js";
 export { formatNotification, formatSessionStart, formatSessionStop, formatSessionEnd, formatSessionIdle, formatAskUserQuestion, } from "./formatter.js";
-export { getCurrentTmuxSession, getTeamTmuxSessions, formatTmuxInfo, } from "./tmux.js";
+export { getCurrentTmuxSession, getCurrentTmuxPaneId, getTeamTmuxSessions, formatTmuxInfo, } from "./tmux.js";
 export { getNotificationConfig, isEventEnabled, getEnabledPlatforms, } from "./config.js";
 import type { NotificationEvent, NotificationPayload, DispatchResult } from "./types.js";
 /**
@@ -27,5 +27,6 @@ import type { NotificationEvent, NotificationPayload, DispatchResult } from "./t
  */
 export declare function notify(event: NotificationEvent, data: Partial<NotificationPayload> & {
     sessionId: string;
+    profileName?: string;
 }): Promise<DispatchResult | null>;
 //# sourceMappingURL=index.d.ts.map

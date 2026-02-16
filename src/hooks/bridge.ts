@@ -505,6 +505,7 @@ async function processPersistentMode(input: HookInput): Promise<HookOutput> {
           notify("session-idle", {
             sessionId,
             projectPath: directory,
+            profileName: process.env.OMC_NOTIFY_PROFILE,
           }).catch(() => {})
         ).catch(() => {});
       }
@@ -564,6 +565,7 @@ async function processSessionStart(input: HookInput): Promise<HookOutput> {
       notify("session-start", {
         sessionId,
         projectPath: directory,
+        profileName: process.env.OMC_NOTIFY_PROFILE,
       }).catch(() => {})
     ).catch(() => {});
   }
@@ -745,6 +747,7 @@ export function dispatchAskUserQuestionNotification(
       sessionId,
       projectPath: directory,
       question: questionText,
+      profileName: process.env.OMC_NOTIFY_PROFILE,
     }).catch(() => {})
   ).catch(() => {});
 }

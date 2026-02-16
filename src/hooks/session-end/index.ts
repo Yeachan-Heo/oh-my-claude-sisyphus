@@ -456,6 +456,7 @@ export async function processSessionEnd(input: SessionEndInput): Promise<HookOut
       modesUsed: metrics.modes_used,
       reason: metrics.reason,
       timestamp: metrics.ended_at,
+      profileName: process.env.OMC_NOTIFY_PROFILE,
     });
   } catch {
     // Notification failures should never block session end

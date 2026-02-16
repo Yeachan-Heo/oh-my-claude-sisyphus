@@ -171,7 +171,16 @@ export async function sendDiscordBot(config, payload) {
                 error: `HTTP ${response.status}`,
             };
         }
-        return { platform: "discord-bot", success: true };
+        // NEW: Parse response to extract message ID
+        let messageId;
+        try {
+            const data = (await response.json());
+            messageId = data?.id;
+        }
+        catch {
+            // Non-fatal: message was sent, we just can't track it
+        }
+        return { platform: "discord-bot", success: true, messageId };
     }
     catch (error) {
         return {
@@ -214,18 +223,32 @@ export async function sendTelegram(config, payload) {
                 },
                 timeout: SEND_TIMEOUT_MS,
             }, (res) => {
-                // Drain the response
-                res.resume();
-                if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
-                    resolve({ platform: "telegram", success: true });
-                }
-                else {
-                    resolve({
-                        platform: "telegram",
-                        success: false,
-                        error: `HTTP ${res.statusCode}`,
-                    });
-                }
+                // Collect response chunks to parse message_id
+                const chunks = [];
+                res.on("data", (chunk) => chunks.push(chunk));
+                res.on("end", () => {
+                    if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
+                        // Parse response to extract message_id
+                        let messageId;
+                        try {
+                            const body = JSON.parse(Buffer.concat(chunks).toString("utf-8"));
+                            if (body?.result?.message_id !== undefined) {
+                                messageId = String(body.result.message_id);
+                            }
+                        }
+                        catch {
+                            // Non-fatal: message was sent, we just can't track it
+                        }
+                        resolve({ platform: "telegram", success: true, messageId });
+                    }
+                    else {
+                        resolve({
+                            platform: "telegram",
+                            success: false,
+                            error: `HTTP ${res.statusCode}`,
+                        });
+                    }
+                });
             });
             req.on("error", (e) => {
                 resolve({ platform: "telegram", success: false, error: e.message });

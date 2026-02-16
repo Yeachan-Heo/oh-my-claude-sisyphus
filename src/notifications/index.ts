@@ -14,6 +14,7 @@ export type {
   NotificationEvent,
   NotificationPlatform,
   NotificationConfig,
+  NotificationProfilesConfig,
   NotificationPayload,
   NotificationResult,
   DispatchResult,
@@ -76,10 +77,10 @@ import { basename } from "path";
  */
 export async function notify(
   event: NotificationEvent,
-  data: Partial<NotificationPayload> & { sessionId: string },
+  data: Partial<NotificationPayload> & { sessionId: string; profileName?: string },
 ): Promise<DispatchResult | null> {
   try {
-    const config = getNotificationConfig();
+    const config = getNotificationConfig(data.profileName);
     if (!config || !isEventEnabled(config, event)) {
       return null;
     }

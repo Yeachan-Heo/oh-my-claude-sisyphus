@@ -239,16 +239,64 @@ function mergeEnvIntoFileConfig(
 }
 
 /**
+ * Apply env-var mention patching and platform merge to a notification config.
+ * Shared logic used by both profile and default config resolution paths.
+ */
+function applyEnvMerge(config: NotificationConfig): NotificationConfig {
+  // Deep-merge: env platforms fill missing blocks in file config
+  const envConfig = buildConfigFromEnv();
+  if (envConfig) {
+    return mergeEnvIntoFileConfig(config, envConfig);
+  }
+  // Even without full env platform config, apply env mention to file discord configs
+  const envMention = validateMention(process.env.OMC_DISCORD_MENTION);
+  if (envMention) {
+    const patched = { ...config };
+    if (patched["discord-bot"] && patched["discord-bot"].mention === undefined) {
+      patched["discord-bot"] = { ...patched["discord-bot"], mention: envMention };
+    }
+    if (patched.discord && patched.discord.mention === undefined) {
+      patched.discord = { ...patched.discord, mention: envMention };
+    }
+    return patched;
+  }
+  return config;
+}
+
+/**
  * Get the notification configuration.
+ *
+ * When a profile name is provided (or set via OMC_NOTIFY_PROFILE env var),
+ * the corresponding named profile from `notificationProfiles` is used.
+ * Falls back to the default `notifications` config if the profile is not found.
  *
  * Reads from .omc-config.json, looking for the `notifications` key.
  * When file config exists, env-derived platforms are merged in to fill
  * missing platform blocks (file fields take precedence).
  * Falls back to migrating old `stopHookCallbacks` if present.
  * Returns null if no notification config is found.
+ *
+ * @param profileName - Optional profile name (overrides OMC_NOTIFY_PROFILE env var)
  */
-export function getNotificationConfig(): NotificationConfig | null {
+export function getNotificationConfig(profileName?: string): NotificationConfig | null {
   const raw = readRawConfig();
+  const effectiveProfile = profileName || process.env.OMC_NOTIFY_PROFILE;
+
+  // Priority 0: Named profile from notificationProfiles
+  if (effectiveProfile && raw) {
+    const profiles = raw.notificationProfiles as Record<string, NotificationConfig> | undefined;
+    if (profiles && profiles[effectiveProfile]) {
+      const profileConfig = profiles[effectiveProfile];
+      if (typeof profileConfig.enabled !== "boolean") {
+        return null;
+      }
+      return applyEnvMerge(profileConfig);
+    }
+    // Profile requested but not found — warn and fall through to default
+    console.warn(
+      `[notifications] Profile "${effectiveProfile}" not found, using default`,
+    );
+  }
 
   // Priority 1: Explicit notifications config in .omc-config.json
   if (raw) {
@@ -257,24 +305,7 @@ export function getNotificationConfig(): NotificationConfig | null {
       if (typeof notifications.enabled !== "boolean") {
         return null;
       }
-      // Deep-merge: env platforms fill missing blocks in file config
-      const envConfig = buildConfigFromEnv();
-      if (envConfig) {
-        return mergeEnvIntoFileConfig(notifications, envConfig);
-      }
-      // Even without full env platform config, apply env mention to file discord configs
-      const envMention = validateMention(process.env.OMC_DISCORD_MENTION);
-      if (envMention) {
-        const patched = { ...notifications };
-        if (patched["discord-bot"] && patched["discord-bot"].mention === undefined) {
-          patched["discord-bot"] = { ...patched["discord-bot"], mention: envMention };
-        }
-        if (patched.discord && patched.discord.mention === undefined) {
-          patched.discord = { ...patched.discord, mention: envMention };
-        }
-        return patched;
-      }
-      return notifications;
+      return applyEnvMerge(notifications);
     }
   }
 
