@@ -172,6 +172,57 @@ describe("getNotificationConfig - file + env deep merge", () => {
         const config = getNotificationConfig();
         expect(config).toBeNull();
     });
+    it("env mention is applied to file discord-bot when other env platform exists", () => {
+        vi.mocked(existsSync).mockReturnValue(true);
+        vi.mocked(readFileSync).mockReturnValue(JSON.stringify({
+            notifications: {
+                enabled: true,
+                "discord-bot": {
+                    enabled: true,
+                    botToken: "file-token",
+                    channelId: "file-channel",
+                },
+            },
+        }));
+        vi.stubEnv("OMC_DISCORD_MENTION", "<@12345678901234567>");
+        vi.stubEnv("OMC_SLACK_WEBHOOK_URL", "https://hooks.slack.com/services/test");
+        const config = getNotificationConfig();
+        expect(config["discord-bot"].mention).toBe("<@12345678901234567>");
+    });
+    it("validates file discord-bot mention when other env platform exists", () => {
+        vi.mocked(existsSync).mockReturnValue(true);
+        vi.mocked(readFileSync).mockReturnValue(JSON.stringify({
+            notifications: {
+                enabled: true,
+                "discord-bot": {
+                    enabled: true,
+                    botToken: "file-token",
+                    channelId: "file-channel",
+                    mention: "  <@12345678901234567>  ",
+                },
+            },
+        }));
+        vi.stubEnv("OMC_SLACK_WEBHOOK_URL", "https://hooks.slack.com/services/test");
+        const config = getNotificationConfig();
+        expect(config["discord-bot"].mention).toBe("<@12345678901234567>");
+    });
+    it("rejects invalid file discord-bot mention when other env platform exists", () => {
+        vi.mocked(existsSync).mockReturnValue(true);
+        vi.mocked(readFileSync).mockReturnValue(JSON.stringify({
+            notifications: {
+                enabled: true,
+                "discord-bot": {
+                    enabled: true,
+                    botToken: "file-token",
+                    channelId: "file-channel",
+                    mention: "@everyone",
+                },
+            },
+        }));
+        vi.stubEnv("OMC_SLACK_WEBHOOK_URL", "https://hooks.slack.com/services/test");
+        const config = getNotificationConfig();
+        expect(config["discord-bot"].mention).toBeUndefined();
+    });
     it("falls back to legacy stopHookCallbacks when no notifications key", () => {
         vi.mocked(existsSync).mockReturnValue(true);
         vi.mocked(readFileSync).mockReturnValue(JSON.stringify({

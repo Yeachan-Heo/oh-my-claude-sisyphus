@@ -203,6 +203,12 @@ function mergeEnvIntoFileConfig(
           ? validateMention(merged["discord-bot"].mention)
           : envConfig["discord-bot"].mention,
     };
+  } else if (merged["discord-bot"]) {
+    // Validate mention in existing file config
+    merged["discord-bot"] = {
+      ...merged["discord-bot"],
+      mention: validateMention(merged["discord-bot"].mention),
+    };
   }
 
   // Merge discord webhook: if file doesn't have it but env does, add it
@@ -245,22 +251,22 @@ function mergeEnvIntoFileConfig(
 function applyEnvMerge(config: NotificationConfig): NotificationConfig {
   // Deep-merge: env platforms fill missing blocks in file config
   const envConfig = buildConfigFromEnv();
-  if (envConfig) {
-    return mergeEnvIntoFileConfig(config, envConfig);
-  }
-  // Even without full env platform config, apply env mention to file discord configs
+  let merged = envConfig ? mergeEnvIntoFileConfig(config, envConfig) : config;
+
+  // Apply env mention to any Discord config that still lacks one.
+  // This must run after mergeEnvIntoFileConfig so that file-only discord
+  // platforms (not present in env) also receive the env mention.
   const envMention = validateMention(process.env.OMC_DISCORD_MENTION);
   if (envMention) {
-    const patched = { ...config };
-    if (patched["discord-bot"] && patched["discord-bot"].mention === undefined) {
-      patched["discord-bot"] = { ...patched["discord-bot"], mention: envMention };
+    if (merged["discord-bot"] && merged["discord-bot"].mention === undefined) {
+      merged = { ...merged, "discord-bot": { ...merged["discord-bot"], mention: envMention } };
     }
-    if (patched.discord && patched.discord.mention === undefined) {
-      patched.discord = { ...patched.discord, mention: envMention };
+    if (merged.discord && merged.discord.mention === undefined) {
+      merged = { ...merged, discord: { ...merged.discord, mention: envMention } };
     }
-    return patched;
   }
-  return config;
+
+  return merged;
 }
 
 /**
