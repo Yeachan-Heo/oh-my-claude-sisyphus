@@ -17,16 +17,16 @@ export const DEFAULT_CONFIG = {
     agents: {
         omc: { model: 'claude-opus-4-6-20260205' },
         architect: { model: 'claude-opus-4-6-20260205', enabled: true },
-        researcher: { model: 'claude-sonnet-4-5-20250929' },
+        researcher: { model: 'claude-sonnet-4-6-20260217' },
         explore: { model: 'claude-haiku-4-5-20251001' },
-        frontendEngineer: { model: 'claude-sonnet-4-5-20250929', enabled: true },
+        frontendEngineer: { model: 'claude-sonnet-4-6-20260217', enabled: true },
         documentWriter: { model: 'claude-haiku-4-5-20251001', enabled: true },
-        multimodalLooker: { model: 'claude-sonnet-4-5-20250929', enabled: true },
+        multimodalLooker: { model: 'claude-sonnet-4-6-20260217', enabled: true },
         // New agents from oh-my-opencode
         critic: { model: 'claude-opus-4-6-20260205', enabled: true },
         analyst: { model: 'claude-opus-4-6-20260205', enabled: true },
-        orchestratorSisyphus: { model: 'claude-sonnet-4-5-20250929', enabled: true },
-        sisyphusJunior: { model: 'claude-sonnet-4-5-20250929', enabled: true },
+        orchestratorSisyphus: { model: 'claude-sonnet-4-6-20260217', enabled: true },
+        sisyphusJunior: { model: 'claude-sonnet-4-6-20260217', enabled: true },
         planner: { model: 'claude-opus-4-6-20260205', enabled: true }
     },
     features: {
@@ -60,7 +60,7 @@ export const DEFAULT_CONFIG = {
         maxEscalations: 2,
         tierModels: {
             LOW: 'claude-haiku-4-5-20251001',
-            MEDIUM: 'claude-sonnet-4-5-20250929',
+            MEDIUM: 'claude-sonnet-4-6-20260217',
             HIGH: 'claude-opus-4-6-20260205'
         },
         agentOverrides: {

@@ -206,14 +206,14 @@ function normalizeModelName(modelName: string): string {
   const lower = modelName.toLowerCase();
 
   if (lower.includes('haiku')) return 'claude-haiku-4';
-  if (lower.includes('sonnet')) return 'claude-sonnet-4.5';
+  if (lower.includes('sonnet')) return 'claude-sonnet-4.6';
   if (lower.includes('opus')) return 'claude-opus-4.6';
 
   // Check exact matches
   if (PRICING[modelName]) return modelName;
 
   // Default
-  return 'claude-sonnet-4.5';
+  return 'claude-sonnet-4.6';
 }
 
 /**
@@ -224,7 +224,7 @@ function normalizeModelName(modelName: string): string {
  */
 export function getFallbackPricing(modelName: string): ModelPricing {
   const normalized = normalizeModelName(modelName);
-  return PRICING[normalized] ?? PRICING['claude-sonnet-4.5'];
+  return PRICING[normalized] ?? PRICING['claude-sonnet-4.6'];
 }
 
 /**

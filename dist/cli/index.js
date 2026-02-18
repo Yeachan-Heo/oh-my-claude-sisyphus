@@ -391,14 +391,14 @@ Examples:
     },
     "researcher": {
       // Documentation and codebase analysis
-      "model": "claude-sonnet-4-5-20250514"
+      "model": "claude-sonnet-4-6-20260217"
     },
     "explore": {
       // Fast pattern matching - uses fastest model
       "model": "claude-3-5-haiku-20241022"
     },
     "frontendEngineer": {
-      "model": "claude-sonnet-4-5-20250514",
+      "model": "claude-sonnet-4-6-20260217",
       "enabled": true
     },
     "documentWriter": {
@@ -406,7 +406,7 @@ Examples:
       "enabled": true
     },
     "multimodalLooker": {
-      "model": "claude-sonnet-4-5-20250514",
+      "model": "claude-sonnet-4-6-20260217",
       "enabled": true
     }
   },

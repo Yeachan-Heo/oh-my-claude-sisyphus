@@ -250,7 +250,7 @@ async function calculateSessionHealth(
       await import("../analytics/output-estimator.js");
 
     const modelName =
-      stdin.model?.id ?? stdin.model?.display_name ?? "claude-sonnet-4.5";
+      stdin.model?.id ?? stdin.model?.display_name ?? "claude-sonnet-4.6";
     const estimatedOutput = estimateOutputTokens(inputTokens, modelName);
 
     const costResult = calculateCost({

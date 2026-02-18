@@ -33,8 +33,8 @@ const mockLine = (sessionId: string, timestamp: string, model: string, input: nu
   });
 
 const mockData = [
-  mockLine('s1', '2026-01-01T00:00:00Z', 'claude-sonnet-4.5', 100, 50, 10, 5),
-  mockLine('s1', '2026-01-01T01:00:00Z', 'claude-sonnet-4.5', 200, 100, 20, 10),
+  mockLine('s1', '2026-01-01T00:00:00Z', 'claude-sonnet-4.6', 100, 50, 10, 5),
+  mockLine('s1', '2026-01-01T01:00:00Z', 'claude-sonnet-4.6', 200, 100, 20, 10),
   mockLine('s2', '2026-01-02T00:00:00Z', 'claude-haiku-4', 50, 25, 5, 2),
 ].join('\n');
 
@@ -105,7 +105,7 @@ describe('SessionCatalog', () => {
     it('should skip malformed JSONL lines gracefully', async () => {
       const dataWithBadLines = [
         'not json at all',
-        mockLine('s1', '2026-01-01T00:00:00Z', 'claude-sonnet-4.5', 100, 50, 10, 5),
+        mockLine('s1', '2026-01-01T00:00:00Z', 'claude-sonnet-4.6', 100, 50, 10, 5),
         '{invalid json',
         '{"sessionId":"missing-fields"}',
         mockLine('s2', '2026-01-02T00:00:00Z', 'claude-haiku-4', 50, 25, 5, 2),
@@ -120,7 +120,7 @@ describe('SessionCatalog', () => {
 
     it('should filter out records with missing required fields', async () => {
       const dataWithInvalid = [
-        mockLine('s1', '2026-01-01T00:00:00Z', 'claude-sonnet-4.5', 100, 50, 10, 5),
+        mockLine('s1', '2026-01-01T00:00:00Z', 'claude-sonnet-4.6', 100, 50, 10, 5),
         // Valid JSON but missing required fields - not a valid TokenUsage
         JSON.stringify({ sessionId: 's3', timestamp: '2026-01-03T00:00:00Z' }),
       ].join('\n');
@@ -199,8 +199,8 @@ describe('SessionCatalog', () => {
       const sessions = await catalog.getSessions();
       const s1 = sessions.find(s => s.sessionId === 's1')!;
 
-      expect(s1.modelBreakdown['claude-sonnet-4.5']).toBeDefined();
-      expect(s1.modelBreakdown['claude-sonnet-4.5'].tokens).toBe(450);
+      expect(s1.modelBreakdown['claude-sonnet-4.6']).toBeDefined();
+      expect(s1.modelBreakdown['claude-sonnet-4.6'].tokens).toBe(450);
     });
 
     it('should use (main session) for entries without agentName', async () => {
@@ -219,7 +219,7 @@ describe('isValidTokenUsage', () => {
     expect(isValidTokenUsage({
       sessionId: 's1',
       timestamp: '2026-01-01T00:00:00Z',
-      modelName: 'claude-sonnet-4.5',
+      modelName: 'claude-sonnet-4.6',
       inputTokens: 100,
       outputTokens: 50,
       cacheCreationTokens: 10,
@@ -246,7 +246,7 @@ describe('isValidTokenUsage', () => {
     expect(isValidTokenUsage({
       sessionId: 's1',
       timestamp: '2026-01-01T00:00:00Z',
-      modelName: 'claude-sonnet-4.5',
+      modelName: 'claude-sonnet-4.6',
       inputTokens: '100', // string instead of number
       outputTokens: 50,
       cacheCreationTokens: 10,

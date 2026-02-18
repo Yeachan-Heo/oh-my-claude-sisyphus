@@ -6,7 +6,7 @@ import type { HudRenderContext, HudConfig } from '../../hud/types.js';
 function createMinimalContext(overrides: Partial<HudRenderContext> = {}): HudRenderContext {
   return {
     contextPercent: 30,
-    modelName: 'claude-sonnet-4.5',
+    modelName: 'claude-sonnet-4.6',
     ralph: null,
     ultrawork: null,
     prd: null,

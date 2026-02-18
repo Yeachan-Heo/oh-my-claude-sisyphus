@@ -33,6 +33,7 @@ function normalizeModelId(modelId) {
 const HIGH_VARIANT_MAP = {
     // Claude
     'claude-sonnet-4-5': 'claude-sonnet-4-5-high',
+    'claude-sonnet-4-6': 'claude-sonnet-4-6-high',
     'claude-opus-4-6': 'claude-opus-4-6-high',
     'claude-3-5-sonnet': 'claude-3-5-sonnet-high',
     'claude-3-opus': 'claude-3-opus-high',

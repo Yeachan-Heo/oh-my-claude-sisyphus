@@ -19,7 +19,7 @@ describe('TokenTracker.getTopAgents', () => {
     // Record usage for multiple agents
     await tracker.recordTokenUsage({
       agentName: 'executor',
-      modelName: 'claude-sonnet-4.5',
+      modelName: 'claude-sonnet-4.6',
       inputTokens: 1000,
       outputTokens: 500,
       cacheCreationTokens: 0,
@@ -50,7 +50,7 @@ describe('TokenTracker.getTopAgents', () => {
     for (let i = 0; i < 5; i++) {
       await tracker.recordTokenUsage({
         agentName: `agent-${i}`,
-        modelName: 'claude-sonnet-4.5',
+        modelName: 'claude-sonnet-4.6',
         inputTokens: (5 - i) * 1000, // Different amounts
         outputTokens: 500,
         cacheCreationTokens: 0,
@@ -68,7 +68,7 @@ describe('TokenTracker.getTopAgents', () => {
     // Record multiple usages for same agent
     await tracker.recordTokenUsage({
       agentName: 'executor',
-      modelName: 'claude-sonnet-4.5',
+      modelName: 'claude-sonnet-4.6',
       inputTokens: 1000,
       outputTokens: 500,
       cacheCreationTokens: 0,
@@ -77,7 +77,7 @@ describe('TokenTracker.getTopAgents', () => {
 
     await tracker.recordTokenUsage({
       agentName: 'executor',
-      modelName: 'claude-sonnet-4.5',
+      modelName: 'claude-sonnet-4.6',
       inputTokens: 1000,
       outputTokens: 500,
       cacheCreationTokens: 0,
@@ -95,7 +95,7 @@ describe('TokenTracker.getTopAgents', () => {
     const tracker = resetTokenTracker('test-session');
 
     await tracker.recordTokenUsage({
-      modelName: 'claude-sonnet-4.5',
+      modelName: 'claude-sonnet-4.6',
       inputTokens: 1000,
       outputTokens: 500,
       cacheCreationTokens: 0,
@@ -112,7 +112,7 @@ describe('TokenTracker.getTopAgents', () => {
 
     // Main session usage
     await tracker.recordTokenUsage({
-      modelName: 'claude-sonnet-4.5',
+      modelName: 'claude-sonnet-4.6',
       inputTokens: 500,
       outputTokens: 250,
       cacheCreationTokens: 0,
@@ -122,7 +122,7 @@ describe('TokenTracker.getTopAgents', () => {
     // Named agent usage
     await tracker.recordTokenUsage({
       agentName: 'executor',
-      modelName: 'claude-sonnet-4.5',
+      modelName: 'claude-sonnet-4.6',
       inputTokens: 1000,
       outputTokens: 500,
       cacheCreationTokens: 0,
@@ -173,7 +173,7 @@ describe('TokenTracker.getTopAgents', () => {
     // Usage with cache
     await tracker.recordTokenUsage({
       agentName: 'cached-agent',
-      modelName: 'claude-sonnet-4.5',
+      modelName: 'claude-sonnet-4.6',
       inputTokens: 1000,
       outputTokens: 500,
       cacheCreationTokens: 500,
@@ -183,7 +183,7 @@ describe('TokenTracker.getTopAgents', () => {
     // Usage without cache
     await tracker.recordTokenUsage({
       agentName: 'uncached-agent',
-      modelName: 'claude-sonnet-4.5',
+      modelName: 'claude-sonnet-4.6',
       inputTokens: 1000,
       outputTokens: 500,
       cacheCreationTokens: 0,
@@ -208,7 +208,7 @@ describe('TokenTracker.getTopAgents', () => {
     for (let i = 0; i < 3; i++) {
       await tracker.recordTokenUsage({
         agentName: `agent-${i}`,
-        modelName: 'claude-sonnet-4.5',
+        modelName: 'claude-sonnet-4.6',
         inputTokens: 1000,
         outputTokens: 500,
         cacheCreationTokens: 0,

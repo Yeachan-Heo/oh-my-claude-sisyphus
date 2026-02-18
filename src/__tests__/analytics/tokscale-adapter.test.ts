@@ -34,7 +34,7 @@ describe('tokscale-adapter', () => {
 
   describe('lookupPricingWithFallback', () => {
     it('returns pricing for known models', async () => {
-      const pricing = await lookupPricingWithFallback('claude-sonnet-4.5');
+      const pricing = await lookupPricingWithFallback('claude-sonnet-4.6');
       expect(pricing).toHaveProperty('inputPerMillion');
       expect(pricing).toHaveProperty('outputPerMillion');
       expect(pricing.inputPerMillion).toBeGreaterThan(0);
@@ -65,7 +65,7 @@ describe('tokscale-adapter', () => {
     });
 
     it('includes cache pricing fields', async () => {
-      const pricing = await lookupPricingWithFallback('claude-sonnet-4.5');
+      const pricing = await lookupPricingWithFallback('claude-sonnet-4.6');
       expect(pricing).toHaveProperty('cacheWriteMarkup');
       expect(pricing).toHaveProperty('cacheReadDiscount');
     });

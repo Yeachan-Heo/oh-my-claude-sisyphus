@@ -9,7 +9,7 @@ describe('OutputEstimator', () => {
     });
 
     it('should estimate Sonnet output tokens (40% ratio)', () => {
-      const estimate = estimateOutputTokens(1000, 'claude-sonnet-4-5-20250929');
+      const estimate = estimateOutputTokens(1000, 'claude-sonnet-4-6-20260217');
       expect(estimate).toBe(400); // 1000 * 0.40
     });
 
@@ -24,7 +24,7 @@ describe('OutputEstimator', () => {
     });
 
     it('should handle zero input tokens', () => {
-      const estimate = estimateOutputTokens(0, 'claude-sonnet-4-5-20250929');
+      const estimate = estimateOutputTokens(0, 'claude-sonnet-4-6-20260217');
       expect(estimate).toBe(0);
     });
 
@@ -48,18 +48,18 @@ describe('OutputEstimator', () => {
     it('should handle various model name formats', () => {
       // Different date formats
       expect(estimateOutputTokens(1000, 'claude-haiku-4')).toBe(300);
-      expect(estimateOutputTokens(1000, 'claude-sonnet-4.5')).toBe(400);
+      expect(estimateOutputTokens(1000, 'claude-sonnet-4.6')).toBe(400);
       expect(estimateOutputTokens(1000, 'claude-opus-4')).toBe(500);
     });
 
     it('should handle large token counts', () => {
-      const estimate = estimateOutputTokens(1_000_000, 'claude-sonnet-4-5-20250929');
+      const estimate = estimateOutputTokens(1_000_000, 'claude-sonnet-4-6-20260217');
       expect(estimate).toBe(400_000); // 1,000,000 * 0.40
     });
 
     it('should handle fractional results', () => {
       // 333 * 0.40 = 133.2 -> rounds to 133
-      const estimate = estimateOutputTokens(333, 'claude-sonnet-4-5-20250929');
+      const estimate = estimateOutputTokens(333, 'claude-sonnet-4-6-20260217');
       expect(estimate).toBe(133);
     });
   });

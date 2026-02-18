@@ -127,7 +127,7 @@ function getPricingForModel(modelName: string): ModelPricing {
 
   // Default to Sonnet if unknown
   console.warn(`Unknown model: ${modelName}, defaulting to Sonnet pricing`);
-  return PRICING['claude-sonnet-4.5'];
+  return PRICING['claude-sonnet-4.6'];
 }
 
 export function normalizeModelName(modelName: string): string {
@@ -135,14 +135,14 @@ export function normalizeModelName(modelName: string): string {
   const lower = modelName.toLowerCase();
 
   if (lower.includes('haiku')) return 'claude-haiku-4';
-  if (lower.includes('sonnet')) return 'claude-sonnet-4.5';
+  if (lower.includes('sonnet')) return 'claude-sonnet-4.6';
   if (lower.includes('opus')) return 'claude-opus-4.6';
 
   // Check exact matches
   if (PRICING[modelName]) return modelName;
 
   // Default
-  return 'claude-sonnet-4.5';
+  return 'claude-sonnet-4.6';
 }
 
 export function formatCost(cost: number): string {

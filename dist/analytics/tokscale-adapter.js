@@ -158,14 +158,14 @@ function normalizeModelName(modelName) {
     if (lower.includes('haiku'))
         return 'claude-haiku-4';
     if (lower.includes('sonnet'))
-        return 'claude-sonnet-4.5';
+        return 'claude-sonnet-4.6';
     if (lower.includes('opus'))
         return 'claude-opus-4.6';
     // Check exact matches
     if (PRICING[modelName])
         return modelName;
     // Default
-    return 'claude-sonnet-4.5';
+    return 'claude-sonnet-4.6';
 }
 /**
  * Gets fallback pricing from the static PRICING table
@@ -175,7 +175,7 @@ function normalizeModelName(modelName) {
  */
 export function getFallbackPricing(modelName) {
     const normalized = normalizeModelName(modelName);
-    return PRICING[normalized] ?? PRICING['claude-sonnet-4.5'];
+    return PRICING[normalized] ?? PRICING['claude-sonnet-4.6'];
 }
 /**
  * Looks up pricing for a model, preferring tokscale's database with fallback

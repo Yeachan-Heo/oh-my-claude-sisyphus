@@ -10,7 +10,7 @@
  */
 export const TIER_MODELS = {
     LOW: 'claude-haiku-4-5-20251001',
-    MEDIUM: 'claude-sonnet-4-5-20250929',
+    MEDIUM: 'claude-sonnet-4-6-20260217',
     HIGH: 'claude-opus-4-6-20260205',
 };
 /**
