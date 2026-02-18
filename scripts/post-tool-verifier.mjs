@@ -125,8 +125,18 @@ function appendToBashHistory(command) {
   }
 }
 
+// Pattern to match Claude Code temp CWD permission errors (false positives on macOS)
+// e.g. "zsh:1: permission denied: /var/folders/.../T/claude-abc123-cwd"
+const CLAUDE_TEMP_CWD_PATTERN = /zsh:\d+: permission denied:.*\/T\/claude-[a-z0-9]+-cwd/gi;
+
+// Strip Claude Code temp CWD noise before pattern matching
+function stripClaudeTempCwdErrors(output) {
+  return output.replace(CLAUDE_TEMP_CWD_PATTERN, '');
+}
+
 // Detect failures in Bash output
-function detectBashFailure(output) {
+export function detectBashFailure(output) {
+  const cleaned = stripClaudeTempCwdErrors(output);
   const errorPatterns = [
     /error:/i,
     /failed/i,
@@ -140,7 +150,7 @@ function detectBashFailure(output) {
     /abort/i,
   ];
 
-  return errorPatterns.some(pattern => pattern.test(output));
+  return errorPatterns.some(pattern => pattern.test(cleaned));
 }
 
 // Detect background operation
@@ -196,7 +206,8 @@ function processRememberTags(output, directory) {
 }
 
 // Detect write failure
-function detectWriteFailure(output) {
+export function detectWriteFailure(output) {
+  const cleaned = stripClaudeTempCwdErrors(output);
   const errorPatterns = [
     /error/i,
     /failed/i,
@@ -205,7 +216,7 @@ function detectWriteFailure(output) {
     /not found/i,
   ];
 
-  return errorPatterns.some(pattern => pattern.test(output));
+  return errorPatterns.some(pattern => pattern.test(cleaned));
 }
 
 // Get agent completion summary from tracking state
@@ -364,4 +375,7 @@ async function main() {
   }
 }
 
-main();
+// Only run when executed directly (not when imported for testing)
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main();
+}
