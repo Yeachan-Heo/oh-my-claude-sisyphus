@@ -77,10 +77,13 @@ Jumping into code without understanding requirements leads to rework, scope cree
    d. Note which improvements were applied in a brief changelog section at the end of the plan
 7. On Critic approval (with improvements applied): **MUST** use `AskUserQuestion` to present the plan with these options:
    - **Approve and execute** — proceed to implementation via ralph+ultrawork
+   - **Clear context and implement** — compact the context window first (recommended when context is large after planning), then start fresh implementation via ralph with the saved plan file
    - **Request changes** — return to step 1 with user feedback
    - **Reject** — discard the plan entirely
 8. User chooses via the structured `AskUserQuestion` UI (never ask for approval in plain text)
-9. On user approval: **MUST** invoke `Skill("oh-my-claudecode:ralph")` with the approved plan path from `.omc/plans/` as context. Do NOT implement directly. Do NOT edit source code files in the planning agent. The ralph skill handles execution via ultrawork parallel agents.
+9. On user approval:
+   - **Approve and execute**: **MUST** invoke `Skill("oh-my-claudecode:ralph")` with the approved plan path from `.omc/plans/` as context. Do NOT implement directly. Do NOT edit source code files in the planning agent. The ralph skill handles execution via ultrawork parallel agents.
+   - **Clear context and implement**: First invoke `Skill("compact")` to compress the context window (reduces token usage accumulated during planning), then invoke `Skill("oh-my-claudecode:ralph")` with the approved plan path from `.omc/plans/`. This path is recommended when the context window is 50%+ full after the planning session.
 
 ### Review Mode (`--review`)
 
@@ -111,6 +114,7 @@ Plans are saved to `.omc/plans/`. Drafts go to `.omc/drafts/`.
 - If ToolSearch finds no MCP tools or Codex is unavailable, fall back to equivalent Claude agents -- never block on external tools
 - In consensus mode, **MUST** use `AskUserQuestion` for the user feedback step (step 2) and the final approval step (step 7) -- never ask for approval in plain text
 - In consensus mode, on user approval **MUST** invoke `Skill("oh-my-claudecode:ralph")` for execution (step 9) -- never implement directly in the planning agent
+- When user selects "Clear context and implement" in step 7: invoke `Skill("compact")` first to compress the accumulated planning context, then immediately invoke `Skill("oh-my-claudecode:ralph")` with the plan path -- the compact step is critical to free up context before the implementation loop begins
 </Tool_Usage>
 
 <Examples>
