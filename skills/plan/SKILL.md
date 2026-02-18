@@ -69,7 +69,13 @@ Jumping into code without understanding requirements leads to rework, scope cree
    - **Skip review** — go directly to final approval (step 7)
 3. **Architect** reviews for architectural soundness (prefer `ask_codex` with `architect` role)
 4. **Critic** evaluates against quality criteria (prefer `ask_codex` with `critic` role)
-5. If Critic rejects: iterate with feedback (max 5 iterations)
+5. **Re-review loop** (max 5 iterations): If Critic rejects, execute this closed loop:
+   a. Collect all rejection feedback from Architect + Critic
+   b. Pass feedback to Planner to produce a revised plan
+   c. **Return to Step 3** — Architect reviews the revised plan
+   d. **Return to Step 4** — Critic evaluates the revised plan
+   e. Repeat until Critic approves OR max 5 iterations reached
+   f. If max iterations reached without approval, present the best version to user via `AskUserQuestion` with note that expert consensus was not reached
 6. **Apply improvements**: When reviewers approve with improvement suggestions, merge all accepted improvements into the plan file before proceeding. Specifically:
    a. Collect all improvement suggestions from Architect and Critic responses
    b. Deduplicate and categorize the suggestions
