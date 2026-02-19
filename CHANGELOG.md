@@ -1,10 +1,22 @@
-# oh-my-claudecode vNext: Deprecate Ecomode
+# oh-my-claudecode v4.2.15
 
-Ecomode execution mode has been fully removed. It was a token-efficient parallel execution mode that routed tasks to cheaper models. Use the standard execution modes (ultrawork, autopilot, ralph) instead.
+### Added
+
+- **CCG skill** (#744): Added `claude-developer-platform` skill (`ccg`) for building programs that call the Claude API or Anthropic SDK.
 
 ### Removed
 
 - **Ecomode execution mode** (#737): Removed `ecomode` from `KeywordType`, `ExecutionMode`, `MODE_CONFIGS`, and all hook scripts. The `persistent-mode` stop hook no longer has a Priority 8 ecomode continuation block. The keyword detector no longer recognizes `eco`, `ecomode`, `eco-mode`, `efficient`, `save-tokens`, or `budget` as execution mode triggers.
+
+### Fixed
+
+- **Windows HUD not showing** (#742): Fixed HUD rendering on Windows by correcting `NODE_PATH` separator handling.
+- **WSL2 scroll fix**: Fixed scroll behavior in WSL2 environments.
+- **tmux session name resolution** (#736, #740, #741): Use `TMUX_PANE` env variable to correctly resolve the tmux session name in notifications.
+
+### Docs
+
+- **oh-my-codex cross-reference** (#744): Added cross-reference documentation for Codex users.
 
 ---
 
