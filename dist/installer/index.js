@@ -547,7 +547,7 @@ export function install(options = {}) {
                 }
                 // Build the HUD script content (compiled from src/hud/index.ts)
                 // Create a wrapper that checks multiple locations for the HUD module
-                hudScriptPath = join(HUD_DIR, 'omc-hud.mjs');
+                hudScriptPath = join(HUD_DIR, 'omc-hud.mjs').replace(/\\/g, '/');
                 const hudScriptLines = [
                     '#!/usr/bin/env node',
                     '/**',
