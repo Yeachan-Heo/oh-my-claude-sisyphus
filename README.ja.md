@@ -147,6 +147,7 @@ stop コールバックがセッション要約を送るときに、誰をタグ
 # タグ一覧を設定/置換
 omc config-stop-callback telegram --enable --token <bot_token> --chat <chat_id> --tag-list "@alice,bob"
 omc config-stop-callback discord --enable --webhook <url> --tag-list "@here,123456789012345678,role:987654321098765432"
+omc config-stop-callback slack --enable --webhook <url> --tag-list "<!here>,<@U1234567890>"
 
 # 追加・削除・クリア
 omc config-stop-callback telegram --add-tag charlie
@@ -188,7 +189,7 @@ export OMC_TELEGRAM_CHAT_ID="your_chat_id"
 export OMC_SLACK_WEBHOOK_URL="your_webhook_url"
 export OMC_SLACK_MENTION="<@U1234567890>"  # optional
 
-# オプションの Webhook
+# Optional webhooks
 export OMC_DISCORD_WEBHOOK_URL="your_webhook_url"
 ```
 

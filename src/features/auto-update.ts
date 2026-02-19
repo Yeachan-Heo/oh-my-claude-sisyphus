@@ -98,12 +98,24 @@ export interface StopCallbackDiscordConfig {
 }
 
 /**
+ * Stop hook callback configuration for Slack
+ */
+export interface StopCallbackSlackConfig {
+  enabled: boolean;
+  /** Slack incoming webhook URL */
+  webhookUrl?: string;
+  /** Optional tags/mentions to include in notifications */
+  tagList?: string[];
+}
+
+/**
  * Stop hook callbacks configuration
  */
 export interface StopHookCallbacksConfig {
   file?: StopCallbackFileConfig;
   telegram?: StopCallbackTelegramConfig;
   discord?: StopCallbackDiscordConfig;
+  slack?: StopCallbackSlackConfig;
 }
 
 /**

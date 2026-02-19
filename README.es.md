@@ -147,6 +147,7 @@ Puedes configurar a quién etiquetar cuando los callbacks de stop envían el res
 # Definir/reemplazar lista de etiquetas
 omc config-stop-callback telegram --enable --token <bot_token> --chat <chat_id> --tag-list "@alice,bob"
 omc config-stop-callback discord --enable --webhook <url> --tag-list "@here,123456789012345678,role:987654321098765432"
+omc config-stop-callback slack --enable --webhook <url> --tag-list "<!here>,<@U1234567890>"
 
 # Actualizaciones incrementales
 omc config-stop-callback telegram --add-tag charlie

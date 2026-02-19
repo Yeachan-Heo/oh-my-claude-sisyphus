@@ -175,6 +175,7 @@ Você pode configurar quem recebe tag quando callbacks de parada enviam resumos 
 # Set/replace tag list
 omc config-stop-callback telegram --enable --token <bot_token> --chat <chat_id> --tag-list "@alice,bob"
 omc config-stop-callback discord --enable --webhook <url> --tag-list "@here,123456789012345678,role:987654321098765432"
+omc config-stop-callback slack --enable --webhook <url> --tag-list "<!here>,<@U1234567890>"
 
 # Incremental updates
 omc config-stop-callback telegram --add-tag charlie
@@ -187,40 +188,6 @@ Comportamento das tags:
 - Discord: suporta `@here`, `@everyone`, IDs numéricos de usuário e `role:<id>`
 - Slack: suporta `<@MEMBER_ID>`, `<!channel>`, `<!here>`, `<!everyone>`, `<!subteam^GROUP_ID>`
 - callbacks de `file` ignoram opções de tag
-
----
-
-## Notificações
-
-Receba notificações em tempo real para eventos do ciclo de vida da sessão.
-
-Eventos suportados:
-- `session-start`
-- `session-stop` (quando um modo persistente entra em estado de espera/bloqueio)
-- `session-end`
-- `ask-user-question`
-
-### Configuração
-Adicione estas variáveis de ambiente ao seu perfil de shell (ex: `~/.zshrc`, `~/.bashrc`):
-
-```bash
-# Discord Bot
-export OMC_DISCORD_NOTIFIER_BOT_TOKEN="your_bot_token"
-export OMC_DISCORD_NOTIFIER_CHANNEL="your_channel_id"
-
-# Telegram
-export OMC_TELEGRAM_BOT_TOKEN="your_bot_token"
-export OMC_TELEGRAM_CHAT_ID="your_chat_id"
-
-# Slack
-export OMC_SLACK_WEBHOOK_URL="your_webhook_url"
-export OMC_SLACK_MENTION="<@U1234567890>"  # opcional
-
-# Webhooks opcionais
-export OMC_DISCORD_WEBHOOK_URL="your_webhook_url"
-```
-
-> Nota: as variáveis devem estar carregadas no mesmo shell onde você executa `claude`.
 
 ---
 

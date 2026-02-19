@@ -147,6 +147,7 @@ stop 콜백이 세션 요약을 보낼 때 태그할 대상을 설정할 수 있
 # 태그 목록 설정/교체
 omc config-stop-callback telegram --enable --token <bot_token> --chat <chat_id> --tag-list "@alice,bob"
 omc config-stop-callback discord --enable --webhook <url> --tag-list "@here,123456789012345678,role:987654321098765432"
+omc config-stop-callback slack --enable --webhook <url> --tag-list "<!here>,<@U1234567890>"
 
 # 점진적 수정
 omc config-stop-callback telegram --add-tag charlie
@@ -188,7 +189,7 @@ export OMC_TELEGRAM_CHAT_ID="your_chat_id"
 export OMC_SLACK_WEBHOOK_URL="your_webhook_url"
 export OMC_SLACK_MENTION="<@U1234567890>"  # optional
 
-# 선택적 웹훅
+# Optional webhooks
 export OMC_DISCORD_WEBHOOK_URL="your_webhook_url"
 ```
 

@@ -147,6 +147,7 @@ omc wait --stop   # 禁用守护进程
 # 设置/替换标签列表
 omc config-stop-callback telegram --enable --token <bot_token> --chat <chat_id> --tag-list "@alice,bob"
 omc config-stop-callback discord --enable --webhook <url> --tag-list "@here,123456789012345678,role:987654321098765432"
+omc config-stop-callback slack --enable --webhook <url> --tag-list "<!here>,<@U1234567890>"
 
 # 增量更新
 omc config-stop-callback telegram --add-tag charlie

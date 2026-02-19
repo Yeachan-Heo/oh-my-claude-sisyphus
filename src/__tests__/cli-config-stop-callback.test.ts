@@ -50,6 +50,11 @@ function readConfig(configPath: string) {
         webhookUrl?: string;
         tagList?: string[];
       };
+      slack?: {
+        enabled: boolean;
+        webhookUrl?: string;
+        tagList?: string[];
+      };
       file?: {
         enabled: boolean;
         path: string;
@@ -145,5 +150,45 @@ describe('omc config-stop-callback tag options', () => {
       path: '/tmp/session.md',
       format: 'markdown',
     });
+  });
+
+  it('configures slack stop-callback with webhook and tags', () => {
+    const homeDir = mkdtempSync(join(tmpdir(), 'omc-cli-stop-callback-home-'));
+    const configPath = join(homeDir, '.claude', '.omc-config.json');
+    mkdirSync(join(homeDir, '.claude'), { recursive: true });
+
+    writeFileSync(configPath, JSON.stringify({
+      silentAutoUpdate: false,
+      stopHookCallbacks: {},
+    }, null, 2));
+
+    // Enable slack with webhook and tags
+    const enable = runCli(['config-stop-callback', 'slack', '--enable', '--webhook', 'https://hooks.slack.com/services/T00/B00/xxx', '--tag-list', '<!here>,<@U1234567890>'], homeDir);
+    expect(enable.status).toBe(0);
+
+    let config = readConfig(configPath);
+    expect(config.stopHookCallbacks?.slack?.enabled).toBe(true);
+    expect(config.stopHookCallbacks?.slack?.webhookUrl).toBe('https://hooks.slack.com/services/T00/B00/xxx');
+    expect(config.stopHookCallbacks?.slack?.tagList).toEqual(['<!here>', '<@U1234567890>']);
+
+    // Add a tag
+    const add = runCli(['config-stop-callback', 'slack', '--add-tag', '<!channel>'], homeDir);
+    expect(add.status).toBe(0);
+
+    config = readConfig(configPath);
+    expect(config.stopHookCallbacks?.slack?.tagList).toEqual(['<!here>', '<@U1234567890>', '<!channel>']);
+
+    // Remove a tag
+    const remove = runCli(['config-stop-callback', 'slack', '--remove-tag', '<!here>'], homeDir);
+    expect(remove.status).toBe(0);
+
+    config = readConfig(configPath);
+    expect(config.stopHookCallbacks?.slack?.tagList).toEqual(['<@U1234567890>', '<!channel>']);
+
+    // Show config
+    const show = runCli(['config-stop-callback', 'slack', '--show'], homeDir);
+    expect(show.status).toBe(0);
+    expect(show.stdout).toContain('"webhookUrl"');
+    expect(show.stdout).toContain('"tagList"');
   });
 });
