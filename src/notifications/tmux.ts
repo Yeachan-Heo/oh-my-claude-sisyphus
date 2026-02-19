@@ -17,6 +17,21 @@ export function getCurrentTmuxSession(): string | null {
   }
 
   try {
+    // Use $TMUX_PANE to find the session this process actually belongs to.
+    // tmux display-message -p '#S' returns the *attached* session name, which
+    // is wrong when Claude runs in a detached session.
+    const paneId = process.env.TMUX_PANE;
+    if (paneId) {
+      const lines = execSync("tmux list-panes -a -F '#{pane_id} #{session_name}'", {
+        encoding: "utf-8",
+        timeout: 3000,
+        stdio: ["pipe", "pipe", "pipe"],
+      }).split("\n");
+      const match = lines.find((l) => l.startsWith(paneId + " "));
+      if (match) return match.split(" ")[1] ?? null;
+    }
+
+    // Fallback: ask the attached session (may differ when detached).
     const sessionName = execSync("tmux display-message -p '#S'", {
       encoding: "utf-8",
       timeout: 3000,
