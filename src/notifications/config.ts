@@ -106,11 +106,11 @@ export function validateSlackMention(raw: string | undefined): string | undefine
   const mention = normalizeOptional(raw);
   if (!mention) return undefined;
   // <@U...> user mention
-  if (/^<@[UW][A-Z0-9]{6,11}>$/.test(mention)) return mention;
+  if (/^<@[UW][A-Z0-9]{8,11}>$/.test(mention)) return mention;
   // <!channel>, <!here>, <!everyone>
   if (/^<!(?:channel|here|everyone)>$/.test(mention)) return mention;
   // <!subteam^S...> user group
-  if (/^<!subteam\^S[A-Z0-9]{6,11}>$/.test(mention)) return mention;
+  if (/^<!subteam\^S[A-Z0-9]{8,11}>$/.test(mention)) return mention;
   return undefined;
 }
 
@@ -290,10 +290,10 @@ function applyEnvMerge(config: NotificationConfig): NotificationConfig {
   // platforms (not present in env) also receive the env mention.
   const envMention = validateMention(process.env.OMC_DISCORD_MENTION);
   if (envMention) {
-    if (merged["discord-bot"] && merged["discord-bot"].mention === undefined) {
+    if (merged["discord-bot"] && merged["discord-bot"].mention == null) {
       merged = { ...merged, "discord-bot": { ...merged["discord-bot"], mention: envMention } };
     }
-    if (merged.discord && merged.discord.mention === undefined) {
+    if (merged.discord && merged.discord.mention == null) {
       merged = { ...merged, discord: { ...merged.discord, mention: envMention } };
     }
   }
@@ -301,7 +301,7 @@ function applyEnvMerge(config: NotificationConfig): NotificationConfig {
   // Apply env mention to any Slack config that still lacks one.
   const envSlackMention = validateSlackMention(process.env.OMC_SLACK_MENTION);
   if (envSlackMention) {
-    if (merged.slack && merged.slack.mention === undefined) {
+    if (merged.slack && merged.slack.mention == null) {
       merged = { ...merged, slack: { ...merged.slack, mention: envSlackMention } };
     }
   }

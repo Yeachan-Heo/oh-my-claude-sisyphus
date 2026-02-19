@@ -148,6 +148,30 @@ describe("validateSlackMention", () => {
   it("rejects whitespace-only string", () => {
     expect(validateSlackMention("   ")).toBeUndefined();
   });
+
+  it("accepts minimum-length user ID (9 chars: U + 8)", () => {
+    expect(validateSlackMention("<@U12345678>")).toBe("<@U12345678>");
+  });
+
+  it("accepts maximum-length user ID (12 chars: U + 11)", () => {
+    expect(validateSlackMention("<@U12345678901>")).toBe("<@U12345678901>");
+  });
+
+  it("rejects too-short user ID (U + 7 chars)", () => {
+    expect(validateSlackMention("<@U1234567>")).toBeUndefined();
+  });
+
+  it("rejects too-long user ID (U + 12 chars)", () => {
+    expect(validateSlackMention("<@U123456789012>")).toBeUndefined();
+  });
+
+  it("accepts minimum-length subteam ID", () => {
+    expect(validateSlackMention("<!subteam^S12345678>")).toBe("<!subteam^S12345678>");
+  });
+
+  it("rejects too-short subteam ID", () => {
+    expect(validateSlackMention("<!subteam^S1234567>")).toBeUndefined();
+  });
 });
 
 describe("buildConfigFromEnv", () => {
