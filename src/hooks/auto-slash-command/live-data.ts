@@ -18,6 +18,7 @@
 import { execSync } from "child_process";
 import { existsSync, readFileSync } from "fs";
 import { join } from "path";
+import { getWorktreeRoot } from "../../lib/worktree-paths.js";
 
 const TIMEOUT_MS = 10_000;
 const MAX_OUTPUT_BYTES = 50 * 1024;
@@ -112,9 +113,10 @@ let cachedPolicy: SecurityPolicy | null = null;
 let policyLoadedFrom: string | null = null;
 
 function loadSecurityPolicy(): SecurityPolicy {
+  const root = getWorktreeRoot() || process.cwd();
   const policyPaths = [
-    join(process.cwd(), ".omc", "config", "live-data-policy.json"),
-    join(process.cwd(), ".claude", "live-data-policy.json"),
+    join(root, ".omc", "config", "live-data-policy.json"),
+    join(root, ".claude", "live-data-policy.json"),
   ];
 
   for (const p of policyPaths) {

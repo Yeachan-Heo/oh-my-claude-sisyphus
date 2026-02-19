@@ -16,7 +16,7 @@ import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
 import { atomicWriteJsonSync } from "../../lib/atomic-write.js";
-import { OmcPaths } from "../../lib/worktree-paths.js";
+import { OmcPaths, getWorktreeRoot } from "../../lib/worktree-paths.js";
 import {
   StateLocation,
   StateConfig,
@@ -33,7 +33,10 @@ import {
 } from "./types.js";
 
 // Standard state directories
-const LOCAL_STATE_DIR = OmcPaths.STATE;
+/** Get the absolute path to the local state directory, resolved from the git worktree root. */
+function getLocalStateDir(): string {
+  return path.join(getWorktreeRoot() || process.cwd(), OmcPaths.STATE);
+}
 /**
  * @deprecated for mode state. Global state directory is only used for analytics and daemon state.
  * Mode state should use LOCAL_STATE_DIR exclusively.
@@ -81,7 +84,7 @@ const LEGACY_LOCATIONS: Record<string, string[]> = {
  */
 export function getStatePath(name: string, location: StateLocation): string {
   const baseDir =
-    location === StateLocation.LOCAL ? LOCAL_STATE_DIR : GLOBAL_STATE_DIR;
+    location === StateLocation.LOCAL ? getLocalStateDir() : GLOBAL_STATE_DIR;
   return path.join(baseDir, `${name}.json`);
 }
 
@@ -97,7 +100,7 @@ export function getLegacyPaths(name: string): string[] {
  */
 export function ensureStateDir(location: StateLocation): void {
   const dir =
-    location === StateLocation.LOCAL ? LOCAL_STATE_DIR : GLOBAL_STATE_DIR;
+    location === StateLocation.LOCAL ? getLocalStateDir() : GLOBAL_STATE_DIR;
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
@@ -167,7 +170,7 @@ export function readState<T = StateData>(
       // Resolve relative paths
       const resolvedPath = path.isAbsolute(legacyPath)
         ? legacyPath
-        : path.join(process.cwd(), legacyPath);
+        : path.join(getWorktreeRoot() || process.cwd(), legacyPath);
 
       if (fs.existsSync(resolvedPath)) {
         try {
@@ -286,7 +289,7 @@ export function clearState(
   for (const legacyPath of legacyPaths) {
     const resolvedPath = path.isAbsolute(legacyPath)
       ? legacyPath
-      : path.join(process.cwd(), legacyPath);
+      : path.join(getWorktreeRoot() || process.cwd(), legacyPath);
 
     try {
       if (fs.existsSync(resolvedPath)) {
@@ -421,7 +424,7 @@ export function listStates(options?: ListStatesOptions): StateFileInfo[] {
 
   // Check standard locations
   if (!options?.location || options.location === StateLocation.LOCAL) {
-    addStatesFromDir(LOCAL_STATE_DIR, StateLocation.LOCAL);
+    addStatesFromDir(getLocalStateDir(), StateLocation.LOCAL);
   }
   if (!options?.location || options.location === StateLocation.GLOBAL) {
     addStatesFromDir(GLOBAL_STATE_DIR, StateLocation.GLOBAL);
@@ -554,7 +557,7 @@ export function cleanupStaleStates(
 ): number {
   const stateDir = directory
     ? path.join(directory, ".omc", "state")
-    : LOCAL_STATE_DIR;
+    : getLocalStateDir();
 
   if (!fs.existsSync(stateDir)) return 0;
 
