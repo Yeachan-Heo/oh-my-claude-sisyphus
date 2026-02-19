@@ -182,6 +182,22 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   }
 });
 
+// Graceful shutdown: disconnect LSP servers on process termination (#768).
+// Without this, LSP child processes (e.g. jdtls) survive the MCP server exit
+// and become orphaned, consuming memory indefinitely.
+async function gracefulShutdown(signal: string): Promise<void> {
+  try {
+    const { disconnectAll } = await import('../tools/lsp/index.js');
+    await disconnectAll();
+  } catch {
+    // Best-effort — do not block exit
+  }
+  process.exit(0);
+}
+
+process.on('SIGTERM', () => { gracefulShutdown('SIGTERM'); });
+process.on('SIGINT', () => { gracefulShutdown('SIGINT'); });
+
 // Start the server
 async function main() {
   const transport = new StdioServerTransport();

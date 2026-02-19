@@ -4,6 +4,7 @@ import * as readline from 'readline';
 import { triggerStopCallbacks } from './callbacks.js';
 import { notify } from '../../notifications/index.js';
 import { cleanupBridgeSessions } from '../../tools/python-repl/bridge-manager.js';
+import { disconnectAll as disconnectAllLspClients } from '../../tools/lsp/index.js';
 
 export interface SessionEndInput {
   session_id: string;
@@ -437,6 +438,15 @@ export async function processSessionEnd(input: SessionEndInput): Promise<HookOut
     }
   } catch {
     // Ignore cleanup errors
+  }
+
+  // Clean up LSP server processes to prevent orphaned language servers (#768).
+  // LSP servers (e.g. jdtls for Java) can consume 300-700MB each and accumulate
+  // across sessions if not explicitly disconnected.
+  try {
+    await disconnectAllLspClients();
+  } catch {
+    // Ignore cleanup errors — session end must not fail
   }
 
   // Trigger stop hook callbacks (#395)
