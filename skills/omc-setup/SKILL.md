@@ -583,16 +583,7 @@ echo "$EXISTING" | jq --arg mode "USER_CHOICE" '. + {defaultExecutionMode: $mode
 echo "Default execution mode set to: USER_CHOICE"
 ```
 
-**Note**: This preference ONLY affects generic keywords ("fast", "parallel"). Explicit keywords ("ulw", "eco") always override this preference.
-
-### Optional: Disable Ecomode Entirely
-
-If the user wants to disable  completely (so  keywords are ignored), add to the config:
-
-```bash
-echo "$EXISTING" | jq '. + {: {enabled: false}}' > "$CONFIG_FILE"
-echo "Ecomode disabled completely"
-```
+**Note**: This preference ONLY affects generic keywords ("fast", "parallel"). Explicit keywords ("ulw") always override this preference.
 
 ## Step 3.8: Install CLI Analytics Tools (Optional)
 

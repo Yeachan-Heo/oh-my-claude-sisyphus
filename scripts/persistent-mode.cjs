@@ -5,7 +5,7 @@
  * Minimal continuation enforcer for all OMC modes.
  * Stripped down for reliability — no optional imports, no PRD, no notepad pruning.
  *
- * Supported modes: ralph, autopilot, ultrapilot, swarm, ultrawork, ecomode, ultraqa, pipeline
+ * Supported modes: ralph, autopilot, ultrapilot, swarm, ultrawork, ultraqa, pipeline
  */
 
 const {
@@ -367,7 +367,6 @@ async function main() {
     const autopilot = readStateFileWithSession(stateDir, "autopilot-state.json", sessionId);
     const ultrapilot = readStateFileWithSession(stateDir, "ultrapilot-state.json", sessionId);
     const ultrawork = readStateFileWithSession(stateDir, "ultrawork-state.json", sessionId);
-    const ecomode = readStateFileWithSession(stateDir, "ecomode-state.json", sessionId);
     const ultraqa = readStateFileWithSession(stateDir, "ultraqa-state.json", sessionId);
     const pipeline = readStateFileWithSession(stateDir, "pipeline-state.json", sessionId);
 
@@ -568,41 +567,6 @@ async function main() {
 
       if (ultrawork.state.original_prompt) {
         reason += `\nTask: ${ultrawork.state.original_prompt}`;
-      }
-
-      console.log(JSON.stringify({ decision: "block", reason }));
-      return;
-    }
-
-    // Priority 8: Ecomode - ALWAYS continue while active
-    if (ecomode.state?.active && !isStaleState(ecomode.state) && isSessionMatch(ecomode.state, sessionId)) {
-      const newCount = (ecomode.state.reinforcement_count || 0) + 1;
-      const maxReinforcements = ecomode.state.max_reinforcements || 50;
-
-      if (newCount > maxReinforcements) {
-        // Max reinforcements reached - allow stop
-        console.log(JSON.stringify({ continue: true, suppressOutput: true }));
-        return;
-      }
-
-      ecomode.state.reinforcement_count = newCount;
-      ecomode.state.last_checked_at = new Date().toISOString();
-      writeJsonFile(ecomode.path, ecomode.state);
-
-      // Fire-and-forget notification
-      sendStopNotification('ecomode', ecomode.state, sessionId, directory).catch(() => {});
-
-      let reason = `[ECOMODE #${newCount}/${maxReinforcements}] Mode active.`;
-
-      if (totalIncomplete > 0) {
-        const itemType = taskCount > 0 ? "Tasks" : "todos";
-        reason += ` ${totalIncomplete} incomplete ${itemType} remain. Continue working.`;
-      } else if (newCount >= 3) {
-        // Only suggest cancel after minimum iterations (guard against no-tasks-created scenario)
-        reason += ` If all work is complete, run /oh-my-claudecode:cancel to cleanly exit ecomode and clean up state files. If cancel fails, retry with /oh-my-claudecode:cancel --force. Otherwise, continue working.`;
-      } else {
-        // Early iterations with no tasks yet - just tell LLM to continue
-        reason += ` Continue working - create Tasks to track your progress.`;
       }
 
       console.log(JSON.stringify({ decision: "block", reason }));

@@ -1,6 +1,6 @@
 ---
 name: cancel
-description: Cancel any active OMC mode (autopilot, ralph, ultrawork, ecomode, ultraqa, swarm, ultrapilot, pipeline, team)
+description: Cancel any active OMC mode (autopilot, ralph, ultrawork, ultraqa, swarm, ultrapilot, pipeline, team)
 ---
 
 # Cancel Skill
@@ -19,7 +19,6 @@ Automatically detects which mode is active and cancels it:
 - **Autopilot**: Stops workflow, preserves progress for resume
 - **Ralph**: Stops persistence loop, clears linked ultrawork if applicable
 - **Ultrawork**: Stops parallel execution (standalone or linked)
-- **Ecomode**: Stops token-efficient parallel execution (standalone or linked to ralph)
 - **UltraQA**: Stops QA cycling workflow
 - **Swarm**: Stops coordinated agent swarm, releases claimed tasks
 - **Ultrapilot**: Stops parallel autopilot workers
@@ -47,8 +46,7 @@ Active modes are still cancelled in dependency order:
 1. Autopilot (includes linked ralph/ultraqa/ cleanup)
 2. Ralph (cleans its linked ultrawork or )
 3. Ultrawork (standalone)
-4. Ecomode (standalone)
-5. UltraQA (standalone)
+4. UltraQA (standalone)
 6. Swarm (standalone)
 7. Ultrapilot (standalone)
 8. Pipeline (standalone)
@@ -81,7 +79,6 @@ Legacy compatibility list (removed only under `--force`/`--all`):
 - `.omc/state/ralph-plan-state.json`
 - `.omc/state/ralph-verification.json`
 - `.omc/state/ultrawork-state.json`
-- `.omc/state/ecomode-state.json`
 - `.omc/state/ultraqa-state.json`
 - `.omc/state/swarm.db`
 - `.omc/state/swarm.db-wal`
@@ -334,7 +331,6 @@ Mode-specific subsections below describe what extra cleanup each handler perform
 | Autopilot | "Autopilot cancelled at phase: {phase}. Progress preserved for resume." |
 | Ralph | "Ralph cancelled. Persistent mode deactivated." |
 | Ultrawork | "Ultrawork cancelled. Parallel execution mode deactivated." |
-| Ecomode | "Ecomode cancelled. Token-efficient execution mode deactivated." |
 | UltraQA | "UltraQA cancelled. QA cycling workflow stopped." |
 | Swarm | "Swarm cancelled. Coordinated agents stopped." |
 | Ultrapilot | "Ultrapilot cancelled. Parallel autopilot workers stopped." |
@@ -360,7 +356,7 @@ Mode-specific subsections below describe what extra cleanup each handler perform
 ## Notes
 
 - **Dependency-aware**: Autopilot cancellation cleans up Ralph and UltraQA
-- **Link-aware**: Ralph cancellation cleans up linked Ultrawork or Ecomode
+- **Link-aware**: Ralph cancellation cleans up linked Ultrawork
 - **Safe**: Only clears linked Ultrawork, preserves standalone Ultrawork
 - **Local-only**: Clears state files in `.omc/state/` directory
 - **Resume-friendly**: Autopilot state is preserved for seamless resume

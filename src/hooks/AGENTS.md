@@ -242,7 +242,6 @@ return {
 5. Pipeline (sequential stages)
 6. UltraQA (test cycling)
 7. Ultrawork (parallel execution)
-8. Ecomode (token-efficient)
 
 **Session isolation**: Hooks only enforce for matching `session_id`. Stale states (>2 hours) are ignored.
 

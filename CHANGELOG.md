@@ -1,3 +1,13 @@
+# oh-my-claudecode vNext: Deprecate Ecomode
+
+Ecomode execution mode has been fully removed. It was a token-efficient parallel execution mode that routed tasks to cheaper models. Use the standard execution modes (ultrawork, autopilot, ralph) instead.
+
+### Removed
+
+- **Ecomode execution mode** (#737): Removed `ecomode` from `KeywordType`, `ExecutionMode`, `MODE_CONFIGS`, and all hook scripts. The `persistent-mode` stop hook no longer has a Priority 8 ecomode continuation block. The keyword detector no longer recognizes `eco`, `ecomode`, `eco-mode`, `efficient`, `save-tokens`, or `budget` as execution mode triggers.
+
+---
+
 # oh-my-claudecode v4.2.4: Session Idle Notifications
 
 Session-idle notifications now fire when Claude stops without any active persistent mode, closing the gap where external integrations (Telegram, Discord) were never informed that a session went idle.

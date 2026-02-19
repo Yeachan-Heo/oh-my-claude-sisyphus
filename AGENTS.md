@@ -16,7 +16,7 @@ oh-my-claudecode enhances Claude Code with:
 - **37 skills** for workflow automation and specialized behaviors
 - **31 hooks** for event-driven execution modes and enhancements
 - **15 custom tools** including 12 LSP, 2 AST, and Python REPL
-- **Execution modes**: autopilot, ultrawork, ralph, ultrapilot, swarm, pipeline, ecomode
+- **Execution modes**: autopilot, ultrawork, ralph, ultrapilot, swarm, pipeline
 - **MCP integration** with plugin-scoped tool discovery and skill loading
 
 ## Key Files
@@ -236,11 +236,10 @@ import { allCustomTools, lspTools, astTools } from './tools';
 | ultrapilot | "ultrapilot", "parallel build" | Parallel autopilot with file ownership |
 | swarm | "swarm N agents" | N coordinated agents with SQLite task claiming |
 | pipeline | "pipeline" | Sequential agent chaining with data passing |
-| ecomode | "eco", "efficient", "budget" | Token-efficient parallel execution |
 
 ## Skills (37)
 
-Key skills: `autopilot`, `ultrawork`, `ralph`, `ultrapilot`, `plan`, `ralplan`, `deepsearch`, `deepinit`, `frontend-ui-ux`, `git-master`, `tdd`, `security-review`, `code-review`, `sciomc`, `external-context`, `analyze`, `swarm`, `pipeline`, `ecomode`, `cancel`, `learner`, `note`, `hud`, `doctor`, `omc-setup`, `mcp-setup`, `build-fix`, `ultraqa`
+Key skills: `autopilot`, `ultrawork`, `ralph`, `ultrapilot`, `plan`, `ralplan`, `deepsearch`, `deepinit`, `frontend-ui-ux`, `git-master`, `tdd`, `security-review`, `code-review`, `sciomc`, `external-context`, `analyze`, `swarm`, `pipeline`, `cancel`, `learner`, `note`, `hud`, `doctor`, `omc-setup`, `mcp-setup`, `build-fix`, `ultraqa`
 
 ## LSP/AST Tools
 
