@@ -14,6 +14,7 @@ import {
   killTmuxPane,
   isClaudeAvailable,
   sanitizeTmuxToken,
+  resolveCurrentPaneId,
   type ClaudeLaunchPolicy,
 } from './tmux-utils.js';
 
@@ -149,7 +150,9 @@ export function runClaude(cwd: string, args: string[], sessionId: string, option
  * Splits pane for HUD, launches Claude in current pane
  */
 function runClaudeInsideTmux(cwd: string, args: string[], hudCmd: string): void {
-  const currentPaneId = process.env.TMUX_PANE;
+  // Resolve leader pane with fallback for cases where TMUX_PANE is unset
+  // (e.g., team worker spawning leader in a new shell context — issue #723).
+  const currentPaneId = resolveCurrentPaneId(process.env);
 
   // Clean up stale HUD panes
   const staleHudPaneIds = listHudWatchPaneIdsInCurrentWindow(currentPaneId);

@@ -134,26 +134,75 @@ export function isHudWatchPane(pane: TmuxPaneSnapshot): boolean {
 }
 
 /**
- * Find HUD watch pane IDs in current window
+ * Find HUD watch pane IDs in current window.
+ *
+ * When `currentPaneId` is undefined or empty (e.g., `TMUX_PANE` env var is not
+ * set because the leader was spawned by a team worker in a new context), we must
+ * NOT fall through to comparing pane IDs against `undefined` — that would make
+ * every pane pass the filter and include the leader's own pane in the cleanup
+ * list (issue #723).
+ *
+ * Guard: if `currentPaneId` is absent, skip the exclusion filter entirely so
+ * that no pane is accidentally promoted to "stale HUD" status.  The caller
+ * (`listHudWatchPaneIdsInCurrentWindow`) is responsible for resolving the
+ * active pane ID via tmux before calling this function.
  */
 export function findHudWatchPaneIds(panes: TmuxPaneSnapshot[], currentPaneId?: string): string[] {
   return panes
-    .filter((pane) => pane.paneId !== currentPaneId)
+    .filter((pane) => {
+      // Guard: only exclude when we actually know which pane is the leader.
+      // An undefined/empty currentPaneId must NOT be compared — every pane ID
+      // is !== undefined, so skipping the filter is the safe default.
+      if (!currentPaneId) return true; // no leader ID known — keep all for HUD check only
+      return pane.paneId !== currentPaneId;
+    })
     .filter((pane) => isHudWatchPane(pane))
     .map((pane) => pane.paneId);
 }
 
 /**
- * List HUD watch panes in current tmux window
+ * Resolve the pane ID to exclude (the leader / current pane).
+ *
+ * Priority:
+ *  1. Use `TMUX_PANE` when set (normal case).
+ *  2. Fall back to `tmux display-message -p "#{pane_id}"` to detect the
+ *     currently active pane (handles the case where TMUX_PANE is absent because
+ *     the leader was launched by a team worker in a new shell context).
+ *  3. Return `undefined` if neither source is available (e.g., outside tmux).
+ */
+export function resolveCurrentPaneId(env: NodeJS.ProcessEnv = process.env): string | undefined {
+  const fromEnv = env.TMUX_PANE;
+  if (fromEnv) return fromEnv;
+
+  try {
+    const active = execFileSync('tmux', ['display-message', '-p', '#{pane_id}'], {
+      encoding: 'utf-8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim();
+    return active.startsWith('%') ? active : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * List HUD watch panes in current tmux window.
+ *
+ * When `currentPaneId` is not provided, we attempt to resolve the active pane
+ * via `resolveCurrentPaneId()` so that the leader is always excluded from the
+ * cleanup candidate list.
  */
 export function listHudWatchPaneIdsInCurrentWindow(currentPaneId?: string): string[] {
+  // Resolve leader pane ID with fallback (fixes issue #723)
+  const leaderPaneId = currentPaneId ?? resolveCurrentPaneId();
+
   try {
     const output = execFileSync(
       'tmux',
       ['list-panes', '-F', '#{pane_id}\t#{pane_current_command}\t#{pane_start_command}'],
       { encoding: 'utf-8' }
     );
-    return findHudWatchPaneIds(parseTmuxPaneSnapshot(output), currentPaneId);
+    return findHudWatchPaneIds(parseTmuxPaneSnapshot(output), leaderPaneId);
   } catch {
     return [];
   }
