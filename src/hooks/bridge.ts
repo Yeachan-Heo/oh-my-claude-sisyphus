@@ -258,7 +258,8 @@ export type HookType =
   | "pre-compact" // NEW: Save state before compaction
   | "setup-init" // NEW: One-time initialization
   | "setup-maintenance" // NEW: Periodic maintenance
-  | "permission-request"; // NEW: Smart auto-approval
+  | "permission-request" // NEW: Smart auto-approval
+  | "code-simplifier"; // NEW: Auto-simplify recently modified files on Stop
 
 /**
  * Extract prompt text from various input formats
@@ -1167,6 +1168,17 @@ export async function processHook(
         }
         const { handlePermissionRequest } = await import("./permission-handler/index.js");
         return await handlePermissionRequest(input as PermissionRequestInput);
+      }
+
+      case "code-simplifier": {
+        const directory = input.directory ?? process.cwd();
+        const stateDir = join(resolveToWorktreeRoot(directory), ".omc", "state");
+        const { processCodeSimplifier } = await import("./code-simplifier/index.js");
+        const result = processCodeSimplifier(directory, stateDir);
+        if (result.shouldBlock) {
+          return { continue: false, message: result.message };
+        }
+        return { continue: true };
       }
 
       default:

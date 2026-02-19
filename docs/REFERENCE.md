@@ -358,6 +358,45 @@ Oh-my-claudecode includes 31 lifecycle hooks that enhance Claude Code's behavior
 | `empty-message-sanitizer` | Empty message handling |
 | `permission-handler` | Permission requests and validation |
 | `think-mode` | Extended thinking detection |
+| `code-simplifier` | Auto-simplify recently modified files on Stop (opt-in) |
+
+### Code Simplifier Hook
+
+The `code-simplifier` Stop hook automatically delegates recently modified source files to the
+`code-simplifier` agent after each Claude turn. It is **disabled by default** and must be
+explicitly enabled via `~/.omc/config.json`.
+
+**Enable:**
+```json
+{
+  "codeSimplifier": {
+    "enabled": true
+  }
+}
+```
+
+**Full config options:**
+```json
+{
+  "codeSimplifier": {
+    "enabled": true,
+    "extensions": [".ts", ".tsx", ".js", ".jsx", ".py", ".go", ".rs"],
+    "maxFiles": 10
+  }
+}
+```
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `enabled` | `boolean` | `false` | Opt-in to automatic simplification |
+| `extensions` | `string[]` | `[".ts",".tsx",".js",".jsx",".py",".go",".rs"]` | File extensions to consider |
+| `maxFiles` | `number` | `10` | Maximum files simplified per turn |
+
+**How it works:**
+1. When Claude stops, the hook runs `git diff HEAD --name-only` to find modified files
+2. If modified source files are found, the hook injects a message asking Claude to delegate to the `code-simplifier` agent
+3. The agent simplifies the files for clarity and consistency without changing behavior
+4. A turn-scoped marker prevents the hook from triggering more than once per turn cycle
 
 ### Coordination & Environment
 

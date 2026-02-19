@@ -828,3 +828,18 @@ export {
   recordModeChange,
 } from './subagent-tracker/flow-tracer.js';
 
+export {
+  // Code Simplifier Stop Hook
+  processCodeSimplifier,
+  isCodeSimplifierEnabled,
+  getModifiedFiles,
+  readOmcConfig,
+  isAlreadyTriggered,
+  writeTriggerMarker,
+  clearTriggerMarker,
+  buildSimplifierMessage,
+  TRIGGER_MARKER_FILENAME,
+  type CodeSimplifierConfig,
+  type CodeSimplifierHookResult,
+} from './code-simplifier/index.js';
+

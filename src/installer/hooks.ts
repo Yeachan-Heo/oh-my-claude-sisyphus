@@ -303,6 +303,9 @@ export const STOP_CONTINUATION_SCRIPT_NODE = loadTemplate(
 /** Node.js persistent mode hook script - loaded from templates/hooks/persistent-mode.mjs */
 export const PERSISTENT_MODE_SCRIPT_NODE = loadTemplate("persistent-mode.mjs");
 
+/** Node.js code simplifier hook script - loaded from templates/hooks/code-simplifier.mjs */
+export const CODE_SIMPLIFIER_SCRIPT_NODE = loadTemplate("code-simplifier.mjs");
+
 /** Node.js session start hook script - loaded from templates/hooks/session-start.mjs */
 export const SESSION_START_SCRIPT_NODE = loadTemplate("session-start.mjs");
 
@@ -392,6 +395,16 @@ export const HOOKS_SETTINGS_CONFIG_NODE = {
           },
         ],
       },
+      {
+        hooks: [
+          {
+            type: "command" as const,
+            command: isWindows()
+              ? 'node "%USERPROFILE%\\.claude\\hooks\\code-simplifier.mjs"'
+              : 'node "$HOME/.claude/hooks/code-simplifier.mjs"',
+          },
+        ],
+      },
     ],
   },
 };
@@ -420,6 +433,7 @@ export function getHookScripts(): Record<string, string> {
     "pre-tool-use.mjs": loadTemplate("pre-tool-use.mjs"),
     "post-tool-use.mjs": loadTemplate("post-tool-use.mjs"),
     "post-tool-use-failure.mjs": loadTemplate("post-tool-use-failure.mjs"),
+    "code-simplifier.mjs": loadTemplate("code-simplifier.mjs"),
     // Shared library modules (in lib/ subdirectory)
     "lib/stdin.mjs": loadTemplate("lib/stdin.mjs"),
     "lib/atomic-write.mjs": loadTemplate("lib/atomic-write.mjs"),
