@@ -19,6 +19,7 @@ import {
   incrementReinforcement,
   deactivateUltrawork,
   getUltraworkPersistenceMessage,
+  MAX_ULTRAWORK_REINFORCEMENTS,
   type UltraworkState
 } from '../ultrawork/index.js';
 import { resolveToWorktreeRoot } from '../../lib/worktree-paths.js';
@@ -393,8 +394,22 @@ async function checkRalphLoop(
     };
   }
 
+  // Hard cap to prevent infinite loops if cancel fails or state persists
+  const RALPH_HARD_MAX_ITERATIONS = 200;
+
   // Check max iterations
   if (state.iteration >= state.max_iterations) {
+    if (state.max_iterations >= RALPH_HARD_MAX_ITERATIONS) {
+      // Hard cap reached — auto-stop rather than extend indefinitely
+      clearRalphState(workingDir, sessionId);
+      clearVerificationState(workingDir, sessionId);
+      deactivateUltrawork(workingDir, sessionId);
+      return {
+        shouldBlock: false,
+        message: `[RALPH LOOP AUTO-STOPPED] Hard maximum iterations (${RALPH_HARD_MAX_ITERATIONS}) reached. State cleared. Use /cancel --force if stale state remains.`,
+        mode: 'none'
+      };
+    }
     // Do not silently stop Ralph with unfinished work.
     // Extend the limit and continue enforcement so user-visible cancellation
     // remains the only explicit termination path.
@@ -470,7 +485,24 @@ async function checkUltrawork(
     return null;
   }
 
-  // Reinforce ultrawork mode - ALWAYS continue while active.
+  // Guard: cancelled flag set by cancel command — do not reinforce, clean up instead
+  if (state.cancelled) {
+    deactivateUltrawork(directory, sessionId);
+    return null;
+  }
+
+  // Safeguard: auto-stop after MAX_ULTRAWORK_REINFORCEMENTS to prevent infinite loops.
+  // This triggers if cancel failed or state was not cleaned up properly.
+  if (state.reinforcement_count >= MAX_ULTRAWORK_REINFORCEMENTS) {
+    deactivateUltrawork(directory, sessionId);
+    return {
+      shouldBlock: false,
+      message: `[ULTRAWORK AUTO-STOPPED] Reached maximum reinforcements (${MAX_ULTRAWORK_REINFORCEMENTS}) without explicit cancel. State cleared. If work is still incomplete, restart with /ultrawork.`,
+      mode: 'none'
+    };
+  }
+
+  // Reinforce ultrawork mode - continue while active.
   // This prevents false stops from bash errors, transient failures, etc.
   const newState = incrementReinforcement(directory, sessionId);
   if (!newState) {
@@ -623,7 +655,8 @@ export async function checkPersistentModes(
 
   // Priority 2: Ultrawork Mode (performance mode with persistence)
   const ultraworkResult = await checkUltrawork(sessionId, workingDir, hasIncompleteTodos);
-  if (ultraworkResult?.shouldBlock) {
+  if (ultraworkResult !== null) {
+    // Return both blocking reinforcements AND non-blocking terminal results (e.g., auto-stop message)
     return ultraworkResult;
   }
 

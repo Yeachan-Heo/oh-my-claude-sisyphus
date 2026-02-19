@@ -5,6 +5,8 @@
  * When ultrawork is activated and todos remain incomplete,
  * this module ensures the mode persists until all work is done.
  */
+/** Maximum reinforcements before auto-stopping to prevent infinite loops */
+export declare const MAX_ULTRAWORK_REINFORCEMENTS = 50;
 export interface UltraworkState {
     /** Whether ultrawork mode is currently active */
     active: boolean;
@@ -22,6 +24,8 @@ export interface UltraworkState {
     last_checked_at: string;
     /** Whether this ultrawork session is linked to a ralph-loop session */
     linked_to_ralph?: boolean;
+    /** Set to true when cancel is requested — stopHook must not reinforce a cancelled session */
+    cancelled?: boolean;
 }
 /**
  * Read Ultrawork state from disk (local only)
@@ -59,6 +63,12 @@ export declare function shouldReinforceUltrawork(sessionId?: string, directory?:
  * Get ultrawork persistence message for injection
  */
 export declare function getUltraworkPersistenceMessage(state: UltraworkState): string;
+/**
+ * Cancel ultrawork by marking it as cancelled before deactivating.
+ * This prevents a race condition where stopHook fires between cancel request
+ * and state file deletion, causing false reinforcement.
+ */
+export declare function cancelUltrawork(directory?: string, sessionId?: string): boolean;
 /**
  * Create an Ultrawork State hook instance
  */

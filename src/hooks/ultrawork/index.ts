@@ -10,6 +10,9 @@ import { existsSync, readFileSync, writeFileSync, mkdirSync, unlinkSync } from '
 import { join } from 'path';
 import { resolveSessionStatePath, ensureSessionStateDir } from '../../lib/worktree-paths.js';
 
+/** Maximum reinforcements before auto-stopping to prevent infinite loops */
+export const MAX_ULTRAWORK_REINFORCEMENTS = 50;
+
 export interface UltraworkState {
   /** Whether ultrawork mode is currently active */
   active: boolean;
@@ -27,6 +30,8 @@ export interface UltraworkState {
   last_checked_at: string;
   /** Whether this ultrawork session is linked to a ralph-loop session */
   linked_to_ralph?: boolean;
+  /** Set to true when cancel is requested — stopHook must not reinforce a cancelled session */
+  cancelled?: boolean;
 }
 
 const _DEFAULT_STATE: UltraworkState = {
@@ -240,7 +245,7 @@ export function shouldReinforceUltrawork(
 export function getUltraworkPersistenceMessage(state: UltraworkState): string {
   return `<ultrawork-persistence>
 
-[ULTRAWORK MODE STILL ACTIVE - Reinforcement #${state.reinforcement_count + 1}]
+[ULTRAWORK MODE STILL ACTIVE - Reinforcement #${state.reinforcement_count}/${MAX_ULTRAWORK_REINFORCEMENTS}]
 
 Your ultrawork session is NOT complete. Incomplete todos remain.
 
@@ -260,6 +265,20 @@ Original task: ${state.original_prompt}
 ---
 
 `;
+}
+
+/**
+ * Cancel ultrawork by marking it as cancelled before deactivating.
+ * This prevents a race condition where stopHook fires between cancel request
+ * and state file deletion, causing false reinforcement.
+ */
+export function cancelUltrawork(directory?: string, sessionId?: string): boolean {
+  const state = readUltraworkState(directory, sessionId);
+  if (state) {
+    state.cancelled = true;
+    writeUltraworkState(state, directory, sessionId);
+  }
+  return deactivateUltrawork(directory, sessionId);
 }
 
 /**
