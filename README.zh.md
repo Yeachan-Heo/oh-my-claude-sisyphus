@@ -139,7 +139,7 @@ omc wait --stop   # 禁用守护进程
 
 **需要：** tmux（用于会话检测）
 
-### 通知标签配置 (Telegram/Discord)
+### 通知标签配置 (Telegram/Discord/Slack)
 
 你可以配置 stop 回调发送会话摘要时要 @ 谁。
 
@@ -157,6 +157,7 @@ omc config-stop-callback discord --clear-tags
 标签规则：
 - Telegram：`alice` 会规范化为 `@alice`
 - Discord：支持 `@here`、`@everyone`、纯数字用户 ID、`role:<id>`
+- Slack：支持 `<@MEMBER_ID>`、`<!channel>`、`<!here>`、`<!everyone>`、`<!subteam^GROUP_ID>`
 - `file` 回调会忽略标签选项
 
 ---
@@ -183,9 +184,12 @@ export OMC_DISCORD_NOTIFIER_CHANNEL="your_channel_id"
 export OMC_TELEGRAM_BOT_TOKEN="your_bot_token"
 export OMC_TELEGRAM_CHAT_ID="your_chat_id"
 
+# Slack
+export OMC_SLACK_WEBHOOK_URL="your_webhook_url"
+export OMC_SLACK_MENTION="<@U1234567890>"  # optional
+
 # 可选 webhook
 export OMC_DISCORD_WEBHOOK_URL="your_webhook_url"
-export OMC_SLACK_WEBHOOK_URL="your_webhook_url"
 ```
 
 > 注意：请确保在运行 `claude` 的同一个 Shell 中已加载这些环境变量。

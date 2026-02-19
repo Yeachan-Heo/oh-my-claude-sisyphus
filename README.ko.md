@@ -139,7 +139,7 @@ omc wait --stop   # 데몬 비활성화
 
 **요구사항:** tmux (세션 감지용)
 
-### 알림 태그 설정 (Telegram/Discord)
+### 알림 태그 설정 (Telegram/Discord/Slack)
 
 stop 콜백이 세션 요약을 보낼 때 태그할 대상을 설정할 수 있습니다.
 
@@ -157,6 +157,7 @@ omc config-stop-callback discord --clear-tags
 태그 동작:
 - Telegram: `alice`는 `@alice`로 정규화됩니다
 - Discord: `@here`, `@everyone`, 숫자 사용자 ID, `role:<id>` 지원
+- Slack: `<@MEMBER_ID>`, `<!channel>`, `<!here>`, `<!everyone>`, `<!subteam^GROUP_ID>` 지원
 - `file` 콜백은 태그 옵션을 무시합니다
 
 ---
@@ -183,9 +184,12 @@ export OMC_DISCORD_NOTIFIER_CHANNEL="your_channel_id"
 export OMC_TELEGRAM_BOT_TOKEN="your_bot_token"
 export OMC_TELEGRAM_CHAT_ID="your_chat_id"
 
+# Slack
+export OMC_SLACK_WEBHOOK_URL="your_webhook_url"
+export OMC_SLACK_MENTION="<@U1234567890>"  # optional
+
 # Optional webhooks
 export OMC_DISCORD_WEBHOOK_URL="your_webhook_url"
-export OMC_SLACK_WEBHOOK_URL="your_webhook_url"
 ```
 
 > 참고: `claude`를 실행하는 동일한 쉘에서 환경 변수가 로드되어 있어야 합니다.

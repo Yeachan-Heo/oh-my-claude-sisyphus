@@ -167,7 +167,7 @@ omc wait --stop   # Disable daemon
 
 **Requer:** tmux (para detecção de sessão)
 
-### Tags de Notificação (Telegram/Discord)
+### Tags de Notificação (Telegram/Discord/Slack)
 
 Você pode configurar quem recebe tag quando callbacks de parada enviam resumos de sessão.
 
@@ -185,6 +185,7 @@ omc config-stop-callback discord --clear-tags
 Comportamento das tags:
 - Telegram: `alice` vira `@alice`
 - Discord: suporta `@here`, `@everyone`, IDs numéricos de usuário e `role:<id>`
+- Slack: suporta `<@MEMBER_ID>`, `<!channel>`, `<!here>`, `<!everyone>`, `<!subteam^GROUP_ID>`
 - callbacks de `file` ignoram opções de tag
 
 ---

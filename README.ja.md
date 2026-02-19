@@ -139,7 +139,7 @@ omc wait --stop   # デーモンを無効化
 
 **必要なもの:** tmux (セッション検出用)
 
-### 通知タグ設定 (Telegram/Discord)
+### 通知タグ設定 (Telegram/Discord/Slack)
 
 stop コールバックがセッション要約を送るときに、誰をタグ付けするか設定できます。
 
@@ -157,6 +157,7 @@ omc config-stop-callback discord --clear-tags
 タグの挙動:
 - Telegram: `alice` は `@alice` に正規化
 - Discord: `@here`、`@everyone`、数値ユーザーID、`role:<id>` をサポート
+- Slack: `<@MEMBER_ID>`、`<!channel>`、`<!here>`、`<!everyone>`、`<!subteam^GROUP_ID>` をサポート
 - `file` コールバックはタグオプションを無視
 
 ---
@@ -183,9 +184,12 @@ export OMC_DISCORD_NOTIFIER_CHANNEL="your_channel_id"
 export OMC_TELEGRAM_BOT_TOKEN="your_bot_token"
 export OMC_TELEGRAM_CHAT_ID="your_chat_id"
 
+# Slack
+export OMC_SLACK_WEBHOOK_URL="your_webhook_url"
+export OMC_SLACK_MENTION="<@U1234567890>"  # optional
+
 # Optional webhooks
 export OMC_DISCORD_WEBHOOK_URL="your_webhook_url"
-export OMC_SLACK_WEBHOOK_URL="your_webhook_url"
 ```
 
 > 注意: `claude` を実行する同じシェルで環境変数が読み込まれている必要があります。
