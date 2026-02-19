@@ -25,16 +25,18 @@ const KEYWORD_PATTERNS = {
     ultrathink: /\b(ultrathink)\b/i,
     deepsearch: /\b(deepsearch)\b|\bsearch\s+the\s+codebase\b|\bfind\s+in\s+(the\s+)?codebase\b/i,
     analyze: /\b(deep[\s-]?analyze|deepanalyze)\b/i,
+    ccg: /\b(ccg|claude-codex-gemini)\b/i,
     codex: /\b(ask|use|delegate\s+to)\s+(codex|gpt)\b/i,
-    gemini: /\b(ask|use|delegate\s+to)\s+gemini\b/i
+    gemini: /\b(ask|use|delegate\s+to)\s+gemini\b/i,
+    ecomode: /\b(ecomode|eco[\s-]?mode)\b/i
 };
 /**
  * Priority order for keyword detection
  */
 const KEYWORD_PRIORITY = [
     'cancel', 'ralph', 'autopilot', 'ultrapilot', 'team', 'ultrawork',
-    'swarm', 'pipeline', 'ralplan', 'plan', 'tdd',
-    'ultrathink', 'deepsearch', 'analyze', 'codex', 'gemini'
+    'swarm', 'pipeline', 'ccg', 'ralplan', 'plan', 'tdd',
+    'ultrathink', 'deepsearch', 'analyze', 'codex', 'gemini', 'ecomode'
 ];
 /**
  * Remove code blocks from text to prevent false positives
@@ -49,7 +51,7 @@ export function removeCodeBlocks(text) {
     return result;
 }
 /**
- * Sanitize text for keyword detection by removing structural noise.
+* Sanitize text for keyword detection by removing structural noise.
  * Strips XML tags, URLs, file paths, and code blocks.
  */
 export function sanitizeForKeywordDetection(text) {

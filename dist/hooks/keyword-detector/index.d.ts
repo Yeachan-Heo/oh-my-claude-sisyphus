@@ -6,7 +6,7 @@
  *
  * Ported from oh-my-opencode's keyword-detector hook.
  */
-export type KeywordType = 'cancel' | 'ralph' | 'autopilot' | 'ultrapilot' | 'team' | 'ultrawork' | 'swarm' | 'pipeline' | 'ralplan' | 'plan' | 'tdd' | 'ultrathink' | 'deepsearch' | 'analyze' | 'codex' | 'gemini';
+export type KeywordType = 'cancel' | 'ralph' | 'autopilot' | 'ultrapilot' | 'team' | 'ultrawork' | 'swarm' | 'pipeline' | 'ralplan' | 'plan' | 'tdd' | 'ultrathink' | 'deepsearch' | 'analyze' | 'codex' | 'gemini' | 'ccg' | 'ecomode';
 export interface DetectedKeyword {
     type: KeywordType;
     keyword: string;
@@ -18,7 +18,7 @@ export interface DetectedKeyword {
  */
 export declare function removeCodeBlocks(text: string): string;
 /**
- * Sanitize text for keyword detection by removing structural noise.
+* Sanitize text for keyword detection by removing structural noise.
  * Strips XML tags, URLs, file paths, and code blocks.
  */
 export declare function sanitizeForKeywordDetection(text: string): string;
