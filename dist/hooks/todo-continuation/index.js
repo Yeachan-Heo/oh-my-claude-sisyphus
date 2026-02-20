@@ -99,6 +99,31 @@ export function isContextLimitStop(context) {
     return contextPatterns.some(p => reason.includes(p) || endTurnReason.includes(p));
 }
 /**
+ * Detect if stop was triggered by rate limiting (HTTP 429 / quota exhausted).
+ * When the API is rate-limited, Claude Code stops the session.
+ * Blocking these stops causes an infinite retry loop: the persistent-mode hook
+ * injects a continuation prompt, Claude immediately hits the rate limit again,
+ * stops again, and the cycle repeats indefinitely.
+ *
+ * Fix for: https://github.com/Yeachan-Heo/oh-my-claudecode/issues/777
+ */
+export function isRateLimitStop(context) {
+    if (!context)
+        return false;
+    const reason = (context.stop_reason ?? context.stopReason ?? '').toLowerCase();
+    const endTurnReason = (context.end_turn_reason ?? context.endTurnReason ?? '').toLowerCase();
+    const rateLimitPatterns = [
+        'rate_limit', 'rate_limited', 'ratelimit',
+        'too_many_requests', '429',
+        'quota_exceeded', 'quota_limit', 'quota_exhausted',
+        'request_limit', 'api_limit',
+        // Anthropic API returns 'overloaded_error' (529) for server overload;
+        // 'capacity' covers provider-level capacity-exceeded responses
+        'overloaded', 'capacity',
+    ];
+    return rateLimitPatterns.some(p => reason.includes(p) || endTurnReason.includes(p));
+}
+/**
  * Get possible todo file locations
  */
 function getTodoFilePaths(sessionId, directory) {

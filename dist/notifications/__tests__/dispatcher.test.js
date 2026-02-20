@@ -501,6 +501,111 @@ describe("sendSlack", () => {
         expect(body.channel).toBe("#alerts");
         expect(body.username).toBe("OMC");
     });
+    it("prepends user mention to message text", async () => {
+        const config = {
+            enabled: true,
+            webhookUrl: "https://hooks.slack.com/services/T00/B00/xxx",
+            mention: "<@U1234567890>",
+        };
+        await sendSlack(config, basePayload);
+        const call = vi.mocked(fetch).mock.calls[0];
+        const body = JSON.parse(call[1].body);
+        expect(body.text).toContain("<@U1234567890>");
+        expect(body.text).toMatch(/^<@U1234567890>\n/);
+    });
+    it("prepends channel mention to message text", async () => {
+        const config = {
+            enabled: true,
+            webhookUrl: "https://hooks.slack.com/services/T00/B00/xxx",
+            mention: "<!channel>",
+        };
+        await sendSlack(config, basePayload);
+        const call = vi.mocked(fetch).mock.calls[0];
+        const body = JSON.parse(call[1].body);
+        expect(body.text).toMatch(/^<!channel>\n/);
+    });
+    it("prepends here mention to message text", async () => {
+        const config = {
+            enabled: true,
+            webhookUrl: "https://hooks.slack.com/services/T00/B00/xxx",
+            mention: "<!here>",
+        };
+        await sendSlack(config, basePayload);
+        const call = vi.mocked(fetch).mock.calls[0];
+        const body = JSON.parse(call[1].body);
+        expect(body.text).toMatch(/^<!here>\n/);
+    });
+    it("prepends subteam mention to message text", async () => {
+        const config = {
+            enabled: true,
+            webhookUrl: "https://hooks.slack.com/services/T00/B00/xxx",
+            mention: "<!subteam^S1234567890>",
+        };
+        await sendSlack(config, basePayload);
+        const call = vi.mocked(fetch).mock.calls[0];
+        const body = JSON.parse(call[1].body);
+        expect(body.text).toMatch(/^<!subteam\^S1234567890>\n/);
+    });
+    it("sends text without mention prefix when mention is undefined", async () => {
+        const config = {
+            enabled: true,
+            webhookUrl: "https://hooks.slack.com/services/T00/B00/xxx",
+        };
+        await sendSlack(config, basePayload);
+        const call = vi.mocked(fetch).mock.calls[0];
+        const body = JSON.parse(call[1].body);
+        expect(body.text).toBe(basePayload.message);
+    });
+    it("returns not configured when webhookUrl is empty", async () => {
+        const config = {
+            enabled: true,
+            webhookUrl: "",
+        };
+        const result = await sendSlack(config, basePayload);
+        expect(result).toEqual({
+            platform: "slack",
+            success: false,
+            error: "Not configured",
+        });
+    });
+    it("rejects HTTP (non-HTTPS) webhook URL", async () => {
+        const config = {
+            enabled: true,
+            webhookUrl: "http://hooks.slack.com/services/T00/B00/xxx",
+        };
+        const result = await sendSlack(config, basePayload);
+        expect(result).toEqual({
+            platform: "slack",
+            success: false,
+            error: "Invalid webhook URL",
+        });
+    });
+    it("returns error on HTTP failure", async () => {
+        vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, status: 403 }));
+        const config = {
+            enabled: true,
+            webhookUrl: "https://hooks.slack.com/services/T00/B00/xxx",
+        };
+        const result = await sendSlack(config, basePayload);
+        expect(result).toEqual({
+            platform: "slack",
+            success: false,
+            error: "HTTP 403",
+        });
+    });
+    it("returns error on fetch exception", async () => {
+        vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("Network failure")));
+        const config = {
+            enabled: true,
+            webhookUrl: "https://hooks.slack.com/services/T00/B00/xxx",
+        };
+        const result = await sendSlack(config, basePayload);
+        expect(result).toEqual({
+            platform: "slack",
+            success: false,
+            error: "Network failure",
+        });
+    });
 });
 describe("sendWebhook", () => {
     beforeEach(() => {

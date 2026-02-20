@@ -10,10 +10,10 @@
  *   await notify('session-start', { sessionId, projectPath, ... });
  */
 export { dispatchNotifications, sendDiscord, sendDiscordBot, sendTelegram, sendSlack, sendWebhook, } from "./dispatcher.js";
-export { formatNotification, formatSessionStart, formatSessionStop, formatSessionEnd, formatSessionIdle, formatAskUserQuestion, } from "./formatter.js";
+export { formatNotification, formatSessionStart, formatSessionStop, formatSessionEnd, formatSessionIdle, formatAskUserQuestion, formatAgentCall, } from "./formatter.js";
 export { getCurrentTmuxSession, getCurrentTmuxPaneId, getTeamTmuxSessions, formatTmuxInfo, } from "./tmux.js";
-export { getNotificationConfig, isEventEnabled, getEnabledPlatforms, } from "./config.js";
-import { getNotificationConfig, isEventEnabled } from "./config.js";
+export { getNotificationConfig, isEventEnabled, getEnabledPlatforms, getVerbosity, isEventAllowedByVerbosity, shouldIncludeTmuxTail, } from "./config.js";
+import { getNotificationConfig, isEventEnabled, getVerbosity, isEventAllowedByVerbosity, shouldIncludeTmuxTail, } from "./config.js";
 import { formatNotification } from "./formatter.js";
 import { dispatchNotifications } from "./dispatcher.js";
 import { getCurrentTmuxSession } from "./tmux.js";
@@ -29,9 +29,18 @@ import { basename } from "path";
  * @returns DispatchResult or null if notifications are not configured/enabled
  */
 export async function notify(event, data) {
+    // OMC_NOTIFY=0 suppresses all CCNotifier events (set by `claud --notify false`)
+    if (process.env.OMC_NOTIFY === '0') {
+        return null;
+    }
     try {
         const config = getNotificationConfig(data.profileName);
         if (!config || !isEventEnabled(config, event)) {
+            return null;
+        }
+        // Verbosity filter (second gate after isEventEnabled)
+        const verbosity = getVerbosity(config);
+        if (!isEventAllowedByVerbosity(verbosity, event)) {
             return null;
         }
         // Get tmux pane ID
@@ -58,7 +67,24 @@ export async function notify(event, data) {
             maxIterations: data.maxIterations,
             question: data.question,
             incompleteTasks: data.incompleteTasks,
+            agentName: data.agentName,
+            agentType: data.agentType,
         };
+        // Capture tmux tail for events that benefit from it
+        if (shouldIncludeTmuxTail(verbosity) &&
+            payload.tmuxPaneId &&
+            (event === "session-idle" || event === "session-end" || event === "session-stop")) {
+            try {
+                const { capturePaneContent } = await import("../features/rate-limit-wait/tmux-detector.js");
+                const tail = capturePaneContent(payload.tmuxPaneId, 15);
+                if (tail) {
+                    payload.tmuxTail = tail;
+                }
+            }
+            catch {
+                // Non-blocking: tmux capture is best-effort
+            }
+        }
         // Format the message
         payload.message = data.message || formatNotification(payload);
         // Dispatch to all enabled platforms

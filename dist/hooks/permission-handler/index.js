@@ -69,7 +69,7 @@ export function isHeredocWithSafeBase(command) {
     return SAFE_HEREDOC_PATTERNS.some(pattern => pattern.test(firstLine));
 }
 /**
- * Check if an active mode (autopilot/ultrawork/ralph/swarm) is running
+ * Check if an active mode (autopilot/ultrawork/ralph/team/swarm) is running
  */
 export function isActiveModeRunning(directory) {
     const stateDir = path.join(directory, '.omc', 'state');
@@ -81,6 +81,7 @@ export function isActiveModeRunning(directory) {
         'ultrapilot-state.json',
         'ralph-state.json',
         'ultrawork-state.json',
+        'team-state.json',
         'swarm-active.marker',
     ];
     for (const stateFile of activeStateFiles) {

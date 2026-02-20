@@ -137,4 +137,7 @@ registerProjectMemoryContext, clearProjectMemorySession, rescanProjectEnvironmen
 export { 
 // Flow Tracer (Agent Flow Trace Recording)
 recordHookFire, recordHookResult, recordKeywordDetected, recordSkillActivated, recordSkillInvoked, recordModeChange, } from './subagent-tracker/flow-tracer.js';
+export { 
+// Code Simplifier Stop Hook
+processCodeSimplifier, isCodeSimplifierEnabled, getModifiedFiles, readOmcConfig, isAlreadyTriggered, writeTriggerMarker, clearTriggerMarker, buildSimplifierMessage, TRIGGER_MARKER_FILENAME, } from './code-simplifier/index.js';
 //# sourceMappingURL=index.js.map

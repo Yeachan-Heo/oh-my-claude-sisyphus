@@ -90,6 +90,11 @@ export declare class McpBridge extends EventEmitter {
      */
     private sendRequest;
     /**
+     * Write a message to a child process stdin, swallowing EPIPE errors.
+     * EPIPE occurs when the process exits before the write completes (e.g., during test teardown).
+     */
+    private safeStdinWrite;
+    /**
      * Send an MCP notification (no response expected)
      */
     private sendNotification;

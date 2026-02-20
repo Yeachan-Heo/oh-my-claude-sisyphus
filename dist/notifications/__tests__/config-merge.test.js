@@ -31,6 +31,7 @@ describe("getNotificationConfig - file + env deep merge", () => {
         vi.stubEnv("OMC_TELEGRAM_NOTIFIER_CHAT_ID", "");
         vi.stubEnv("OMC_TELEGRAM_NOTIFIER_UID", "");
         vi.stubEnv("OMC_SLACK_WEBHOOK_URL", "");
+        vi.stubEnv("OMC_SLACK_MENTION", "");
         // Default: no config file
         vi.mocked(existsSync).mockReturnValue(false);
     });
@@ -237,6 +238,73 @@ describe("getNotificationConfig - file + env deep merge", () => {
         const config = getNotificationConfig();
         expect(config).not.toBeNull();
         expect(config.telegram.botToken).toBe("legacy-token");
+    });
+    it("merges env slack into file config that lacks it", () => {
+        vi.mocked(existsSync).mockReturnValue(true);
+        vi.mocked(readFileSync).mockReturnValue(JSON.stringify({
+            notifications: {
+                enabled: true,
+                discord: {
+                    enabled: true,
+                    webhookUrl: "https://discord.com/api/webhooks/file-webhook",
+                },
+            },
+        }));
+        vi.stubEnv("OMC_SLACK_WEBHOOK_URL", "https://hooks.slack.com/services/env-slack");
+        const config = getNotificationConfig();
+        expect(config).not.toBeNull();
+        // File discord preserved
+        expect(config.discord.webhookUrl).toBe("https://discord.com/api/webhooks/file-webhook");
+        // Env slack merged in
+        expect(config.slack).toBeDefined();
+        expect(config.slack.webhookUrl).toBe("https://hooks.slack.com/services/env-slack");
+        expect(config.slack.enabled).toBe(true);
+    });
+    it("file slack webhookUrl takes precedence over env", () => {
+        vi.mocked(existsSync).mockReturnValue(true);
+        vi.mocked(readFileSync).mockReturnValue(JSON.stringify({
+            notifications: {
+                enabled: true,
+                slack: {
+                    enabled: true,
+                    webhookUrl: "https://hooks.slack.com/services/file-url",
+                },
+            },
+        }));
+        vi.stubEnv("OMC_SLACK_WEBHOOK_URL", "https://hooks.slack.com/services/env-url");
+        const config = getNotificationConfig();
+        expect(config.slack.webhookUrl).toBe("https://hooks.slack.com/services/file-url");
+    });
+    it("env slack mention fills missing mention in file slack config", () => {
+        vi.mocked(existsSync).mockReturnValue(true);
+        vi.mocked(readFileSync).mockReturnValue(JSON.stringify({
+            notifications: {
+                enabled: true,
+                slack: {
+                    enabled: true,
+                    webhookUrl: "https://hooks.slack.com/services/file-slack",
+                },
+            },
+        }));
+        vi.stubEnv("OMC_SLACK_MENTION", "<@U1234567890>");
+        const config = getNotificationConfig();
+        expect(config.slack.mention).toBe("<@U1234567890>");
+    });
+    it("file slack mention takes precedence over env slack mention", () => {
+        vi.mocked(existsSync).mockReturnValue(true);
+        vi.mocked(readFileSync).mockReturnValue(JSON.stringify({
+            notifications: {
+                enabled: true,
+                slack: {
+                    enabled: true,
+                    webhookUrl: "https://hooks.slack.com/services/file-slack",
+                    mention: "<!channel>",
+                },
+            },
+        }));
+        vi.stubEnv("OMC_SLACK_MENTION", "<@U9999999999>");
+        const config = getNotificationConfig();
+        expect(config.slack.mention).toBe("<!channel>");
     });
 });
 //# sourceMappingURL=config-merge.test.js.map

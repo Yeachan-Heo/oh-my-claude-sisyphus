@@ -97,6 +97,10 @@ export declare const codeReviewerAgent: AgentConfig;
  */
 export declare const gitMasterAgent: AgentConfig;
 /**
+ * Code-Simplifier Agent - Code Simplification & Refactoring (Opus)
+ */
+export declare const codeSimplifierAgent: AgentConfig;
+/**
  * @deprecated Use dependency-expert agent instead
  */
 export declare const researcherAgentAlias: AgentConfig;

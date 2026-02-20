@@ -15,7 +15,7 @@ import { getClaudeConfigDir } from '../../utils/paths.js';
 import { readUltraworkState, writeUltraworkState, incrementReinforcement, deactivateUltrawork, getUltraworkPersistenceMessage } from '../ultrawork/index.js';
 import { resolveToWorktreeRoot } from '../../lib/worktree-paths.js';
 import { readRalphState, writeRalphState, incrementRalphIteration, clearRalphState, getPrdCompletionStatus, getRalphContext, readVerificationState, recordArchitectFeedback, getArchitectVerificationPrompt, getArchitectRejectionContinuationPrompt, detectArchitectApproval, detectArchitectRejection, clearVerificationState } from '../ralph/index.js';
-import { checkIncompleteTodos, getNextPendingTodo, isUserAbort, isContextLimitStop } from '../todo-continuation/index.js';
+import { checkIncompleteTodos, getNextPendingTodo, isUserAbort, isContextLimitStop, isRateLimitStop } from '../todo-continuation/index.js';
 import { TODO_CONTINUATION_PROMPT } from '../../installer/hooks.js';
 import { isAutopilotActive } from '../autopilot/index.js';
 import { checkAutopilot } from '../autopilot/enforcement.js';
@@ -467,6 +467,18 @@ export async function checkPersistentModes(sessionId, directory, stopContext // 
         return {
             shouldBlock: false,
             message: '',
+            mode: 'none'
+        };
+    }
+    // CRITICAL: Never block rate-limit stops.
+    // When the API returns 429 / quota-exhausted, Claude Code stops the session.
+    // Blocking these stops creates an infinite retry loop: the hook injects a
+    // continuation prompt → Claude hits the rate limit again → stops again → loops.
+    // Fix for: https://github.com/Yeachan-Heo/oh-my-claudecode/issues/777
+    if (isRateLimitStop(stopContext)) {
+        return {
+            shouldBlock: false,
+            message: '[RALPH PAUSED - RATE LIMITED] API rate limit detected. Ralph loop paused until the rate limit resets. Resume manually once the limit clears.',
             mode: 'none'
         };
     }
