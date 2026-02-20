@@ -721,14 +721,14 @@ export function install(options = {}) {
                     if (!existingSettings.statusLine) {
                         existingSettings.statusLine = {
                             type: 'command',
-                            command: 'node ' + hudScriptPath
+                            command: 'node ' + hudScriptPath.replace(/\\/g, '/')
                         };
                         log('  Configured statusLine');
                     }
                     else if (options.force && isOmcStatusLine(existingSettings.statusLine)) {
                         existingSettings.statusLine = {
                             type: 'command',
-                            command: 'node ' + hudScriptPath
+                            command: 'node ' + hudScriptPath.replace(/\\/g, '/')
                         };
                         log('  Updated statusLine (--force)');
                     }

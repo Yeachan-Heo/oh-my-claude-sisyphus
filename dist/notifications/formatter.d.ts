@@ -25,6 +25,11 @@ export declare function formatSessionEnd(payload: NotificationPayload): string;
  */
 export declare function formatSessionIdle(payload: NotificationPayload): string;
 /**
+ * Format agent-call notification message.
+ * Sent when a new agent (Task) is spawned.
+ */
+export declare function formatAgentCall(payload: NotificationPayload): string;
+/**
  * Format ask-user-question notification message.
  * Notifies the user that Claude is waiting for input.
  */

@@ -70,12 +70,6 @@ const MODE_CONFIGS = {
         name: 'UltraQA',
         stateFile: 'ultraqa-state.json',
         activeProperty: 'active'
-    },
-    ecomode: {
-        name: 'Ecomode',
-        stateFile: 'ecomode-state.json',
-        activeProperty: 'active',
-        hasGlobalState: false
     }
 };
 // Export for use in other modules

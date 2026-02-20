@@ -355,8 +355,24 @@ export class McpBridge extends EventEmitter {
             });
             // Send the request
             const message = JSON.stringify(request) + '\n';
-            connection.process.stdin?.write(message);
+            this.safeStdinWrite(connection.process.stdin, message);
         });
+    }
+    /**
+     * Write a message to a child process stdin, swallowing EPIPE errors.
+     * EPIPE occurs when the process exits before the write completes (e.g., during test teardown).
+     */
+    safeStdinWrite(stdin, message) {
+        if (!stdin)
+            return;
+        try {
+            stdin.write(message);
+        }
+        catch (err) {
+            if (err.code !== 'EPIPE') {
+                throw err;
+            }
+        }
     }
     /**
      * Send an MCP notification (no response expected)
@@ -371,7 +387,7 @@ export class McpBridge extends EventEmitter {
             params,
         };
         const message = JSON.stringify(notification) + '\n';
-        connection.process.stdin?.write(message);
+        this.safeStdinWrite(connection.process.stdin, message);
     }
     /**
      * Handle incoming data from server

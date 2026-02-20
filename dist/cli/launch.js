@@ -8,6 +8,33 @@ import { resolveLaunchPolicy, buildTmuxSessionName, buildTmuxShellCommand, listH
 const MADMAX_FLAG = '--madmax';
 const YOLO_FLAG = '--yolo';
 const CLAUDE_BYPASS_FLAG = '--dangerously-skip-permissions';
+const NOTIFY_FLAG = '--notify';
+/**
+ * Extract the OMC-specific --notify flag from launch args.
+ * --notify false  → disable notifications (OMC_NOTIFY=0)
+ * --notify true   → enable notifications (default)
+ * This flag must be stripped before passing args to Claude CLI.
+ */
+export function extractNotifyFlag(args) {
+    let notifyEnabled = true;
+    const remainingArgs = [];
+    for (let i = 0; i < args.length; i++) {
+        const arg = args[i];
+        if (arg === NOTIFY_FLAG && i + 1 < args.length) {
+            const val = args[i + 1].toLowerCase();
+            notifyEnabled = val !== 'false' && val !== '0';
+            i++; // skip value
+        }
+        else if (arg.startsWith(`${NOTIFY_FLAG}=`)) {
+            const val = arg.slice(NOTIFY_FLAG.length + 1).toLowerCase();
+            notifyEnabled = val !== 'false' && val !== '0';
+        }
+        else {
+            remainingArgs.push(arg);
+        }
+    }
+    return { notifyEnabled, remainingArgs };
+}
 /**
  * Normalize Claude launch arguments
  * Maps --madmax/--yolo to --dangerously-skip-permissions
@@ -178,6 +205,11 @@ export async function postLaunch(_cwd, _sessionId) {
  * Orchestrates the 3-phase launch: preLaunch -> run -> postLaunch
  */
 export async function launchCommand(args) {
+    // Extract OMC-specific --notify flag before passing remaining args to Claude CLI
+    const { notifyEnabled, remainingArgs } = extractNotifyFlag(args);
+    if (!notifyEnabled) {
+        process.env.OMC_NOTIFY = '0';
+    }
     const cwd = process.cwd();
     // Pre-flight: check for nested session
     if (process.env.CLAUDECODE) {
@@ -190,7 +222,7 @@ export async function launchCommand(args) {
         console.error('  npm install -g @anthropic-ai/claude-code');
         process.exit(1);
     }
-    const normalizedArgs = normalizeClaudeLaunchArgs(args);
+    const normalizedArgs = normalizeClaudeLaunchArgs(remainingArgs);
     const sessionId = `omc-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     // Phase 1: preLaunch
     try {

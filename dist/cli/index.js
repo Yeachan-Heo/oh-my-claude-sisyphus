@@ -146,12 +146,20 @@ program
     .allowUnknownOption()
     .addHelpText('after', `
 Examples:
-  $ omc launch                   Launch Claude Code
-  $ omc launch --madmax          Launch with permissions bypass
-  $ omc launch --yolo            Launch with permissions bypass (alias)
+  $ omc launch                         Launch Claude Code
+  $ omc launch --madmax                Launch with permissions bypass
+  $ omc launch --yolo                  Launch with permissions bypass (alias)
+  $ omc launch --notify false          Launch with all CCNotifier events suppressed
+  $ claud --notify false               Same via the dedicated shell launcher
+
+Options:
+  --notify <bool>   Enable/disable CCNotifier events. false sets OMC_NOTIFY=0
+                    and suppresses all stop/session-start/session-idle notifications.
+                    Default: true
 
 Environment:
-  Set OMC_DEFAULT_ACTION=dashboard to show analytics dashboard when running 'omc' with no args`)
+  OMC_NOTIFY=0              Suppress all notifications (set by --notify false)
+  OMC_DEFAULT_ACTION=dashboard  Show analytics dashboard when running 'omc' with no args`)
     .action(async (args) => {
     await launchCommand(args);
 });
@@ -545,7 +553,7 @@ Examples:
  */
 const configStopCallback = program
     .command('config-stop-callback <type>')
-    .description('Configure stop hook callbacks (file/telegram/discord)')
+    .description('Configure stop hook callbacks (file/telegram/discord/slack)')
     .option('--enable', 'Enable callback')
     .option('--disable', 'Disable callback')
     .option('--path <path>', 'File path (supports {session_id}, {date}, {time})')
@@ -565,6 +573,7 @@ Types:
   file       File system callback (saves session summary to disk)
   telegram   Telegram bot notification
   discord    Discord webhook notification
+  slack      Slack incoming webhook notification
 
 Profile types (use with --profile):
   discord-bot  Discord Bot API (token + channel ID)
@@ -716,7 +725,7 @@ Examples:
         return;
     }
     // Legacy (non-profile) path
-    const validTypes = ['file', 'telegram', 'discord'];
+    const validTypes = ['file', 'telegram', 'discord', 'slack'];
     if (!validTypes.includes(type)) {
         console.error(chalk.red(`Invalid callback type: ${type}`));
         console.error(chalk.gray(`Valid types: ${validTypes.join(', ')}`));
@@ -810,6 +819,20 @@ Examples:
                 process.exit(1);
             }
             config.stopHookCallbacks.discord = {
+                ...current,
+                enabled: enabled ?? current?.enabled ?? false,
+                webhookUrl: options.webhook ?? current?.webhookUrl,
+                tagList: hasTagListChanges ? resolveTagList(current?.tagList) : current?.tagList,
+            };
+            break;
+        }
+        case 'slack': {
+            const current = config.stopHookCallbacks.slack;
+            if (enabled === true && (!options.webhook && !current?.webhookUrl)) {
+                console.error(chalk.red('Slack requires --webhook <webhook_url>'));
+                process.exit(1);
+            }
+            config.stopHookCallbacks.slack = {
                 ...current,
                 enabled: enabled ?? current?.enabled ?? false,
                 webhookUrl: options.webhook ?? current?.webhookUrl,

@@ -34,8 +34,8 @@ export { styleReviewerAgent, qualityReviewerAgent, apiReviewerAgent, performance
 export { dependencyExpertAgent, testEngineerAgent, qualityStrategistAgent } from './definitions.js';
 // Reformed agents (Product Lane)
 export { productManagerAgent, uxResearcherAgent, informationArchitectAgent, productAnalystAgent } from './definitions.js';
-// Specialized agents (Security, Build, Code Review, Git)
-export { securityReviewerAgent, buildFixerAgent, codeReviewerAgent, gitMasterAgent } from './definitions.js';
+// Specialized agents (Security, Build, Code Review, Git, Code Simplifier)
+export { securityReviewerAgent, buildFixerAgent, codeReviewerAgent, gitMasterAgent, codeSimplifierAgent } from './definitions.js';
 // Core exports (getAgentDefinitions and omcSystemPrompt)
 export { getAgentDefinitions, omcSystemPrompt } from './definitions.js';
 // Deprecated exports (for backward compatibility)

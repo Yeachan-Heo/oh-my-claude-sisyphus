@@ -4,7 +4,8 @@
  * Renders real-time counts of tool calls, agent invocations, and skill usages
  * on the right side of the HUD status line. (Issue #710)
  *
- * Format: 🔧42 🤖7 ⚡3
+ * Format: 🔧42 🤖7 ⚡3  (Unix)
+ * Format: T:42 A:7 S:3   (Windows - ASCII fallback to avoid rendering issues)
  */
 /**
  * Render call counts badge.

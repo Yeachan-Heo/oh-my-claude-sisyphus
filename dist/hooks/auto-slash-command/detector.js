@@ -37,7 +37,16 @@ export function parseSlashCommand(text) {
  * Check if a command should be excluded from auto-expansion
  */
 export function isExcludedCommand(command) {
-    return EXCLUDED_COMMANDS.has(command.toLowerCase());
+    const lower = command.toLowerCase();
+    // Exclude commands in the explicit set
+    if (EXCLUDED_COMMANDS.has(lower))
+        return true;
+    // Exclude 'omc' bare command — /omc:skillname is parsed as command='omc'
+    // by SLASH_COMMAND_PATTERN since ':' is not in [\w-]. These are handled
+    // by the keyword-detector as omc: namespace alias (issue #785).
+    if (lower === 'omc')
+        return true;
+    return false;
 }
 /**
  * Detect a slash command in user input text

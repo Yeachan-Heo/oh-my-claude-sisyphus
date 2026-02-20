@@ -55,6 +55,8 @@ export interface CommandMetadata {
     argumentHint?: string;
     model?: string;
     agent?: string;
+    aliases?: string[];
+    aliasOf?: string;
 }
 /**
  * Discovered command information

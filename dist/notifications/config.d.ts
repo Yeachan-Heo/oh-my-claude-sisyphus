@@ -4,12 +4,18 @@
  * Reads notification config from .omc-config.json and provides
  * backward compatibility with the old stopHookCallbacks format.
  */
-import type { NotificationConfig, NotificationEvent, NotificationPlatform } from "./types.js";
+import type { NotificationConfig, NotificationEvent, NotificationPlatform, VerbosityLevel } from "./types.js";
 /**
  * Validate Discord mention format: <@USER_ID> or <@&ROLE_ID>.
  * Returns the mention string if valid, undefined otherwise.
  */
 export declare function validateMention(raw: string | undefined): string | undefined;
+/**
+ * Validate Slack mention format.
+ * Accepts: <@UXXXXXXXX> (user), <!channel>, <!here>, <!everyone>, <!subteam^SXXXXXXXXX> (user group).
+ * Returns the mention string if valid, undefined otherwise.
+ */
+export declare function validateSlackMention(raw: string | undefined): string | undefined;
 /**
  * Parse a validated mention into allowed_mentions structure for Discord API.
  */
@@ -22,6 +28,29 @@ export declare function parseMentionAllowedMentions(mention: string | undefined)
  * This enables zero-config notification setup - just set env vars in .zshrc.
  */
 export declare function buildConfigFromEnv(): NotificationConfig | null;
+/**
+ * Get the effective verbosity level.
+ *
+ * Priority: OMC_NOTIFY_VERBOSITY env var > config.verbosity > "session" default.
+ * Invalid env var values are ignored (fall back to config or default).
+ */
+export declare function getVerbosity(config: NotificationConfig): VerbosityLevel;
+/**
+ * Check if an event is allowed by the given verbosity level.
+ *
+ * Level matrix:
+ * - minimal: session-start, session-stop, session-end, session-idle
+ * - session: same as minimal (tmux tail handled separately)
+ * - agent:   session events + agent-call
+ * - verbose: all events
+ */
+export declare function isEventAllowedByVerbosity(verbosity: VerbosityLevel, event: NotificationEvent): boolean;
+/**
+ * Check if tmux tail content should be included at the given verbosity level.
+ *
+ * Returns true for session, agent, verbose. Returns false for minimal.
+ */
+export declare function shouldIncludeTmuxTail(verbosity: VerbosityLevel): boolean;
 /**
  * Get the notification configuration.
  *

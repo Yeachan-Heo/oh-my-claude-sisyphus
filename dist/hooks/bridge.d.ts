@@ -59,7 +59,7 @@ export interface HookOutput {
 /**
  * Hook types that can be processed
  */
-export type HookType = "keyword-detector" | "stop-continuation" | "ralph" | "persistent-mode" | "session-start" | "session-end" | "pre-tool-use" | "post-tool-use" | "autopilot" | "subagent-start" | "subagent-stop" | "pre-compact" | "setup-init" | "setup-maintenance" | "permission-request";
+export type HookType = "keyword-detector" | "stop-continuation" | "ralph" | "persistent-mode" | "session-start" | "session-end" | "pre-tool-use" | "post-tool-use" | "autopilot" | "subagent-start" | "subagent-stop" | "pre-compact" | "setup-init" | "setup-maintenance" | "permission-request" | "code-simplifier";
 /**
  * Fire-and-forget notification for AskUserQuestion (issue #597).
  * Extracted for testability; the dynamic import makes direct assertion

@@ -26,7 +26,7 @@ export { debuggerAgent, verifierAgent } from './definitions.js';
 export { styleReviewerAgent, qualityReviewerAgent, apiReviewerAgent, performanceReviewerAgent } from './definitions.js';
 export { dependencyExpertAgent, testEngineerAgent, qualityStrategistAgent } from './definitions.js';
 export { productManagerAgent, uxResearcherAgent, informationArchitectAgent, productAnalystAgent } from './definitions.js';
-export { securityReviewerAgent, buildFixerAgent, codeReviewerAgent, gitMasterAgent } from './definitions.js';
+export { securityReviewerAgent, buildFixerAgent, codeReviewerAgent, gitMasterAgent, codeSimplifierAgent } from './definitions.js';
 export { getAgentDefinitions, omcSystemPrompt } from './definitions.js';
 export { coordinatorAgent, ORCHESTRATOR_SISYPHUS_PROMPT_METADATA } from './coordinator-deprecated.js';
 //# sourceMappingURL=index.d.ts.map

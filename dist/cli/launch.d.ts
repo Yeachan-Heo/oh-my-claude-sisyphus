@@ -3,6 +3,16 @@
  * Launches Claude Code with tmux session management and HUD integration
  */
 /**
+ * Extract the OMC-specific --notify flag from launch args.
+ * --notify false  → disable notifications (OMC_NOTIFY=0)
+ * --notify true   → enable notifications (default)
+ * This flag must be stripped before passing args to Claude CLI.
+ */
+export declare function extractNotifyFlag(args: string[]): {
+    notifyEnabled: boolean;
+    remainingArgs: string[];
+};
+/**
  * Normalize Claude launch arguments
  * Maps --madmax/--yolo to --dangerously-skip-permissions
  * All other flags pass through unchanged

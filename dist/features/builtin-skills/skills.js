@@ -42,6 +42,40 @@ function parseFrontmatter(content) {
     }
     return { data, body };
 }
+function stripOptionalQuotes(value) {
+    const trimmed = value.trim();
+    if ((trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+        (trimmed.startsWith("'") && trimmed.endsWith("'"))) {
+        return trimmed.slice(1, -1).trim();
+    }
+    return trimmed;
+}
+function parseFrontmatterAliases(rawAliases) {
+    if (!rawAliases)
+        return [];
+    const trimmed = rawAliases.trim();
+    if (!trimmed)
+        return [];
+    // Supports inline YAML list: aliases: [psm, swarm]
+    if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+        const inner = trimmed.slice(1, -1).trim();
+        if (!inner)
+            return [];
+        return inner
+            .split(',')
+            .map((alias) => stripOptionalQuotes(alias))
+            .filter((alias) => alias.length > 0);
+    }
+    // Fallback single alias value
+    const singleAlias = stripOptionalQuotes(trimmed);
+    return singleAlias ? [singleAlias] : [];
+}
+function toSafeSkillName(name) {
+    const normalized = name.trim();
+    return CC_NATIVE_COMMANDS.has(normalized.toLowerCase())
+        ? `omc-${normalized}`
+        : normalized;
+}
 /**
  * Load a single skill from a SKILL.md file
  */
@@ -50,22 +84,34 @@ function loadSkillFromFile(skillPath, skillName) {
         const content = readFileSync(skillPath, 'utf-8');
         const { data, body } = parseFrontmatter(content);
         const resolvedName = data.name || skillName;
-        // Prefix skills whose short name would shadow a CC native command
-        const safeName = CC_NATIVE_COMMANDS.has(resolvedName.toLowerCase())
-            ? `omc-${resolvedName}`
-            : resolvedName;
-        return {
-            name: safeName,
-            description: data.description || '',
-            template: body.trim(),
-            // Optional fields from frontmatter
-            model: data.model,
-            agent: data.agent,
-            argumentHint: data['argument-hint'],
-        };
+        const safePrimaryName = toSafeSkillName(resolvedName);
+        const safeAliases = Array.from(new Set(parseFrontmatterAliases(data.aliases)
+            .map(alias => toSafeSkillName(alias))
+            .filter(alias => alias.length > 0 && alias.toLowerCase() !== safePrimaryName.toLowerCase())));
+        const allNames = [safePrimaryName, ...safeAliases];
+        const skillEntries = [];
+        const seen = new Set();
+        for (const name of allNames) {
+            const key = name.toLowerCase();
+            if (seen.has(key))
+                continue;
+            seen.add(key);
+            skillEntries.push({
+                name,
+                aliases: name === safePrimaryName ? safeAliases : undefined,
+                aliasOf: name === safePrimaryName ? undefined : safePrimaryName,
+                description: data.description || '',
+                template: body.trim(),
+                // Optional fields from frontmatter
+                model: data.model,
+                agent: data.agent,
+                argumentHint: data['argument-hint'],
+            });
+        }
+        return skillEntries;
     }
     catch {
-        return null;
+        return [];
     }
 }
 /**
@@ -92,6 +138,7 @@ function loadSkillsFromDirectory() {
         return [];
     }
     const skills = [];
+    const seenNames = new Set();
     try {
         const entries = readdirSync(SKILLS_DIR, { withFileTypes: true });
         for (const entry of entries) {
@@ -99,8 +146,12 @@ function loadSkillsFromDirectory() {
                 continue;
             const skillPath = join(SKILLS_DIR, entry.name, 'SKILL.md');
             if (existsSync(skillPath)) {
-                const skill = loadSkillFromFile(skillPath, entry.name);
-                if (skill) {
+                const skillEntries = loadSkillFromFile(skillPath, entry.name);
+                for (const skill of skillEntries) {
+                    const key = skill.name.toLowerCase();
+                    if (seenNames.has(key))
+                        continue;
+                    seenNames.add(key);
                     skills.push(skill);
                 }
             }

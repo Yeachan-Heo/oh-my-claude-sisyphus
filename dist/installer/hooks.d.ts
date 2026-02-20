@@ -62,6 +62,8 @@ export declare const KEYWORD_DETECTOR_SCRIPT_NODE: string;
 export declare const STOP_CONTINUATION_SCRIPT_NODE: string;
 /** Node.js persistent mode hook script - loaded from templates/hooks/persistent-mode.mjs */
 export declare const PERSISTENT_MODE_SCRIPT_NODE: string;
+/** Node.js code simplifier hook script - loaded from templates/hooks/code-simplifier.mjs */
+export declare const CODE_SIMPLIFIER_SCRIPT_NODE: string;
 /** Node.js session start hook script - loaded from templates/hooks/session-start.mjs */
 export declare const SESSION_START_SCRIPT_NODE: string;
 /** Post-tool-use Node.js script - loaded from templates/hooks/post-tool-use.mjs */
