@@ -95,6 +95,24 @@ async function main() {
   // Extract tool name (handle both cases)
   const toolName = data.tool_name || data.toolName || '';
 
+  // Handle Skill tool with omc: namespace alias (issue #785)
+  // Rewrite omc:X → oh-my-claudecode:X so Claude retries with the correct name
+  if (toolName === 'Skill' || toolName === 'skill') {
+    const toolInput = data.tool_input || data.toolInput || {};
+    const skill = toolInput.skill || toolInput.skill_name || toolInput.skillName || '';
+    if (/^omc:/i.test(skill)) {
+      const corrected = skill.replace(/^omc:/i, 'oh-my-claudecode:');
+      console.log(JSON.stringify({
+        continue: true,
+        hookSpecificOutput: {
+          hookEventName: 'PreToolUse',
+          additionalContext: `[OMC NAMESPACE ALIAS] "omc:" is shorthand for "oh-my-claudecode:". Use the full name:\n\nSkill: ${corrected}`
+        }
+      }));
+      return;
+    }
+  }
+
   // Handle Bash tool separately - check for file modification patterns
   if (toolName === 'Bash' || toolName === 'bash') {
     const toolInput = data.tool_input || data.toolInput || {};

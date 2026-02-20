@@ -26,6 +26,12 @@ export const EXCLUDED_COMMANDS = new Set([
   'oh-my-claudecode:learner',
   'oh-my-claudecode:plan',
   'oh-my-claudecode:cancel',
+  // omc: shorthand aliases (issue #785)
+  'omc:ralplan',
+  'omc:ultraqa',
+  'omc:learner',
+  'omc:plan',
+  'omc:cancel',
   // Claude Code built-in commands that shouldn't be expanded
   'help',
   'clear',

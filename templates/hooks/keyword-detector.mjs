@@ -355,6 +355,34 @@ async function main() {
       return;
     }
 
+    // Early detection: /omc:skillname shorthand (issue #785)
+    // Maps /omc:X to oh-my-claudecode:X skill invocation
+    const omcShorthandMatch = prompt.match(/^\/omc:([\w-]+)(?:\s+([\s\S]*))?$/);
+    if (omcShorthandMatch) {
+      const [, skillName, rawArgs] = omcShorthandMatch;
+      const args = (rawArgs || '').trim();
+      const sessionId = data.sessionId || data.session_id || data.sessionid || '';
+
+      // Handle cancel specially
+      if (skillName === 'cancel') {
+        clearStateFiles(directory, ['ralph', 'autopilot', 'team', 'ultrawork', 'pipeline']);
+      }
+
+      // Activate state for modes that need persistent state
+      if (['ralph', 'autopilot', 'team', 'ultrawork'].includes(skillName)) {
+        activateState(directory, prompt, skillName, sessionId);
+        // Ralph always includes ultrawork
+        if (skillName === 'ralph') {
+          activateState(directory, prompt, 'ultrawork', sessionId);
+        }
+      }
+
+      console.log(JSON.stringify(createHookOutput(
+        createSkillInvocation(skillName, prompt, args)
+      )));
+      return;
+    }
+
     const cleanPrompt = sanitizeForKeywordDetection(prompt).toLowerCase();
 
     // Collect all matching keywords
