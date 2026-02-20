@@ -116,6 +116,11 @@
             "type": "command",
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/subagent-tracker.mjs\" stop",
             "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/verify-deliverables.mjs\"",
+            "timeout": 5
           }
         ]
       }
