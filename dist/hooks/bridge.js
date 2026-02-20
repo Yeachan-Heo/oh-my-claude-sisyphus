@@ -552,19 +552,6 @@ export const _notify = {
  */
 function processPreToolUse(input) {
     const directory = resolveToWorktreeRoot(input.directory);
-    // Handle Skill tool with omc: namespace alias (issue #785)
-    // Rewrite omc:X → oh-my-claudecode:X so Claude retries with the correct name
-    if (input.toolName === "Skill") {
-        const toolInput = input.toolInput;
-        const skill = toolInput?.skill || toolInput?.skill_name || toolInput?.skillName || "";
-        if (/^omc:/i.test(skill)) {
-            const corrected = skill.replace(/^omc:/i, "oh-my-claudecode:");
-            return {
-                continue: true,
-                message: `[OMC NAMESPACE ALIAS] "omc:" is shorthand for "oh-my-claudecode:". Use the full name:\n\nSkill: ${corrected}`,
-            };
-        }
-    }
     // Check delegation enforcement FIRST
     const enforcementResult = processOrchestratorPreTool({
         toolName: input.toolName || "",
