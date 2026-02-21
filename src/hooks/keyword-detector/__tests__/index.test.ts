@@ -7,6 +7,7 @@ import {
   hasKeyword,
   getPrimaryKeyword,
   getAllKeywords,
+  getAllKeywordsWithSizeCheck,
   type KeywordType,
   type DetectedKeyword,
 } from '../index.js';
@@ -1041,6 +1042,141 @@ World`);
         const result = getAllKeywords('team autopilot build');
         expect(result).toContain('autopilot');
         expect(result).not.toContain('team');
+      });
+    });
+  });
+
+  describe('getAllKeywordsWithSizeCheck', () => {
+    describe('small task suppression', () => {
+      it('suppresses ralph on small task (short prompt)', () => {
+        const result = getAllKeywordsWithSizeCheck('ralph fix typo');
+        expect(result.keywords).not.toContain('ralph');
+        expect(result.suppressedKeywords).toContain('ralph');
+        expect(result.taskSizeResult?.size).toBe('small');
+      });
+
+      it('suppresses autopilot on small task', () => {
+        const result = getAllKeywordsWithSizeCheck('autopilot fix the typo');
+        expect(result.keywords).not.toContain('autopilot');
+        expect(result.suppressedKeywords).toContain('autopilot');
+      });
+
+      it('suppresses team on small task', () => {
+        const result = getAllKeywordsWithSizeCheck('team fix the typo');
+        expect(result.suppressedKeywords).toContain('team');
+      });
+
+      it('suppresses ultrawork on small task', () => {
+        const result = getAllKeywordsWithSizeCheck('ultrawork fix typo');
+        expect(result.suppressedKeywords).toContain('ultrawork');
+      });
+
+      it('suppresses pipeline on small task', () => {
+        const result = getAllKeywordsWithSizeCheck('chain agents to fix typo');
+        expect(result.suppressedKeywords).toContain('pipeline');
+      });
+
+      it('does NOT suppress ralph on large task (refactor)', () => {
+        const result = getAllKeywordsWithSizeCheck(
+          'ralph refactor the entire authentication module to support OAuth2 and update all related tests'
+        );
+        expect(result.keywords).toContain('ralph');
+        expect(result.suppressedKeywords).not.toContain('ralph');
+        expect(result.taskSizeResult?.size).toBe('large');
+      });
+
+      it('does NOT suppress ralph on medium task (word count > smallWordLimit)', () => {
+        const mediumPrompt = 'ralph ' + Array(60).fill('word').join(' ');
+        const result = getAllKeywordsWithSizeCheck(mediumPrompt);
+        expect(result.keywords).toContain('ralph');
+        expect(result.suppressedKeywords).not.toContain('ralph');
+      });
+    });
+
+    describe('cancel passthrough', () => {
+      it('cancel is never suppressed even on small task', () => {
+        const result = getAllKeywordsWithSizeCheck('cancelomc');
+        expect(result.keywords).toContain('cancel');
+        expect(result.suppressedKeywords).not.toContain('cancel');
+      });
+    });
+
+    describe('lightweight modes preserved', () => {
+      it('plan is not suppressed on small task', () => {
+        const result = getAllKeywordsWithSizeCheck('plan this typo fix');
+        expect(result.keywords).toContain('plan');
+        expect(result.suppressedKeywords).not.toContain('plan');
+      });
+
+      it('tdd is not suppressed on small task', () => {
+        const result = getAllKeywordsWithSizeCheck('tdd fix typo');
+        expect(result.keywords).toContain('tdd');
+        expect(result.suppressedKeywords).not.toContain('tdd');
+      });
+
+      it('codex is not suppressed on small task', () => {
+        const result = getAllKeywordsWithSizeCheck('ask codex to fix typo');
+        expect(result.keywords).toContain('codex');
+        expect(result.suppressedKeywords).not.toContain('codex');
+      });
+
+      it('gemini is not suppressed on small task', () => {
+        const result = getAllKeywordsWithSizeCheck('ask gemini about typo');
+        expect(result.keywords).toContain('gemini');
+        expect(result.suppressedKeywords).not.toContain('gemini');
+      });
+    });
+
+    describe('escape hatch prefix suppresses heavy modes', () => {
+      it('quick: prefix forces small even with ralph keyword', () => {
+        const result = getAllKeywordsWithSizeCheck('quick: ralph refactor the entire codebase');
+        expect(result.suppressedKeywords).toContain('ralph');
+        expect(result.taskSizeResult?.hasEscapeHatch).toBe(true);
+      });
+
+      it('simple: prefix forces small', () => {
+        const result = getAllKeywordsWithSizeCheck('simple: autopilot rename function');
+        expect(result.suppressedKeywords).toContain('autopilot');
+      });
+    });
+
+    describe('enabled: false', () => {
+      it('returns raw keywords without size filtering when disabled', () => {
+        const result = getAllKeywordsWithSizeCheck('ralph fix typo', { enabled: false });
+        expect(result.keywords).toContain('ralph');
+        expect(result.suppressedKeywords).toHaveLength(0);
+        expect(result.taskSizeResult).toBeNull();
+      });
+    });
+
+    describe('suppressHeavyModesForSmallTasks: false', () => {
+      it('returns raw keywords without suppression', () => {
+        const result = getAllKeywordsWithSizeCheck('ralph fix typo', {
+          suppressHeavyModesForSmallTasks: false,
+        });
+        expect(result.keywords).toContain('ralph');
+        expect(result.suppressedKeywords).toHaveLength(0);
+        expect(result.taskSizeResult).toBeNull();
+      });
+    });
+
+    describe('no keywords', () => {
+      it('returns empty arrays when no keywords detected', () => {
+        const result = getAllKeywordsWithSizeCheck('just fix the bug');
+        expect(result.keywords).toHaveLength(0);
+        expect(result.suppressedKeywords).toHaveLength(0);
+      });
+    });
+
+    describe('custom thresholds', () => {
+      it('uses custom smallWordLimit', () => {
+        // 10-word prompt, but with custom smallWordLimit of 3 → medium, ralph not suppressed
+        const result = getAllKeywordsWithSizeCheck(
+          'ralph fix the bug in the handler function now please',
+          { smallWordLimit: 3, largeWordLimit: 200 }
+        );
+        expect(result.keywords).toContain('ralph');
+        expect(result.suppressedKeywords).not.toContain('ralph');
       });
     });
   });

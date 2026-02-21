@@ -247,7 +247,7 @@ describe('task-size-detector', () => {
             });
             it('includes reason for large signals', () => {
                 const result = classifyTaskSize('Refactor the entire architecture of the application including all modules and cross-cutting concerns to support microservices');
-                expect(result.reason).toContain('large');
+                expect(result.reason.toLowerCase()).toContain('large');
             });
             it('includes word count in reason for word-count-based decisions', () => {
                 const shortText = 'fix the bug';

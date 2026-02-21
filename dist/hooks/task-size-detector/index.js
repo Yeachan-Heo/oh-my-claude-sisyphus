@@ -129,8 +129,8 @@ export function classifyTaskSize(text, thresholds = DEFAULT_THRESHOLDS) {
     }
     const hasLarge = hasLargeTaskSignals(text);
     const hasSmall = hasSmallTaskSignals(text);
-    // Rule 2: Large task signals override word count (unless prompt is very short)
-    if (hasLarge && wordCount >= thresholds.smallWordLimit) {
+    // Rule 2: Large task signals always classify as large (explicit scope indicators beat word count)
+    if (hasLarge) {
         return {
             size: 'large',
             reason: 'Large task signals detected (architecture/refactor/cross-cutting scope)',
