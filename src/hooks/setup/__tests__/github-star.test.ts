@@ -7,13 +7,13 @@
 
 /// <reference types="jest" />
 
-import { execSync, ExecSyncOptions } from 'child_process';
+import type { ExecSyncOptions } from 'child_process';
 import {
   isGhCliAvailable,
   isRepoStarred,
   starRepository,
   autoStarRepository,
-  StarResult,
+  // StarResult,
   ExecFunction,
 } from '../github-star.js';
 
@@ -33,7 +33,7 @@ describe('GitHub Star Module', () => {
     it('should return false when gh CLI is not available', () => {
       const mockExec = (() => {
         throw new Error('gh: command not found');
-      }) as ExecFunction;
+      }) as unknown as ExecFunction;
       const result = isGhCliAvailable(mockExec);
       expect(result).toBe(false);
     });
@@ -43,7 +43,7 @@ describe('GitHub Star Module', () => {
       const mockExec = (() => {
         called = true;
         return Buffer.from('gh version 2.0.0');
-      }) as ExecFunction;
+      }) as unknown as ExecFunction;
       isGhCliAvailable(mockExec);
       expect(called).toBe(true);
     });
@@ -59,13 +59,13 @@ describe('GitHub Star Module', () => {
     it('should return false when API call fails', () => {
       const mockExec = (() => {
         throw new Error('API error');
-      }) as ExecFunction;
+      }) as unknown as ExecFunction;
       const result = isRepoStarred(TEST_REPO, mockExec);
       expect(result).toBe(false);
     });
 
     it('should return true when repo is starred', () => {
-      const mockExec = (() => Buffer.from('')) as ExecFunction;
+      const mockExec = (() => Buffer.from('')) as unknown as ExecFunction;
       const result = isRepoStarred(TEST_REPO, mockExec);
       expect(result).toBe(true);
     });
@@ -73,7 +73,7 @@ describe('GitHub Star Module', () => {
 
   describe('starRepository', () => {
     it('should return true on successful star', () => {
-      const mockExec = (() => Buffer.from('')) as ExecFunction;
+      const mockExec = (() => Buffer.from('')) as unknown as ExecFunction;
       const result = starRepository(TEST_REPO, mockExec);
       expect(result).toBe(true);
     });
@@ -81,7 +81,7 @@ describe('GitHub Star Module', () => {
     it('should return false on failed star', () => {
       const mockExec = (() => {
         throw new Error('API error');
-      }) as ExecFunction;
+      }) as unknown as ExecFunction;
       const result = starRepository(TEST_REPO, mockExec);
       expect(result).toBe(false);
     });
@@ -91,7 +91,7 @@ describe('GitHub Star Module', () => {
     it('should handle gh CLI not available', () => {
       const mockExec = (() => {
         throw new Error('gh: command not found');
-      }) as ExecFunction;
+      }) as unknown as ExecFunction;
       const result = autoStarRepository({ execFn: mockExec });
       expect(result.starred).toBe(false);
       expect(result.action).toBe('skipped');
@@ -100,12 +100,12 @@ describe('GitHub Star Module', () => {
 
     it('should handle already starred repository', () => {
       let callCount = 0;
-      const mockExec = ((command: string) => {
+      const mockExec = ((_command: string) => {
         callCount++;
         // First call: gh --version (success)
         // Second call: gh api user/starred/... (success = already starred)
         return Buffer.from('');
-      }) as ExecFunction;
+      }) as unknown as ExecFunction;
       const result = autoStarRepository({ execFn: mockExec });
       expect(result.starred).toBe(true);
       expect(result.action).toBe('already_starred');
@@ -114,7 +114,7 @@ describe('GitHub Star Module', () => {
 
     it('should star repository when not starred', () => {
       let callCount = 0;
-      const mockExec = ((command: string) => {
+      const mockExec = ((_command: string) => {
         callCount++;
         // First call: gh --version (success)
         if (callCount === 1) return Buffer.from('gh version 2.0.0');
@@ -122,7 +122,7 @@ describe('GitHub Star Module', () => {
         if (callCount === 2) throw new Error('not starred');
         // Third call: gh api --method PUT (success = starred)
         return Buffer.from('');
-      }) as ExecFunction;
+      }) as unknown as ExecFunction;
       const result = autoStarRepository({ execFn: mockExec });
       expect(result.starred).toBe(true);
       expect(result.action).toBe('newly_starred');
@@ -132,7 +132,7 @@ describe('GitHub Star Module', () => {
 
     it('should handle star failure', () => {
       let callCount = 0;
-      const mockExec = ((command: string) => {
+      const mockExec = ((_command: string) => {
         callCount++;
         // First call: gh --version (success)
         if (callCount === 1) return Buffer.from('gh version 2.0.0');
@@ -140,7 +140,7 @@ describe('GitHub Star Module', () => {
         if (callCount === 2) throw new Error('not starred');
         // Third call: gh api --method PUT (fail)
         throw new Error('API error');
-      }) as ExecFunction;
+      }) as unknown as ExecFunction;
       const result = autoStarRepository({ execFn: mockExec });
       expect(result.starred).toBe(false);
       expect(result.action).toBe('failed');
@@ -149,11 +149,11 @@ describe('GitHub Star Module', () => {
 
     it('should use custom repo', () => {
       let capturedCommand = '';
-      const mockExec = ((command: string) => {
-        capturedCommand = command;
-        if (command.includes('--version')) return Buffer.from('gh version 2.0.0');
+      const mockExec = ((_command: string) => {
+        capturedCommand = _command;
+        if (_command.includes('--version')) return Buffer.from('gh version 2.0.0');
         return Buffer.from('');
-      }) as ExecFunction;
+      }) as unknown as ExecFunction;
       autoStarRepository({
         repo: 'test/repo',
         execFn: mockExec,
@@ -164,7 +164,7 @@ describe('GitHub Star Module', () => {
     it('should support silent mode', () => {
       const mockExec = (() => {
         throw new Error('gh: command not found');
-      }) as ExecFunction;
+      }) as unknown as ExecFunction;
       const result = autoStarRepository({
         silent: true,
         execFn: mockExec,
