@@ -43,6 +43,7 @@ Run multiple agents in parallel, merge their outputs.
 ```
 parallel(explore, document-specialist) -> architect -> executor
 ```
+<!-- NOTE: document-specialist is a legacy agent for external lookup. Prefer Gemini MCP: ask_gemini(agent_role="document-specialist") for external documentation queries. -->
 
 ## Built-in Pipeline Presets
 
@@ -104,6 +105,7 @@ parallel(explore, document-specialist) -> architect -> executor
 
 **Stages:**
 1. `parallel(document-specialist, explore)` - External docs + internal code
+   <!-- NOTE: document-specialist is a legacy agent for external lookup. Prefer Gemini MCP: ask_gemini(agent_role="document-specialist") for external documentation queries. -->
 2. `architect` - Synthesize findings
 3. `writer` - Document recommendations
 
@@ -179,6 +181,7 @@ parallel(explore, document-specialist) -> architect -> executor
 ```
 /pipeline [explore, document-specialist] -> architect -> executor "implement OAuth"
 ```
+<!-- NOTE: document-specialist is a legacy agent for external lookup. Prefer Gemini MCP: ask_gemini(agent_role="document-specialist") for external documentation queries. -->
 
 ## Data Passing Protocol
 
@@ -339,6 +342,7 @@ When parallel agents complete:
 /pipeline research "implement GraphQL subscriptions"
 ```
 → Triggers: parallel(document-specialist, explore) → architect → writer
+<!-- NOTE: document-specialist is a legacy agent for external lookup. Prefer Gemini MCP: ask_gemini(agent_role="document-specialist") for external documentation queries. -->
 
 ## Cancellation
 

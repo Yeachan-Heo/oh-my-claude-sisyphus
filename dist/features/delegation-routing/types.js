@@ -20,6 +20,7 @@ export const ROLE_CATEGORY_DEFAULTS = {
     explore: 'explore',
     'document-specialist': 'document-specialist',
     researcher: 'document-specialist',
+    'tdd-guide': 'test-engineer',
     // Advisory roles (high complexity)
     architect: 'architect',
     planner: 'planner',
@@ -34,12 +35,29 @@ export const ROLE_CATEGORY_DEFAULTS = {
     // Specialized roles
     designer: 'designer',
     writer: 'writer',
-    vision: 'vision',
     'qa-tester': 'qa-tester',
     debugger: 'debugger',
     scientist: 'scientist',
     'build-fixer': 'build-fixer',
 };
+/**
+ * Deprecated role aliases mapped to canonical role names.
+ */
+export const DEPRECATED_ROLE_ALIASES = {
+    researcher: 'document-specialist',
+    'tdd-guide': 'test-engineer',
+    'api-reviewer': 'code-reviewer',
+    'performance-reviewer': 'quality-reviewer',
+    'dependency-expert': 'document-specialist',
+    'quality-strategist': 'quality-reviewer',
+    vision: 'document-specialist',
+};
+/**
+ * Normalize legacy role aliases to canonical role names.
+ */
+export function normalizeDelegationRole(role) {
+    return DEPRECATED_ROLE_ALIASES[role] ?? role;
+}
 /**
  * Check if delegation routing is enabled
  */
