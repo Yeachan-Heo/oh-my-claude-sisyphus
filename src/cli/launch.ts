@@ -175,10 +175,9 @@ function runClaudeInsideTmux(cwd: string, args: string[], hudCmd: string): void 
  * Run Claude outside tmux - create new session
  * Creates tmux session with Claude + HUD pane
  */
-function runClaudeOutsideTmux(cwd: string, args: string[], sessionId: string, hudCmd: string): void {
+function runClaudeOutsideTmux(cwd: string, args: string[], _sessionId: string, hudCmd: string): void {
   const claudeCmd = buildTmuxShellCommand('claude', args);
-  const tmuxSessionId = `omc-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-  const sessionName = buildTmuxSessionName(cwd, tmuxSessionId);
+  const sessionName = buildTmuxSessionName(cwd);
 
   const tmuxArgs = [
     'new-session', '-d', '-s', sessionName, '-c', cwd,
