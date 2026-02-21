@@ -16508,6 +16508,13 @@ var DEFAULT_CONFIG = {
     // Opt-in feature
     defaultProvider: "claude",
     roles: {}
+  },
+  // Task size detection (issue #790): prevent over-orchestration for small tasks
+  taskSizeDetection: {
+    enabled: true,
+    smallWordLimit: 50,
+    largeWordLimit: 200,
+    suppressHeavyModesForSmallTasks: true
   }
 };
 function getConfigPaths() {
