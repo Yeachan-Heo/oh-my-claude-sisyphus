@@ -99,6 +99,7 @@ describe('Builtin Skills', () => {
         'trace',
         'ultraqa',
         'ultrawork',
+        'ralplan',
       ];
 
       const actualSkillNames = skills.map((s) => s.name);
