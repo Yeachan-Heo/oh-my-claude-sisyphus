@@ -144,7 +144,6 @@ describe('Installer Constants', () => {
         'security-reviewer.md': 'opus',
         'build-fixer.md': 'sonnet',
         'git-master.md': 'sonnet',
-        'deep-executor.md': 'opus',
       };
 
       for (const [filename, expectedModel] of Object.entries(modelExpectations)) {

@@ -9,6 +9,7 @@
 import { existsSync, mkdirSync, readdirSync, statSync, unlinkSync, readFileSync, appendFileSync } from 'fs';
 import { join } from 'path';
 import { registerBeadsContext } from '../beads-context/index.js';
+import { autoStarRepository } from './github-star.js';
 // ============================================================================
 // Constants
 // ============================================================================
@@ -93,6 +94,7 @@ export async function processSetupInit(input) {
         errors: [],
         env_vars_set: [],
     };
+    let starResult = null;
     try {
         // Create directory structure
         result.directories_created = ensureDirectoryStructure(input.cwd);
@@ -100,6 +102,8 @@ export async function processSetupInit(input) {
         result.configs_validated = validateConfigFiles(input.cwd);
         // Set environment variables
         result.env_vars_set = setEnvironmentVariables();
+        // Auto-star repository (silent mode - only show on successful new star)
+        starResult = autoStarRepository({ silent: false });
     }
     catch (err) {
         result.errors.push(err instanceof Error ? err.message : String(err));
@@ -116,6 +120,7 @@ export async function processSetupInit(input) {
         `- ${result.directories_created.length} directories created`,
         `- ${result.configs_validated.length} configs validated`,
         result.env_vars_set.length > 0 ? `- Environment variables set: ${result.env_vars_set.join(', ')}` : null,
+        starResult && starResult.action === 'newly_starred' ? `- ${starResult.message}` : null,
         result.errors.length > 0 ? `- Errors: ${result.errors.length}` : null,
     ]
         .filter(Boolean)

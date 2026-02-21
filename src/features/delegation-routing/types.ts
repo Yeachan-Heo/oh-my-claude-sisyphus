@@ -32,7 +32,7 @@ export const ROLE_CATEGORY_DEFAULTS: Record<string, string> = {
   // Exploration roles
   explore: 'explore',
   'document-specialist': 'document-specialist',
-  researcher: 'researcher',
+  researcher: 'document-specialist',
 
   // Advisory roles (high complexity)
   architect: 'architect',
@@ -42,7 +42,6 @@ export const ROLE_CATEGORY_DEFAULTS: Record<string, string> = {
 
   // Implementation roles
   executor: 'executor',
-  'deep-executor': 'deep-executor',
 
   // Review roles
   'code-reviewer': 'code-reviewer',

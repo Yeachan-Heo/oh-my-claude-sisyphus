@@ -19,7 +19,7 @@ export const ROLE_CATEGORY_DEFAULTS = {
     // Exploration roles
     explore: 'explore',
     'document-specialist': 'document-specialist',
-    researcher: 'researcher',
+    researcher: 'document-specialist',
     // Advisory roles (high complexity)
     architect: 'architect',
     planner: 'planner',
@@ -27,7 +27,6 @@ export const ROLE_CATEGORY_DEFAULTS = {
     analyst: 'analyst',
     // Implementation roles
     executor: 'executor',
-    'deep-executor': 'deep-executor',
     // Review roles
     'code-reviewer': 'code-reviewer',
     'security-reviewer': 'security-reviewer',

@@ -8,14 +8,13 @@ describe('Builtin Skills', () => {
   });
 
   describe('createBuiltinSkills()', () => {
-    it('should return correct number of skills (42)', () => {
+    it('should return correct number of skills (35)', () => {
       const skills = createBuiltinSkills();
-      // 42 skills: analyze, autopilot, build-fix, cancel, ccg, code-review, configure-discord, configure-slack,
+      // 35 skills: analyze, autopilot, build-fix, cancel, ccg, code-review, configure-discord, configure-slack,
       // configure-telegram, deepinit, deepsearch, omc-doctor, external-context, frontend-ui-ux, git-master,
-      // omc-help, hud, learn-about-omc, learner, mcp-setup, note, omc-setup, pipeline, plan,
-      // project-session-manager, psm, ralph, ralph-init, ralplan, release, review, sciomc, security-review,
-      // skill, swarm, tdd, team, trace, ultrapilot, ultraqa, ultrawork, writer-memory
-      expect(skills).toHaveLength(42);
+      // omc-help, hud, learn-about-omc, learner, mcp-setup, note, omc-setup, pipeline, omc-plan,
+      // ralph, ralph-init, release, omc-security-review, skill, swarm, tdd, team, trace, ultraqa, ultrawork
+      expect(skills).toHaveLength(35);
     });
 
     it('should return an array of BuiltinSkill objects', () => {
@@ -89,24 +88,17 @@ describe('Builtin Skills', () => {
         'omc-setup',
         'pipeline',
         'omc-plan',
-        'project-session-manager',
-        'psm',
         'ralph',
         'ralph-init',
-        'ralplan',
         'release',
-        'omc-review',
-        'sciomc',
         'omc-security-review',
         'skill',
         'swarm',
         'tdd',
         'team',
         'trace',
-        'ultrapilot',
         'ultraqa',
         'ultrawork',
-        'writer-memory',
       ];
 
       const actualSkillNames = skills.map((s) => s.name);
@@ -151,7 +143,7 @@ describe('Builtin Skills', () => {
     it('should return all skill names', () => {
       const names = listBuiltinSkillNames();
 
-      expect(names).toHaveLength(42);
+      expect(names).toHaveLength(35);
       expect(names).toContain('autopilot');
       expect(names).toContain('cancel');
       expect(names).toContain('ccg');

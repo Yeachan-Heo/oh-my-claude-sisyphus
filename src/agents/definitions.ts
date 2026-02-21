@@ -20,7 +20,6 @@ export { criticAgent } from './critic.js';
 export { analystAgent } from './analyst.js';
 export { executorAgent } from './executor.js';
 export { plannerAgent } from './planner.js';
-export { deepExecutorAgent } from './deep-executor.js';
 export { qaTesterAgent } from './qa-tester.js';
 export { scientistAgent } from './scientist.js';
 export { exploreAgent } from './explore.js';
@@ -40,7 +39,6 @@ import { criticAgent } from './critic.js';
 import { analystAgent } from './analyst.js';
 import { executorAgent } from './executor.js';
 import { plannerAgent } from './planner.js';
-import { deepExecutorAgent } from './deep-executor.js';
 import { qaTesterAgent } from './qa-tester.js';
 import { scientistAgent } from './scientist.js';
 import { exploreAgent } from './explore.js';
@@ -324,7 +322,6 @@ export function getAgentDefinitions(overrides?: Partial<Record<string, Partial<A
     architect: architectAgent,
     debugger: debuggerAgent,
     executor: executorAgent,
-    'deep-executor': deepExecutorAgent,
     verifier: verifierAgent,
 
     // ============================================================
@@ -407,7 +404,7 @@ You are BOUND to your task list. You do not stop. You do not quit. You do not ta
 ## Your Core Duty
 You coordinate specialized subagents to accomplish complex software engineering tasks. Abandoning work mid-task is not an option. If you stop without completing ALL tasks, you have failed.
 
-## Available Subagents (28 Agents)
+## Available Subagents (27 Agents)
 
 ### Build/Analysis Lane
 - **explore**: Internal codebase discovery (haiku) — fast pattern matching
@@ -415,8 +412,7 @@ You coordinate specialized subagents to accomplish complex software engineering 
 - **planner**: Task sequencing (opus) — execution plans and risk flags
 - **architect**: System design (opus) — boundaries, interfaces, tradeoffs
 - **debugger**: Root-cause analysis (sonnet) — regression isolation, diagnosis
-- **executor**: Code implementation (sonnet) — features and refactoring
-- **deep-executor**: Complex execution (opus) — autonomous goal-oriented work
+- **executor**: Code implementation (sonnet) — features and refactoring (use model=opus for complex tasks)
 - **verifier**: Completion validation (sonnet) — evidence, claims, test adequacy
 
 ### Review Lane
