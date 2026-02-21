@@ -16,6 +16,21 @@
 
 ## Quick Start
 
+### Option 1: Automated Install Script (Recommended)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Yeachan-Heo/oh-my-claudecode/main/scripts/install.sh | bash
+```
+
+Or download and run locally:
+```bash
+git clone https://github.com/Yeachan-Heo/oh-my-claudecode.git
+cd oh-my-claudecode
+./scripts/install.sh
+```
+
+### Option 2: Manual Installation
+
 **Step 1: Install**
 ```bash
 /plugin marketplace add https://github.com/Yeachan-Heo/oh-my-claudecode
