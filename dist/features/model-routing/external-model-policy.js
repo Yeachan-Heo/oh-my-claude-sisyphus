@@ -12,6 +12,7 @@ export const CODEX_MODEL_FALLBACKS = [
     'gpt-5.2',
 ];
 export const GEMINI_MODEL_FALLBACKS = [
+    'gemini-3.1-pro-preview',
     'gemini-3-pro-preview',
     'gemini-3-flash-preview',
     'gemini-2.5-pro',
@@ -20,7 +21,7 @@ export const GEMINI_MODEL_FALLBACKS = [
 // Hardcoded defaults (from codex-core.ts and gemini-core.ts)
 const HARDCODED_DEFAULTS = {
     codex: 'gpt-5.3-codex',
-    gemini: 'gemini-3-pro-preview',
+    gemini: 'gemini-3.1-pro-preview',
 };
 // Default fallback policy
 const DEFAULT_FALLBACK_POLICY = {

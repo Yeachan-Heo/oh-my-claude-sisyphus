@@ -104,7 +104,7 @@ Each pipeline stage uses **specialized agents** -- not just executors. The lead 
 **Routing rules:**
 
 1. **The lead picks agents per stage, not the user.** The user's `N:agent-type` parameter only overrides the `team-exec` stage worker type. All other stages use stage-appropriate specialists.
-2. **MCP providers complement Claude agents.** Route analysis/review to Codex (`ask_codex`) and UI/large-context work to Gemini (`ask_gemini`) when available. MCP workers are one-shot and don't participate in team communication.
+2. **Specialist agents complement executor agents.** Route analysis/review to architect/critic Claude agents and UI work to designer agents. Tmux CLI workers are one-shot and don't participate in team communication.
 3. **Cost mode affects model tier.** In downgrade: `opus` agents to `sonnet`, `sonnet` to `haiku` where quality permits. `team-verify` always uses at least `sonnet`.
 4. **Risk level escalates review.** Security-sensitive or >20 file changes must include `security-reviewer` + `code-reviewer` (opus) in `team-verify`.
 
@@ -567,9 +567,9 @@ This scans for processes matching the team name whose config no longer exists, a
 
 **IMPORTANT:** The `request_id` is provided in the shutdown request message that the teammate receives. The teammate must extract it and pass it back. Do NOT fabricate request IDs.
 
-## MCP Workers (Hybrid Roles)
+## CLI Workers (Hybrid Roles)
 
-The team skill supports **hybrid execution** combining Claude agent teammates with external MCP workers (Codex and Gemini CLIs). Both types can make code changes -- they differ in capabilities and cost.
+The team skill supports **hybrid execution** combining Claude agent teammates with tmux CLI workers. Both types can make code changes -- they differ in capabilities and interaction model.
 
 ### Execution Modes
 
@@ -578,21 +578,20 @@ Tasks are tagged with an execution mode during decomposition:
 | Execution Mode | Provider | Capabilities |
 |---------------|----------|-------------|
 | `claude_worker` | Claude agent | Full Claude Code tool access (Read/Write/Edit/Bash/Task). Best for tasks needing Claude's reasoning + iterative tool use. |
-| `mcp_codex` | Codex CLI (`ask_codex`) | Full filesystem access in working_directory. Runs autonomously. Best for code review, security analysis, refactoring, architecture. |
-| `mcp_gemini` | Gemini CLI (`ask_gemini`) | Full filesystem access + 1M token context. Runs autonomously. Best for UI/frontend work, large-scale changes, documentation. |
+| `cli_worker` | Tmux CLI session | Full filesystem access in working_directory. Runs autonomously via tmux pane. Best for code review, security analysis, refactoring, architecture. |
 
-### How MCP Workers Operate
+### How CLI Workers Operate
 
-Codex and Gemini CLIs run in full-auto mode with filesystem access. They are **autonomous executors**, not just analysts:
+Tmux CLI workers run in dedicated tmux panes with filesystem access. They are **autonomous executors**, not just analysts:
 
-1. Lead writes task instructions to a `prompt_file`
-2. Lead calls `ask_codex` or `ask_gemini` with `working_directory` set to the project root
-3. The CLI reads files, makes changes, runs commands -- all within the working directory
-4. Results/summary are written to `output_file`
+1. Lead writes task instructions to a prompt file
+2. Lead spawns a tmux CLI worker with `working_directory` set to the project root
+3. The worker reads files, makes changes, runs commands -- all within the working directory
+4. Results/summary are written to an output file
 5. Lead reads the output, marks the task complete, and feeds results to dependent tasks
 
 **Key difference from Claude teammates:**
-- MCP workers operate via CLI, not Claude Code's tool system
+- CLI workers operate via tmux, not Claude Code's tool system
 - They cannot use TaskList/TaskUpdate/SendMessage (no team awareness)
 - They run as one-shot autonomous jobs, not persistent teammates
 - The lead manages their lifecycle (spawn, monitor, collect results)
@@ -602,46 +601,42 @@ Codex and Gemini CLIs run in full-auto mode with filesystem access. They are **a
 | Task Type | Best Route | Why |
 |-----------|-----------|-----|
 | Iterative multi-step work | Claude teammate | Needs tool-mediated iteration + team communication |
-| Code review / security audit | Codex MCP | Specialized, cheaper than Claude opus |
-| Architecture analysis / planning | Codex MCP | External perspective, strong analytical reasoning |
-| Refactoring (well-scoped) | Codex MCP | Autonomous execution, good at structured transforms |
-| UI/frontend implementation | Gemini MCP | 1M context window, design expertise, can edit many files |
-| Large-scale documentation | Gemini MCP | Writing expertise + large context for consistency |
-| Visual/image analysis | Gemini MCP | Multimodal capability |
+| Code review / security audit | CLI worker or specialist agent | Autonomous execution, good at structured analysis |
+| Architecture analysis / planning | architect Claude agent | Strong analytical reasoning with codebase access |
+| Refactoring (well-scoped) | CLI worker or executor agent | Autonomous execution, good at structured transforms |
+| UI/frontend implementation | designer Claude agent | Design expertise, framework idioms |
+| Large-scale documentation | writer Claude agent | Writing expertise + large context for consistency |
 | Build/test iteration loops | Claude teammate | Needs Bash tool + iterative fix cycles |
 | Tasks needing team coordination | Claude teammate | Needs SendMessage for status updates |
 
-### Example: Hybrid Team with MCP Executors
+### Example: Hybrid Team with CLI Workers
 
 ```
 /team 3:executor "refactor auth module with security review"
 
 Task decomposition:
-#1 [mcp_codex] Security review of current auth code -> output to .omc/research/auth-security.md
-#2 [mcp_codex] Refactor auth/login.ts and auth/session.ts (uses #1 findings)
-#3 [mcp_gemini] Redesign auth UI components (login form, session indicator)
+#1 [cli_worker] Security review of current auth code -> output to .omc/research/auth-security.md
+#2 [cli_worker] Refactor auth/login.ts and auth/session.ts (uses #1 findings)
+#3 [claude_worker:designer] Redesign auth UI components (login form, session indicator)
 #4 [claude_worker] Update auth tests + fix integration issues
-#5 [mcp_codex] Final code review of all changes
+#5 [cli_worker] Final code review of all changes
 ```
 
-The lead runs #1 (Codex analysis), then #2 and #3 in parallel (Codex refactors backend, Gemini redesigns frontend), then #4 (Claude teammate handles test iteration), then #5 (final Codex review).
+The lead runs #1 (CLI security analysis), then #2 and #3 in parallel (CLI refactors backend, designer agent redesigns frontend), then #4 (Claude teammate handles test iteration), then #5 (final CLI review).
 
-### MCP Pre-flight Analysis (Optional)
+### Pre-flight Analysis (Optional)
 
 For large ambiguous tasks, run analysis before team creation:
 
-1. Call `ToolSearch("mcp")` to discover deferred MCP tools; from the results, confirm `mcp__x__ask_codex` is present before proceeding. Never use `ToolSearch("ask_codex")` as the primary search -- it can return false negatives even when MCP tools are present.
-2. Call `ask_codex` (planner role) with task description + codebase context
-3. Use the analysis to produce better task decomposition
-4. Create team and tasks with enriched context
-
-If ToolSearch finds no MCP tools, skip MCP pre-flight and use Claude agents instead.
+1. Spawn `Task(subagent_type="oh-my-claudecode:planner", ...)` with task description + codebase context
+2. Use the analysis to produce better task decomposition
+3. Create team and tasks with enriched context
 
 This is especially useful when the task scope is unclear and benefits from external reasoning before committing to a specific decomposition.
 
 ## Monitor Enhancement: Outbox Auto-Ingestion
 
-The lead can proactively ingest outbox messages from MCP workers using the outbox reader utilities, enabling event-driven monitoring without relying solely on `SendMessage` delivery.
+The lead can proactively ingest outbox messages from CLI workers using the outbox reader utilities, enabling event-driven monitoring without relying solely on `SendMessage` delivery.
 
 ### Outbox Reader Functions
 
@@ -929,4 +924,4 @@ MCP workers can operate in isolated git worktrees to prevent file conflicts betw
 
 10. **Broadcast is expensive** -- Each broadcast sends a separate message to every teammate. Use `message` (DM) by default. Only broadcast for truly team-wide critical alerts.
 
-11. **MCP workers are one-shot, not persistent** -- Codex and Gemini CLIs have full filesystem access and CAN make code changes. However, they run as autonomous one-shot jobs -- they cannot use TaskList/TaskUpdate/SendMessage. The lead must manage their lifecycle: write prompt_file, call MCP, read output_file, mark task complete. They don't participate in team communication like Claude teammates do.
+11. **CLI workers are one-shot, not persistent** -- Tmux CLI workers have full filesystem access and CAN make code changes. However, they run as autonomous one-shot jobs -- they cannot use TaskList/TaskUpdate/SendMessage. The lead must manage their lifecycle: write prompt_file, spawn CLI worker, read output_file, mark task complete. They don't participate in team communication like Claude teammates do.

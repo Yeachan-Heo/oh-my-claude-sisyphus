@@ -39,4 +39,16 @@ export type { MergeResult } from './merge-coordinator.js';
 export { generateTeamReport, saveTeamReport } from './summary-report.js';
 export { isPathAllowed, isCommandAllowed, formatPermissionInstructions, getDefaultPermissions, } from './permissions.js';
 export type { WorkerPermissions } from './permissions.js';
+export { TeamPaths, absPath, teamStateRoot } from './state-paths.js';
+export type { CliAgentType, CliAgentContract, WorkerLaunchConfig } from './model-contract.js';
+export { getContract, isCliAvailable as isCliAvailableForAgent, validateCliAvailable as validateCliAvailableForAgent, buildLaunchArgs, buildWorkerCommand, parseCliOutput, } from './model-contract.js';
+export type { CliInfo } from './cli-detection.js';
+export { detectCli, detectAllClis } from './cli-detection.js';
+export type { WorkerBootstrapParams } from './worker-bootstrap.js';
+export { generateWorkerOverlay, composeInitialInbox, appendToInbox, getWorkerEnv, ensureWorkerStateDir, writeWorkerOverlay, } from './worker-bootstrap.js';
+export { sendTmuxTrigger, queueInboxInstruction, queueDirectMessage, queueBroadcastMessage, readMailbox, } from './tmux-comm.js';
+export type { TeamPhase, PhaseableTask } from './phase-controller.js';
+export { inferPhase, getPhaseTransitionLog, isTerminalPhase } from './phase-controller.js';
+export type { TeamConfig, TeamRuntime, WorkerStatus as RuntimeWorkerStatus, TeamSnapshot, } from './runtime.js';
+export { startTeam, monitorTeam, assignTask, shutdownTeam, resumeTeam } from './runtime.js';
 //# sourceMappingURL=index.d.ts.map

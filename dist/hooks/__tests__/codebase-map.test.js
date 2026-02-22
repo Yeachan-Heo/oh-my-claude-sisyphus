@@ -55,8 +55,9 @@ describe('shouldSkipEntry', () => {
     it('skips binary/media files (.png)', () => {
         expect(shouldSkipEntry('logo.png', false, [])).toBe(true);
     });
-    it('skips .lock files', () => {
+    it('skips lock files (package-lock.json, yarn.lock)', () => {
         expect(shouldSkipEntry('package-lock.json', false, [])).toBe(true);
+        expect(shouldSkipEntry('yarn.lock', false, [])).toBe(true);
     });
     it('skips entries matching custom ignorePatterns', () => {
         expect(shouldSkipEntry('generated-code.ts', false, ['generated'])).toBe(true);

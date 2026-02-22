@@ -24,6 +24,7 @@ export const TOOL_CATEGORIES = {
     MEMORY: 'memory',
     TRACE: 'trace',
     SKILLS: 'skills',
+    INTEROP: 'interop',
     CODEX: 'codex',
     GEMINI: 'gemini',
 };

@@ -1,7 +1,19 @@
 // src/team/worker-health.ts
 import { listMcpWorkers } from './team-registration.js';
 import { readHeartbeat, isWorkerAlive } from './heartbeat.js';
-import { isSessionAlive } from './tmux-session.js';
+import { isSessionAlive, sanitizeName } from './tmux-session.js';
+import { execFileSync } from 'child_process';
+/** Check if the shared split-pane session 'omc-team-{teamName}' exists (new tmux model). */
+function isSharedSessionAlive(teamName) {
+    const name = `omc-team-${sanitizeName(teamName)}`;
+    try {
+        execFileSync('tmux', ['has-session', '-t', name], { stdio: 'pipe', timeout: 5000 });
+        return true;
+    }
+    catch {
+        return false;
+    }
+}
 import { readAuditLog } from './audit-log.js';
 /**
  * Generate health report for all workers in a team.
@@ -15,7 +27,7 @@ export function getWorkerHealthReports(teamName, workingDirectory, heartbeatMaxA
         const alive = isWorkerAlive(workingDirectory, teamName, worker.name, heartbeatMaxAgeMs);
         let tmuxAlive = false;
         try {
-            tmuxAlive = isSessionAlive(teamName, worker.name);
+            tmuxAlive = isSessionAlive(teamName, worker.name) || isSharedSessionAlive(teamName);
         }
         catch { /* tmux not available */ }
         // Calculate heartbeat age
@@ -81,7 +93,7 @@ export function checkWorkerHealth(teamName, workerName, workingDirectory, heartb
     const alive = isWorkerAlive(workingDirectory, teamName, workerName, heartbeatMaxAgeMs);
     let tmuxAlive = false;
     try {
-        tmuxAlive = isSessionAlive(teamName, workerName);
+        tmuxAlive = isSessionAlive(teamName, workerName) || isSharedSessionAlive(teamName);
     }
     catch { /* tmux not available */ }
     if (!alive && !tmuxAlive) {

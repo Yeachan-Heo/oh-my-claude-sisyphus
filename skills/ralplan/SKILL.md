@@ -41,6 +41,6 @@ The consensus workflow:
 7. *(--interactive only)* User chooses: Approve (ralph or team), Request changes, or Reject
 8. *(--interactive only)* On approval: invoke `Skill("oh-my-claudecode:ralph")` for sequential execution or `Skill("oh-my-claudecode:team")` for parallel team execution -- never implement directly
 
-> **Important:** Steps 3 and 4 MUST run sequentially. Do NOT issue both `ask_codex` calls in the same parallel batch — if one hits a 429 rate-limit error, Claude Code will cancel the sibling call ("Sibling tool call errored"), causing the entire review to fail. On a rate-limit error, retry once after 5–10 s; on second failure fall back to the equivalent Claude agent.
+> **Important:** Steps 3 and 4 MUST run sequentially. Do NOT issue both agent Task calls in the same parallel batch. Always await the Architect result before issuing the Critic Task.
 
 Follow the Plan skill's full documentation for consensus mode details.

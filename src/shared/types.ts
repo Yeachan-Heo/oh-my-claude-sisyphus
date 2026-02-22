@@ -234,12 +234,22 @@ export interface ResolveOptions {
 /**
  * Provider type for delegation routing
  */
-export type DelegationProvider = 'claude' | 'codex' | 'gemini';
+export type DelegationProvider =
+  | 'claude'
+  /** @deprecated Codex MCP server removed in v5.0. Use /team to coordinate CLI workers. */
+  | 'codex'
+  /** @deprecated Gemini MCP server removed in v5.0. Use /team to coordinate CLI workers. */
+  | 'gemini';
 
 /**
  * Tool type for delegation routing
  */
-export type DelegationTool = 'Task' | 'ask_codex' | 'ask_gemini';
+export type DelegationTool =
+  | 'Task'
+  /** @deprecated Codex MCP server removed in v5.0. Use /team to coordinate CLI workers. */
+  | 'ask_codex'
+  /** @deprecated Gemini MCP server removed in v5.0. Use /team to coordinate CLI workers. */
+  | 'ask_gemini';
 
 /**
  * Individual route configuration for a role

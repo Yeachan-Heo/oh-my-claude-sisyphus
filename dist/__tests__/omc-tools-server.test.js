@@ -1,9 +1,15 @@
 import { describe, it, expect } from 'vitest';
 import { omcToolsServer, omcToolNames, getOmcToolNames } from '../mcp/omc-tools-server.js';
+const interopEnabled = process.env.OMC_INTEROP_TOOLS_ENABLED === '1';
+const totalTools = interopEnabled ? 43 : 35;
+const withoutLsp = interopEnabled ? 31 : 23;
+const withoutAst = interopEnabled ? 41 : 33;
+const withoutPython = interopEnabled ? 42 : 34;
+const withoutSkills = interopEnabled ? 40 : 32;
 describe('omc-tools-server', () => {
     describe('omcToolNames', () => {
-        it('should export 35 tools total', () => {
-            expect(omcToolNames).toHaveLength(35);
+        it('should export expected tools total', () => {
+            expect(omcToolNames).toHaveLength(totalTools);
         });
         it('should have 12 LSP tools', () => {
             const lspTools = omcToolNames.filter(n => n.includes('lsp_'));
@@ -25,31 +31,39 @@ describe('omc-tools-server', () => {
     describe('getOmcToolNames', () => {
         it('should return all tools by default', () => {
             const tools = getOmcToolNames();
-            expect(tools).toHaveLength(35);
+            expect(tools).toHaveLength(totalTools);
         });
         it('should filter out LSP tools when includeLsp is false', () => {
             const tools = getOmcToolNames({ includeLsp: false });
             expect(tools.some(t => t.includes('lsp_'))).toBe(false);
-            expect(tools).toHaveLength(23); // 2 AST + 1 python + 3 skills + 5 state + 6 notepad + 4 memory + 2 trace
+            expect(tools).toHaveLength(withoutLsp);
         });
         it('should filter out AST tools when includeAst is false', () => {
             const tools = getOmcToolNames({ includeAst: false });
             expect(tools.some(t => t.includes('ast_'))).toBe(false);
-            expect(tools).toHaveLength(33); // 12 LSP + 1 python + 3 skills + 5 state + 6 notepad + 4 memory + 2 trace
+            expect(tools).toHaveLength(withoutAst);
         });
         it('should filter out python_repl when includePython is false', () => {
             const tools = getOmcToolNames({ includePython: false });
             expect(tools.some(t => t.includes('python_repl'))).toBe(false);
-            expect(tools).toHaveLength(34); // 12 LSP + 2 AST + 3 skills + 5 state + 6 notepad + 4 memory + 2 trace
+            expect(tools).toHaveLength(withoutPython);
         });
         it('should filter out skills tools', () => {
             const names = getOmcToolNames({ includeSkills: false });
-            expect(names).toHaveLength(32);
+            expect(names).toHaveLength(withoutSkills);
             expect(names.every(n => !n.includes('load_omc_skills') && !n.includes('list_omc_skills'))).toBe(true);
         });
         it('should have 3 skills tools', () => {
             const skillsTools = omcToolNames.filter(n => n.includes('load_omc_skills') || n.includes('list_omc_skills'));
             expect(skillsTools).toHaveLength(3);
+        });
+        it('supports includeInterop filter option', () => {
+            const withInterop = getOmcToolNames({ includeInterop: true });
+            const withoutInterop = getOmcToolNames({ includeInterop: false });
+            if (interopEnabled) {
+                expect(withInterop.some(n => n.includes('interop_'))).toBe(true);
+            }
+            expect(withoutInterop.some(n => n.includes('interop_'))).toBe(false);
         });
     });
     describe('omcToolsServer', () => {

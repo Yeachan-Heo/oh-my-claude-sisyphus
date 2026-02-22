@@ -21,7 +21,6 @@ const KEYWORD_PATTERNS = {
     team: /(?<!\b(?:my|the|our|a|his|her|their|its)\s)\bteam\b|\bcoordinated\s+team\b/i,
     pipeline: /\bagent\s+pipeline\b|\bchain\s+agents\b/i,
     ralplan: /\b(ralplan)\b/i,
-    plan: /\bplan\s+(this|the)\b/i,
     tdd: /\b(tdd)\b|\btest\s+first\b/i,
     ultrathink: /\b(ultrathink)\b/i,
     deepsearch: /\b(deepsearch)\b|\bsearch\s+the\s+codebase\b|\bfind\s+in\s+(the\s+)?codebase\b/i,
@@ -35,7 +34,7 @@ const KEYWORD_PATTERNS = {
  */
 const KEYWORD_PRIORITY = [
     'cancel', 'ralph', 'autopilot', 'ultrapilot', 'team', 'ultrawork',
-    'swarm', 'pipeline', 'ccg', 'ralplan', 'plan', 'tdd',
+    'swarm', 'pipeline', 'ccg', 'ralplan', 'tdd',
     'ultrathink', 'deepsearch', 'analyze', 'codex', 'gemini'
 ];
 /**

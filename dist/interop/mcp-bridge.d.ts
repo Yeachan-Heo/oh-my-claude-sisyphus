@@ -6,6 +6,9 @@
  */
 import { z } from 'zod';
 import { ToolDefinition } from '../tools/types.js';
+export type InteropMode = 'off' | 'observe' | 'active';
+export declare function getInteropMode(env?: NodeJS.ProcessEnv): InteropMode;
+export declare function canUseOmxDirectWriteBridge(env?: NodeJS.ProcessEnv): boolean;
 export declare const interopSendTaskTool: ToolDefinition<{
     target: z.ZodEnum<['omc', 'omx']>;
     type: z.ZodEnum<['analyze', 'implement', 'review', 'test', 'custom']>;

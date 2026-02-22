@@ -3,136 +3,133 @@ name: ccg
 description: Claude-Codex-Gemini tri-model orchestration - fans out backend tasks to Codex and frontend/UI tasks to Gemini in parallel, then Claude synthesizes results
 ---
 
-# CCG (Claude-Codex-Gemini) Orchestration
+# CCG - Claude-Codex-Gemini Tri-Model Orchestration
 
-## Overview
+CCG spawns a tmux team with Codex and Gemini CLI workers running in parallel panes, then Claude synthesizes the results. Use this for tasks that benefit from multiple AI perspectives simultaneously.
 
-CCG is a tri-model orchestration pattern:
+## When to Use
 
-- **Claude** — Orchestrator/conductor: decomposes requests, fans out work, synthesizes results
-- **Codex** (OpenAI) — Backend/code engine: architecture, APIs, security, code analysis
-- **Gemini** (Google) — Frontend/design processor: UI components, styling, visual design, large-context tasks
+- Backend/analysis + frontend/UI work that can run truly in parallel
+- Code review from multiple perspectives (architecture + style simultaneously)
+- Research tasks where different models have complementary strengths
+- Any task you want to split across Codex (analytical) and Gemini (design/creative) workers
 
-Claude fans Codex and Gemini out **in parallel**, then synthesizes their outputs into a unified solution.
+## Requirements
 
-## Trigger
+- **Codex CLI**: `npm install -g @openai/codex` (or `@openai/codex`)
+- **Gemini CLI**: `npm install -g @google/gemini-cli`
+- **tmux**: Must be running inside a tmux session
+- If either CLI is unavailable, CCG falls back to Claude-only execution
 
-Activated when the user says `ccg` or `claude-codex-gemini` in their prompt.
+## How It Works
+
+```
+1. Claude decomposes the request into:
+   - Backend/analytical tasks → Codex worker
+   - Frontend/UI/design tasks → Gemini worker
+
+2. startTeam() creates a tmux session with 2 workers:
+   omc-team-{name}
+   ├── Leader pane (Claude orchestrates)
+   ├── Worker pane 1: codex CLI (analytical tasks)
+   └── Worker pane 2: gemini CLI (design tasks)
+
+3. Tasks assigned to workers via inbox files + tmux triggers
+
+4. Workers claim tasks, execute, write results to task files
+
+5. Claude reads results and synthesizes into final output
+
+6. Team shut down cleanly
+```
 
 ## Execution Protocol
 
-**ANNOUNCE immediately**: `"CCG MODE ENABLED — Orchestrating Claude + Codex + Gemini"`
+When invoked, Claude MUST follow this workflow:
 
-### Phase 1: Decompose
-
-Analyze the request and split into:
-- **Backend tasks** → Codex (APIs, data models, business logic, tests, security)
-- **Frontend tasks** → Gemini (UI components, styling, layout, responsive design)
-- **Synthesis tasks** → Claude (integration, cross-cutting concerns, final wiring)
-
-### Phase 2: Fan-Out (Parallel)
-
-Run Codex and Gemini **simultaneously** using background mode.
-
-**Codex — backend**:
-1. Write prompt to `.omc/prompts/codex-{purpose}-{timestamp}.md`
-2. Call `ask_codex` MCP tool:
-   - `agent_role`: pick from `architect`, `executor`, `code-reviewer`, `security-reviewer`, `planner`, `critic`
-   - `prompt_file`: the file you just wrote
-   - `output_file`: `.omc/prompts/codex-{purpose}-{timestamp}-output.md`
-   - `context_files`: relevant source files
-   - `background: true` for non-blocking execution
-
-**Gemini — frontend**:
-1. Write prompt to `.omc/prompts/gemini-{purpose}-{timestamp}.md`
-2. Call `ask_gemini` MCP tool:
-   - `agent_role`: pick from `designer`, `writer`, `vision`
-   - `prompt_file`: the file you just wrote
-   - `output_file`: `.omc/prompts/gemini-{purpose}-{timestamp}-output.md`
-   - `files`: relevant source files
-   - `background: true` for non-blocking execution
-
-### Phase 3: Await Results
-
-Use `wait_for_job` (or poll with `check_job_status`) for both jobs. Wait for both to complete before synthesizing.
-
-### Phase 4: Synthesize
-
-Claude reads both output files and:
-1. Reconciles any conflicts (e.g., API shape vs component props)
-2. Integrates backend + frontend solutions into a cohesive whole
-3. Applies cross-cutting concerns (error handling, typing, auth)
-4. Implements any remaining integration glue code
-
-## MCP Tool Selection Guide
-
-### Use Codex (`ask_codex`) for:
-- REST/GraphQL API design and implementation
-- Database schema, migrations, data models
-- Backend business logic and services
-- Security audit and vulnerability analysis
-- Architecture review and refactoring
-- Test strategy, TDD, unit/integration tests
-- Build errors and TypeScript issues
-
-**Roles**: `architect`, `code-reviewer`, `security-reviewer`, `executor`, `planner`, `critic`, `test-engineer`
-
-### Use Gemini (`ask_gemini`) for:
-- React/Vue/Svelte component implementation
-- CSS, Tailwind, styled-components
-- Responsive layouts and visual design
-- UI/UX review and heuristic audits
-- Large-scale documentation (1M token context)
-- Image/screenshot/diagram analysis
-
-**Roles**: `designer`, `writer`, `vision`
-
-## Fallback
-
-If **Codex MCP unavailable** → use `Task(subagent_type="oh-my-claudecode:executor", model="sonnet")` for backend tasks.
-
-If **Gemini MCP unavailable** → use `Task(subagent_type="oh-my-claudecode:designer", model="sonnet")` for frontend tasks.
-
-If **both unavailable** → use Claude directly with the standard agent catalog.
-
-## Example
-
-**User**: `ccg Add a user profile page with a REST API endpoint and React frontend`
-
-```
-CCG MODE ENABLED — Orchestrating Claude + Codex + Gemini
-
-Decomposition:
-  Backend  → Codex: /api/users/:id endpoint, Prisma user model, auth middleware
-  Frontend → Gemini: React UserProfile component, avatar, form, responsive layout
-
-Fan-out (parallel):
-  [Codex]  Implementing REST endpoint + data layer...
-  [Gemini] Designing UserProfile component + styling...
-
-[Both complete]
-
-Synthesis:
-  - Align API response type with React component props
-  - Wire fetch hook to /api/users/:id endpoint
-  - Add error boundary and loading state across layers
-  - Export unified UserProfilePage with data fetching
+### 1. Check CLI Availability
+```typescript
+import { isCliAvailable } from './src/team/model-contract.js';
+const hasCodex = isCliAvailable('codex');
+const hasGemini = isCliAvailable('gemini');
 ```
 
-## Integration with Other Skills
+If neither is available: fall back to Claude Task agents directly (no tmux team needed).
 
-CCG composes with other OMC modes:
+### 2. Decompose Request
+Split the user's request into:
+- **Codex tasks**: code analysis, architecture review, backend logic, security review, test strategy
+- **Gemini tasks**: UI/UX design, documentation, visual analysis, large-context file review
+- **Synthesis task**: Claude combines results (always done by Claude, not delegated)
 
-| Combination | Effect |
-|-------------|--------|
-| `ccg ralph` | CCG loop with ralph persistence until verified complete |
-| `ccg ultrawork` | CCG with max parallelism within each model |
-| `ccg team` | CCG orchestration within a multi-agent team |
+### 3. Start Team
+```typescript
+import { startTeam } from './src/team/runtime.js';
 
-## Cancellation
+const runtime = await startTeam({
+  teamName: 'ccg-' + Date.now(),
+  workerCount: 2,
+  agentTypes: ['codex', 'gemini'],
+  tasks: [...codexTasks, ...geminiTasks],
+  cwd: process.cwd(),
+});
+```
 
-Stop active CCG work: say `cancelomc` or run `/oh-my-claudecode:cancel`.
+### 4. Assign Tasks
+```typescript
+import { assignTask } from './src/team/runtime.js';
 
-## State
+// Assign codex tasks to worker-1, gemini tasks to worker-2
+for (const task of codexTasks) {
+  await assignTask(runtime.teamName, task.id, 'worker-1',
+    runtime.workerPaneIds[0], runtime.sessionName, runtime.cwd);
+}
+for (const task of geminiTasks) {
+  await assignTask(runtime.teamName, task.id, 'worker-2',
+    runtime.workerPaneIds[1], runtime.sessionName, runtime.cwd);
+}
+```
 
-CCG does not maintain persistent state files. Each invocation is stateless — Claude manages the workflow inline. MCP job IDs are tracked in-context during the session.
+### 5. Monitor Until Complete
+```typescript
+import { monitorTeam } from './src/team/runtime.js';
+
+let phase = 'executing';
+while (phase !== 'completed' && phase !== 'failed') {
+  await new Promise(r => setTimeout(r, 5000)); // poll every 5s
+  const snapshot = await monitorTeam(runtime.teamName, runtime.cwd, runtime.workerPaneIds);
+  phase = snapshot.phase;
+}
+```
+
+### 6. Read Results & Synthesize
+Read task files from `.omc/state/team/{teamName}/tasks/` and synthesize.
+
+### 7. Shutdown
+```typescript
+import { shutdownTeam } from './src/team/runtime.js';
+await shutdownTeam(runtime.teamName, runtime.sessionName, runtime.cwd);
+```
+
+## Fallback (CLIs Not Available)
+
+When Codex or Gemini CLI is not installed:
+
+```
+[CCG] Codex/Gemini CLI not found. Falling back to Claude-only execution.
+```
+
+Use standard Claude Task agents instead:
+- `Task(subagent_type="oh-my-claudecode:executor", model="sonnet", ...)` for analytical tasks
+- `Task(subagent_type="oh-my-claudecode:designer", model="sonnet", ...)` for design tasks
+
+## Invocation
+
+```
+/oh-my-claudecode:ccg [task description]
+```
+
+Example:
+```
+/oh-my-claudecode:ccg Review this PR - check architecture and code quality (Codex) and UI components (Gemini)
+```

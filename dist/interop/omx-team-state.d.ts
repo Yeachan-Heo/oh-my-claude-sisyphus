@@ -97,14 +97,21 @@ export declare function readOmxMailbox(teamName: string, workerName: string, cwd
 export declare function listOmxMailboxMessages(teamName: string, workerName: string, cwd: string): Promise<OmxTeamMailboxMessage[]>;
 /**
  * Send a direct message to an omx worker's mailbox
+ *
+ * @deprecated Interop active write path must go through broker -> OMX team_* MCP APIs.
+ * Kept for legacy compatibility and observe-mode tooling only.
  */
 export declare function sendOmxDirectMessage(teamName: string, fromWorker: string, toWorker: string, body: string, cwd: string): Promise<OmxTeamMailboxMessage>;
 /**
  * Broadcast a message to all workers in an omx team
+ *
+ * @deprecated Interop active write path must go through broker -> OMX team_* MCP APIs.
  */
 export declare function broadcastOmxMessage(teamName: string, fromWorker: string, body: string, cwd: string): Promise<OmxTeamMailboxMessage[]>;
 /**
  * Mark a message as delivered in an omx worker's mailbox
+ *
+ * @deprecated Interop active write path must go through broker -> OMX team_* MCP APIs.
  */
 export declare function markOmxMessageDelivered(teamName: string, workerName: string, messageId: string, cwd: string): Promise<boolean>;
 /**
@@ -117,6 +124,8 @@ export declare function readOmxTask(teamName: string, taskId: string, cwd: strin
 export declare function listOmxTasks(teamName: string, cwd: string): Promise<OmxTeamTask[]>;
 /**
  * Append an event to the omx team event log
+ *
+ * @deprecated Interop active write path must go through broker -> OMX team_* MCP APIs.
  */
 export declare function appendOmxTeamEvent(teamName: string, event: Omit<OmxTeamEvent, 'event_id' | 'created_at' | 'team'>, cwd: string): Promise<OmxTeamEvent>;
 //# sourceMappingURL=omx-team-state.d.ts.map

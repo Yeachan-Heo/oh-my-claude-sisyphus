@@ -4,7 +4,7 @@ description: Deep analysis and investigation
 ---
 
 <Purpose>
-Analyze performs deep investigation of architecture, bugs, performance issues, and dependencies. It routes to the architect agent or Codex MCP for thorough analysis and returns structured findings with evidence.
+Analyze performs deep investigation of architecture, bugs, performance issues, and dependencies. It routes to the architect Claude agent for thorough analysis and returns structured findings with evidence.
 </Purpose>
 
 <Use_When>
@@ -27,26 +27,20 @@ Deep investigation requires a different approach than quick lookups or code chan
 </Why_This_Exists>
 
 <Execution_Policy>
-- Prefer Codex MCP for analysis when available (faster, lower cost)
-- Fall back to architect Claude agent when Codex is unavailable
-- Always provide context files to the analysis tool for grounded reasoning
+- Route analysis to the architect Claude agent for thorough investigation
+- Always gather context files before spawning the architect agent for grounded reasoning
 - Return structured findings, not just raw observations
 </Execution_Policy>
 
 <Steps>
 1. **Identify the analysis type**: Architecture, bug investigation, performance, or dependency analysis
 2. **Gather relevant context**: Read or identify the key files involved
-3. **Route to analyzer**:
-   - Preferred: `ask_codex` with `agent_role: "architect"` and relevant `context_files`
-   - Fallback: `Task(subagent_type="oh-my-claudecode:architect", model="opus", prompt="Analyze: ...")`
+3. **Route to analyzer**: `Task(subagent_type="oh-my-claudecode:architect", model="opus", prompt="Analyze: ...")`
 4. **Return structured findings**: Present the analysis with evidence, file references, and actionable recommendations
 </Steps>
 
 <Tool_Usage>
-- Before first MCP tool use, run the 3-step discovery: (1) `ToolSearch("mcp")`, (2) select the full name from results (e.g., `mcp__x__ask_codex`), (3) fall back to the equivalent Claude agent only if step 1 returns empty. Never use `ToolSearch("ask_codex")` as the primary search -- it can return false negatives even when MCP tools are present.
-- Use `ask_codex` with `agent_role: "architect"` as the preferred analysis route
-- Pass `context_files` with all relevant source files for grounded analysis
-- Use `Task(subagent_type="oh-my-claudecode:architect", model="opus", ...)` as fallback when ToolSearch finds no MCP tools or Codex is unavailable
+- Use `Task(subagent_type="oh-my-claudecode:architect", model="opus", ...)` as the primary analysis route
 - For broad analysis, use `explore` agent first to identify relevant files before routing to architect
 </Tool_Usage>
 

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { formatSessionIdle, formatSessionEnd, formatAgentCall, formatNotification, } from "../formatter.js";
+import { formatSessionIdle, formatSessionEnd, formatAgentCall, formatNotification, parseTmuxTail, } from "../formatter.js";
 describe("formatSessionIdle", () => {
     const basePayload = {
         event: "session-idle",
@@ -108,6 +108,85 @@ describe("formatAgentCall", () => {
     it("should include footer with project info", () => {
         const result = formatAgentCall(basePayload);
         expect(result).toContain("`my-project`");
+    });
+});
+describe("parseTmuxTail", () => {
+    it("returns empty string for empty input", () => {
+        expect(parseTmuxTail("")).toBe("");
+    });
+    it("strips ANSI escape codes", () => {
+        const result = parseTmuxTail("\x1b[32mhello\x1b[0m world");
+        expect(result).toBe("hello world");
+    });
+    it("strips multi-parameter ANSI sequences", () => {
+        const result = parseTmuxTail("\x1b[1;34mBold blue\x1b[0m");
+        expect(result).toBe("Bold blue");
+    });
+    it("removes lines starting with ●", () => {
+        const result = parseTmuxTail("● Running tests\nnormal line");
+        expect(result).toBe("normal line");
+        expect(result).not.toContain("●");
+    });
+    it("removes lines starting with ⎿", () => {
+        const result = parseTmuxTail("⎿ subtask detail\nnormal line");
+        expect(result).toBe("normal line");
+    });
+    it("removes lines starting with ✻", () => {
+        const result = parseTmuxTail("✻ spinning indicator\nnormal line");
+        expect(result).toBe("normal line");
+    });
+    it("removes lines starting with ·", () => {
+        const result = parseTmuxTail("· bullet item\nnormal line");
+        expect(result).toBe("normal line");
+    });
+    it("removes lines starting with ◼", () => {
+        const result = parseTmuxTail("◼ block item\nnormal line");
+        expect(result).toBe("normal line");
+    });
+    it("removes 'ctrl+o to expand' lines (case-insensitive)", () => {
+        const result = parseTmuxTail("some output\nctrl+o to expand\nmore output");
+        expect(result).not.toContain("ctrl+o to expand");
+        expect(result).toBe("some output\nmore output");
+    });
+    it("removes 'Ctrl+O to Expand' mixed-case variant", () => {
+        const result = parseTmuxTail("line1\nCtrl+O to Expand\nline2");
+        expect(result).not.toContain("Expand");
+        expect(result).toBe("line1\nline2");
+    });
+    it("skips blank lines", () => {
+        const result = parseTmuxTail("\n\nfoo\n\nbar\n\n");
+        expect(result).toBe("foo\nbar");
+    });
+    it("caps output at 10 meaningful lines", () => {
+        const input = Array.from({ length: 20 }, (_, i) => `line ${i + 1}`).join("\n");
+        const result = parseTmuxTail(input);
+        const lines = result.split("\n");
+        expect(lines).toHaveLength(10);
+        expect(lines[0]).toBe("line 1");
+        expect(lines[9]).toBe("line 10");
+    });
+    it("returns fewer than 10 lines when input has fewer meaningful lines", () => {
+        const result = parseTmuxTail("line 1\nline 2\nline 3");
+        expect(result.split("\n")).toHaveLength(3);
+    });
+    it("trims trailing whitespace from each line", () => {
+        const result = parseTmuxTail("hello   \nworld  ");
+        expect(result).toBe("hello\nworld");
+    });
+    it("handles mixed content: chrome + ANSI + normal lines", () => {
+        const input = [
+            "\x1b[32m● Starting task\x1b[0m",
+            "\x1b[1mBuilding project\x1b[0m",
+            "● Another chrome line",
+            "ctrl+o to expand",
+            "Tests passed: 42",
+        ].join("\n");
+        const result = parseTmuxTail(input);
+        expect(result).toBe("Building project\nTests passed: 42");
+    });
+    it("does not remove lines that merely contain chrome characters mid-line", () => {
+        const result = parseTmuxTail("status: ● ok");
+        expect(result).toBe("status: ● ok");
     });
 });
 describe("tmuxTail in formatters", () => {

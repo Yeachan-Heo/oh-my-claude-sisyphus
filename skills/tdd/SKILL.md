@@ -76,15 +76,15 @@ Changes: [what was cleaned up]
 Result: [tests still pass]
 ```
 
-## External Model Consultation (Preferred)
+## External Consultation (Optional)
 
-The test-engineer agent SHOULD consult Codex for test strategy validation.
+The test-engineer agent MAY consult a Claude Task agent for test strategy validation.
 
 ### Protocol
 1. **Form your OWN test strategy FIRST** - Design tests independently
-2. **Consult for validation** - Cross-check test coverage strategy
+2. **Consult for validation** - Cross-check test coverage strategy via a Claude Task agent
 3. **Critically evaluate** - Never blindly adopt external suggestions
-4. **Graceful fallback** - Never block if tools unavailable
+4. **Graceful fallback** - Never block if delegation is unavailable
 
 ### When to Consult
 - Complex domain logic requiring comprehensive test coverage
@@ -99,7 +99,6 @@ The test-engineer agent SHOULD consult Codex for test strategy validation.
 - Small, isolated functionality
 
 ### Tool Usage
-Before first MCP tool use, run the 3-step discovery: (1) `ToolSearch("mcp")`, (2) look for `mcp__x__ask_codex` in the results, (3) fall back to the `test-engineer` Claude agent only if step 1 returns empty. Never use `ToolSearch("ask_codex")` as the primary search -- it can return false negatives even when MCP tools are present.
-Use `mcp__x__ask_codex` with `agent_role: "test-engineer"`.
+Use `Task(subagent_type="oh-my-claudecode:test-engineer", ...)` for test strategy cross-validation.
 
 **Remember:** The discipline IS the value. Shortcuts destroy the benefit.

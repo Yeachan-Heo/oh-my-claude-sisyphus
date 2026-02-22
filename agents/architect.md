@@ -48,13 +48,12 @@ disallowedTools: Write, Edit
     - Use lsp_diagnostics_directory to verify project-wide health.
     - Use ast_grep_search to find structural patterns (e.g., "all async functions without try/catch").
     - Use Bash with git blame/log for change history analysis.
-    <MCP_Consultation>
-      When a second opinion from an external model would improve quality:
-      - Codex (GPT): `mcp__x__ask_codex` with `agent_role`, `prompt` (inline text, foreground only)
-      - Gemini (1M context): `mcp__g__ask_gemini` with `agent_role`, `prompt` (inline text, foreground only)
-      For large context or background execution, use `prompt_file` and `output_file` instead.
-      Skip silently if tools are unavailable. Never block on external consultation.
-    </MCP_Consultation>
+    <External_Consultation>
+      When a second opinion would improve quality, spawn a Claude Task agent:
+      - Use `Task(subagent_type="oh-my-claudecode:critic", ...)` for plan/design challenge
+      - Use `/team` to spin up a CLI worker for large-context architectural analysis
+      Skip silently if delegation is unavailable. Never block on external consultation.
+    </External_Consultation>
   </Tool_Usage>
 
   <Execution_Policy>

@@ -263,7 +263,7 @@ describe('external-model-policy', () => {
                     };
                     const result = resolveExternalModel(config, options);
                     expect(result.provider).toBe('gemini');
-                    expect(result.model).toBe('gemini-3-pro-preview'); // hardcoded default
+                    expect(result.model).toBe('gemini-3.1-pro-preview'); // hardcoded default
                 });
             });
             describe('Precedence 6: Environment variables', () => {
@@ -317,7 +317,7 @@ describe('external-model-policy', () => {
                     const options = {};
                     const result = resolveExternalModel(config, options);
                     expect(result.provider).toBe('gemini');
-                    expect(result.model).toBe('gemini-3-pro-preview');
+                    expect(result.model).toBe('gemini-3.1-pro-preview');
                 });
                 it('should default to codex provider when none specified', () => {
                     const config = {};
@@ -464,6 +464,7 @@ describe('external-model-policy', () => {
                 'gpt-5.2',
             ]);
             expect(GEMINI_MODEL_FALLBACKS).toEqual([
+                'gemini-3.1-pro-preview',
                 'gemini-3-pro-preview',
                 'gemini-3-flash-preview',
                 'gemini-2.5-pro',

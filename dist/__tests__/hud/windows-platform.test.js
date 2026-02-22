@@ -40,8 +40,6 @@ describe('Windows HUD Platform Fixes (#739)', () => {
         const bridgeFiles = [
             'bridge/mcp-server.cjs',
             'bridge/team-bridge.cjs',
-            'bridge/codex-server.cjs',
-            'bridge/gemini-server.cjs',
         ];
         for (const file of bridgeFiles) {
             describe(file, () => {

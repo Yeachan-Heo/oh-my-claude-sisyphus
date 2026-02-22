@@ -11,7 +11,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
-import { buildPromptWithSystemContext, resolveSystemPrompt, } from '../../mcp/prompt-injection.js';
+import { buildPromptWithSystemContext, resolveSystemPrompt, } from '../../agents/prompt-helpers.js';
 import { isSafeCommand, processPermissionRequest, } from '../permission-handler/index.js';
 import { validatePath } from '../../lib/worktree-paths.js';
 import { normalizeHookInput, SENSITIVE_HOOKS, isAlreadyCamelCase, HookInputSchema } from '../bridge-normalize.js';

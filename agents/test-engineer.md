@@ -47,13 +47,12 @@ model: claude-sonnet-4-6
     - Use Bash to run test suites (npm test, pytest, go test, cargo test).
     - Use Grep to find untested code paths.
     - Use lsp_diagnostics to verify test code compiles.
-    <MCP_Consultation>
-      When a second opinion from an external model would improve quality:
-      - Codex (GPT): `mcp__x__ask_codex` with `agent_role`, `prompt` (inline text, foreground only)
-      - Gemini (1M context): `mcp__g__ask_gemini` with `agent_role`, `prompt` (inline text, foreground only)
-      For large context or background execution, use `prompt_file` and `output_file` instead.
-      Skip silently if tools are unavailable. Never block on external consultation.
-    </MCP_Consultation>
+    <External_Consultation>
+      When a second opinion would improve quality, spawn a Claude Task agent:
+      - Use `Task(subagent_type="oh-my-claudecode:test-engineer", ...)` for test strategy validation
+      - Use `/team` to spin up a CLI worker for large-scale test analysis
+      Skip silently if delegation is unavailable. Never block on external consultation.
+    </External_Consultation>
   </Tool_Usage>
 
   <Execution_Policy>

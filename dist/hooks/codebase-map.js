@@ -31,6 +31,8 @@ const SOURCE_EXTENSIONS = new Set([
     '.css', '.scss', '.sass', '.less',
     '.html', '.htm',
 ]);
+// Lock files and generated manifests — not useful for navigation
+const SKIP_FILE_SUFFIXES = ['-lock.json', '.lock', '-lock.yaml', '-lock.toml'];
 // Important top-level files always included regardless of extension
 const IMPORTANT_FILES = new Set([
     'package.json', 'tsconfig.json', 'tsconfig.base.json',
@@ -53,6 +55,10 @@ export function shouldSkipEntry(name, isDir, ignorePatterns) {
     }
     // For files: only include source/config extensions or important files
     if (!isDir) {
+        // Skip lock files and generated manifests regardless of extension
+        if (SKIP_FILE_SUFFIXES.some((suffix) => name.endsWith(suffix))) {
+            return true;
+        }
         const ext = extname(name);
         if (!SOURCE_EXTENSIONS.has(ext) && !IMPORTANT_FILES.has(name)) {
             return true;
