@@ -1,7 +1,7 @@
 ---
 name: quality-strategist
 description: Quality strategy, release readiness, risk assessment, and quality gates (Sonnet)
-model: sonnet
+model: claude-sonnet-4-6
 disallowedTools: apply_patch, write_file
 ---
 

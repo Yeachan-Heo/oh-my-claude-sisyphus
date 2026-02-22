@@ -1,7 +1,7 @@
 ---
 name: performance-reviewer
 description: Hotspots, algorithmic complexity, memory/latency tradeoffs, profiling plans
-model: sonnet
+model: claude-sonnet-4-6
 ---
 
 > **Deprecated**: `performance-reviewer` is an alias for `quality-reviewer`. This file is kept for reference only.

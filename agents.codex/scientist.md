@@ -1,7 +1,7 @@
 ---
 name: scientist
 description: Data analysis and research execution specialist
-model: sonnet
+model: claude-sonnet-4-6
 disallowedTools: apply_patch, write_file
 ---
 

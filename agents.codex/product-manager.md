@@ -1,7 +1,7 @@
 ---
 name: product-manager
 description: Problem framing, value hypothesis, prioritization, and PRD generation (Sonnet)
-model: sonnet
+model: claude-sonnet-4-6
 disallowedTools: apply_patch, write_file
 ---
 

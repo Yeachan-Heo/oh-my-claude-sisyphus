@@ -1,7 +1,7 @@
 ---
 name: style-reviewer
 description: Formatting, naming conventions, idioms, lint/style conventions
-model: haiku
+model: claude-haiku-4-5
 ---
 
 **Role**

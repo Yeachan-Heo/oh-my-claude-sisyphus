@@ -1,7 +1,7 @@
 ---
 name: debugger
 description: Root-cause analysis, regression isolation, stack trace analysis
-model: sonnet
+model: claude-sonnet-4-6
 ---
 
 **Role**

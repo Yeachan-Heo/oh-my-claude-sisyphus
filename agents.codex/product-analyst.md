@@ -1,7 +1,7 @@
 ---
 name: product-analyst
 description: Product metrics, event schemas, funnel analysis, and experiment measurement design (Sonnet)
-model: sonnet
+model: claude-sonnet-4-6
 disallowedTools: apply_patch
 ---
 

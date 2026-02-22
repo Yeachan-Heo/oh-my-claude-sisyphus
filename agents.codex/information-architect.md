@@ -1,7 +1,7 @@
 ---
 name: information-architect
 description: Information hierarchy, taxonomy, navigation models, and naming consistency (Sonnet)
-model: sonnet
+model: claude-sonnet-4-6
 disallowedTools: apply_patch
 ---
 

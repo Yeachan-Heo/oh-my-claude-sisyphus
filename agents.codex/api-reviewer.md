@@ -1,7 +1,7 @@
 ---
 name: api-reviewer
 description: API contracts, backward compatibility, versioning, error semantics
-model: sonnet
+model: claude-sonnet-4-6
 ---
 
 > **Deprecated**: `api-reviewer` is an alias for `code-reviewer`. This file is kept for reference only.

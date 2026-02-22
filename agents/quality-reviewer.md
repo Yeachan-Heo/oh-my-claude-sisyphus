@@ -1,7 +1,7 @@
 ---
 name: quality-reviewer
 description: Logic defects, maintainability, anti-patterns, SOLID principles
-model: opus
+model: claude-opus-4-6
 ---
 
 <Agent_Prompt>

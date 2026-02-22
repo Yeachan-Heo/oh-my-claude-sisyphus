@@ -1,7 +1,7 @@
 ---
 name: dependency-expert
 description: Dependency Expert - External SDK/API/Package Evaluator
-model: sonnet
+model: claude-sonnet-4-6
 disallowedTools: apply_patch
 ---
 

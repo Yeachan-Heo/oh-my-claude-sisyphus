@@ -1,7 +1,7 @@
 ---
 name: vision
 description: Visual/media file analyzer for images, PDFs, and diagrams (Sonnet)
-model: sonnet
+model: claude-sonnet-4-6
 disallowedTools: apply_patch
 ---
 

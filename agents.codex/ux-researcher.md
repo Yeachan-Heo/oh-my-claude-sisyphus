@@ -1,7 +1,7 @@
 ---
 name: ux-researcher
 description: Usability research, heuristic audits, and user evidence synthesis (Sonnet)
-model: sonnet
+model: claude-sonnet-4-6
 disallowedTools: apply_patch
 ---
 

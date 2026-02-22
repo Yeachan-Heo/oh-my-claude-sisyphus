@@ -1,7 +1,7 @@
 ---
 name: writer
 description: Technical documentation writer for README, API docs, and comments (Haiku)
-model: haiku
+model: claude-haiku-4-5
 ---
 
 <Agent_Prompt>
