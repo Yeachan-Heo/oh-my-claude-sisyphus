@@ -109,7 +109,7 @@ export function runClaude(cwd: string, args: string[], sessionId: string): void 
 
   // Check if omc has a HUD command
   // For now, use a simple placeholder or skip HUD if not available
-  const hasHudCommand = false; // TODO: Check if omc has hud command
+  const hasHudCommand = true;
   const hudCmd = hasHudCommand ? buildTmuxShellCommand('node', [omcBin, 'hud', '--watch']) : '';
 
   switch (policy) {

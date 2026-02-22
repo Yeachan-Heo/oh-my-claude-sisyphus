@@ -1641,5 +1641,27 @@ program
     }
   });
 
+/**
+ * HUD command - Run the OMC HUD statusline renderer
+ * In --watch mode, loops continuously for use in a tmux pane.
+ */
+program
+  .command('hud')
+  .description('Run the OMC HUD statusline renderer')
+  .option('--watch', 'Run in watch mode (continuous polling for tmux pane)')
+  .option('--interval <ms>', 'Poll interval in milliseconds', '1000')
+  .action(async (options) => {
+    const { main: hudMain } = await import('../hud/index.js');
+    if (options.watch) {
+      const intervalMs = parseInt(options.interval, 10);
+      while (true) {
+        await hudMain();
+        await new Promise<void>(resolve => setTimeout(resolve, intervalMs));
+      }
+    } else {
+      await hudMain();
+    }
+  });
+
 // Parse arguments
 program.parse();
