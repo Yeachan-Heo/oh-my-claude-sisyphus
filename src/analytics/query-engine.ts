@@ -1,6 +1,5 @@
 import { getTokenTracker } from './token-tracker.js';
 import { getSessionManager } from './session-manager.js';
-import { getMetricsCollector, aggregators } from './metrics-collector.js';
 import { calculateCost } from './cost-estimator.js';
 import { getTokscaleAdapter, TokscaleAdapter } from './tokscale-adapter.js';
 import * as fs from 'fs/promises';
@@ -65,7 +64,7 @@ export class QueryEngine {
         period,
         range
       };
-    } catch (error) {
+    } catch (_error) {
       // If tokscale fails, fall back to legacy
       return this.getCostReportLegacy(period);
     }
@@ -148,7 +147,7 @@ export class QueryEngine {
         period,
         range
       };
-    } catch (error) {
+    } catch (_error) {
       // Return empty report if no data
       return {
         totalCost: 0,
@@ -190,7 +189,7 @@ export class QueryEngine {
           byAgent[record.agentName] = (byAgent[record.agentName] || 0) + cost.totalCost;
         }
       }
-    } catch (error) {
+    } catch (_error) {
       // Return empty if error
     }
 
@@ -252,7 +251,7 @@ export class QueryEngine {
         averageCostPerSession,
         totalSessions: history.totalSessions
       };
-    } catch (error) {
+    } catch (_error) {
       return {
         peakHours: [],
         mostExpensiveOperations: [],

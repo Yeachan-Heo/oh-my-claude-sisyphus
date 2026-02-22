@@ -29,7 +29,7 @@ function renderProgressBar(current: number, total: number, width: number = 40): 
 /**
  * Format file size in human-readable format
  */
-function formatFileSize(bytes: number): string {
+function _formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
@@ -84,10 +84,10 @@ export async function backfillCommand(options: BackfillCommandOptions): Promise<
   const engine = new BackfillEngine();
 
   // Setup progress handler
-  let lastProgress: BackfillProgress | null = null;
+  let _lastProgress: BackfillProgress | null = null;
 
   engine.on('progress', (progress: BackfillProgress) => {
-    lastProgress = progress;
+    _lastProgress = progress;
 
     if (!options.json && !options.verbose) {
       // Show progress bar
@@ -133,7 +133,7 @@ export async function backfillCommand(options: BackfillCommandOptions): Promise<
   }
 
   // Run backfill
-  const startTime = Date.now();
+  const _startTime = Date.now();
   const result = await engine.run(backfillOptions);
 
   // Clear progress line

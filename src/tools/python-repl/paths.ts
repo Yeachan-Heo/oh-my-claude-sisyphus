@@ -18,7 +18,7 @@ import * as crypto from "crypto";
  * Maximum length for Unix socket paths (Linux: 108, macOS: 104).
  * We use a conservative value that works on both platforms.
  */
-const MAX_SOCKET_PATH_LENGTH = 100;
+const _MAX_SOCKET_PATH_LENGTH = 100;
 
 /**
  * Length of the short session ID hash used for socket paths.

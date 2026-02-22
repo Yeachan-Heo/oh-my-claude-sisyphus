@@ -65,6 +65,31 @@ describe('readNewOutboxMessages', () => {
         expect(msgs).toHaveLength(1);
         expect(msgs[0].type).toBe('idle');
     });
+    it('does not drop messages when read window ends mid-JSON line', () => {
+        const outbox = join(TEAMS_DIR, 'outbox', 'w1.jsonl');
+        const cursorFile = join(TEAMS_DIR, 'outbox', 'w1.outbox-offset');
+        const msg1 = { type: 'task_complete', taskId: 't1', timestamp: '2026-01-01T00:00:00Z' };
+        const msg2 = { type: 'idle', message: 'standing by', timestamp: '2026-01-01T00:01:00Z' };
+        const msg2json = JSON.stringify(msg2);
+        // Write first complete line plus a partial second line (no trailing newline)
+        writeFileSync(outbox, JSON.stringify(msg1) + '\n' + msg2json.slice(0, 10));
+        const batch1 = readNewOutboxMessages(TEST_TEAM, 'w1');
+        // Only the complete first line should be returned
+        expect(batch1).toHaveLength(1);
+        expect(batch1[0].type).toBe('task_complete');
+        // Cursor must NOT have advanced past the partial line; verify by checking
+        // that the cursor points to the byte just after the first newline
+        const cursor = JSON.parse(readFileSync(cursorFile, 'utf-8'));
+        const firstLineBytes = Buffer.byteLength(JSON.stringify(msg1) + '\n', 'utf-8');
+        expect(cursor.bytesRead).toBe(firstLineBytes);
+        // Now complete the second line
+        writeFileSync(outbox, JSON.stringify(msg1) + '\n' + msg2json + '\n');
+        const batch2 = readNewOutboxMessages(TEST_TEAM, 'w1');
+        // The previously partial line should now be delivered
+        expect(batch2).toHaveLength(1);
+        expect(batch2[0].type).toBe('idle');
+        expect(batch2[0].message).toBe('standing by');
+    });
 });
 describe('readAllTeamOutboxMessages', () => {
     it('aggregates across workers', () => {

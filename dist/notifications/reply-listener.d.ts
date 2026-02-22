@@ -73,7 +73,7 @@ declare function pollLoop(): Promise<void>;
  *
  * @param config - Daemon config (used only for validation, daemon reads config independently)
  */
-export declare function startReplyListener(config: ReplyListenerDaemonConfig): DaemonResponse;
+export declare function startReplyListener(_config: ReplyListenerDaemonConfig): DaemonResponse;
 /**
  * Stop the reply listener daemon
  */

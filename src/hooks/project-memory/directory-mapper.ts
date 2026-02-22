@@ -123,7 +123,7 @@ export async function mapDirectoryStructure(projectRoot: string): Promise<Record
         // Skip unreadable directories
       }
     }
-  } catch (error) {
+  } catch (_error) {
     // Return empty map on error
   }
 

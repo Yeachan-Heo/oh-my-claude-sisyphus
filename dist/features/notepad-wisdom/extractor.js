@@ -26,7 +26,7 @@ export function extractWisdomFromCompletion(response) {
         }
     }
     // Pattern 2: <learning>, <decision>, <issue>, <problem> tags
-    const categories = ['learnings', 'decisions', 'issues', 'problems'];
+    const _categories = ['learnings', 'decisions', 'issues', 'problems'];
     const singularMap = {
         learning: 'learnings',
         decision: 'decisions',

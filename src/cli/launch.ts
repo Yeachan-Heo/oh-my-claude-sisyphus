@@ -8,12 +8,10 @@ import {
   resolveLaunchPolicy,
   buildTmuxSessionName,
   buildTmuxShellCommand,
-  quoteShellArg,
   listHudWatchPaneIdsInCurrentWindow,
   createHudWatchPane,
   killTmuxPane,
   isClaudeAvailable,
-  type ClaudeLaunchPolicy,
 } from './tmux-utils.js';
 
 // Flag mapping

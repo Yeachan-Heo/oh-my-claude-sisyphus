@@ -54,7 +54,8 @@ export function readNewOutboxMessages(teamName, workerName) {
     finally {
         closeSync(fd);
     }
-    const lines = buf.toString('utf-8').split('\n').filter(l => l.trim());
+    const chunk = buf.toString('utf-8');
+    const lines = chunk.split('\n').filter(l => l.trim());
     const messages = [];
     for (const line of lines) {
         try {
@@ -62,8 +63,17 @@ export function readNewOutboxMessages(teamName, workerName) {
         }
         catch { /* skip malformed lines */ }
     }
+    // If the buffer ends mid-line (no trailing newline), backtrack the cursor
+    // to the start of that partial line so it is retried on the next read.
+    let consumed = bytesToRead;
+    if (!chunk.endsWith('\n')) {
+        const lastNewline = chunk.lastIndexOf('\n');
+        consumed = lastNewline >= 0
+            ? Buffer.byteLength(chunk.slice(0, lastNewline + 1), 'utf-8')
+            : 0;
+    }
     // Update cursor atomically to prevent corruption on crash
-    const newCursor = { bytesRead: cursor.bytesRead + bytesToRead };
+    const newCursor = { bytesRead: cursor.bytesRead + consumed };
     const cursorDir = join(teamsDir(), safeName, 'outbox');
     ensureDirWithMode(cursorDir);
     atomicWriteJson(cursorPath, newCursor);

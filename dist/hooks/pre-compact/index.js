@@ -222,11 +222,11 @@ async function getActiveJobsSummary(directory) {
         if (!dbReady) {
             return { activeJobs: [], recentJobs: [], stats: null };
         }
-        const active = getActiveJobs();
-        const recent = getRecentJobs(undefined, 5 * 60 * 1000); // Last 5 minutes
+        const active = getActiveJobs(undefined, directory);
+        const recent = getRecentJobs(undefined, 5 * 60 * 1000, directory); // Last 5 minutes
         // Filter recent to only completed/failed (not active ones which are already listed)
         const recentCompleted = recent.filter(j => j.status === 'completed' || j.status === 'failed');
-        const stats = getJobStats();
+        const stats = getJobStats(directory);
         return {
             activeJobs: active.map(j => ({
                 jobId: j.jobId,

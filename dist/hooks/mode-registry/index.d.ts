@@ -46,7 +46,7 @@ export declare function getMarkerFilePath(cwd: string, mode: ExecutionMode): str
  * @deprecated Global state is no longer supported. All modes use local-only state in .omc/state/
  * @returns Always returns null
  */
-export declare function getGlobalStateFilePath(mode: ExecutionMode): string | null;
+export declare function getGlobalStateFilePath(_mode: ExecutionMode): string | null;
 /**
  * Check if a specific mode is currently active
  *

@@ -18,10 +18,6 @@ import {
   writeUltrapilotState,
   initUltrapilot,
   addWorker,
-  updateWorkerState,
-  completeWorker,
-  failWorker,
-  completeUltrapilot,
   getCompletedWorkers,
   getRunningWorkers,
   getFailedWorkers,
@@ -179,7 +175,7 @@ export async function spawnWorkers(
     throw new Error('Ultrapilot not initialized');
   }
 
-  const mergedConfig = { ...DEFAULT_CONFIG, ...config };
+  const _mergedConfig = { ...DEFAULT_CONFIG, ...config };
   const workers: WorkerState[] = [];
 
   for (let i = 0; i < subtasks.length; i++) {

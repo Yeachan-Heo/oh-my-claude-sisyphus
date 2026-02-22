@@ -80,7 +80,7 @@ async function displayAnalyticsBanner() {
         console.log(banner);
         console.log('');
     }
-    catch (error) {
+    catch (_error) {
         // Fallback if gradient-string not installed
         console.log('╔═══════════════════════════════════════╗');
         console.log('║   Oh-My-ClaudeCode - Analytics Dashboard   ║');
@@ -554,7 +554,7 @@ Examples:
 /**
  * Config stop-callback subcommand - Configure stop hook callbacks
  */
-const configStopCallback = program
+const _configStopCallback = program
     .command('config-stop-callback <type>')
     .description('Configure stop hook callbacks (file/telegram/discord/slack)')
     .option('--enable', 'Enable callback')

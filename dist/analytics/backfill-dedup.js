@@ -26,7 +26,7 @@ export class BackfillDedup {
             this.totalProcessed = index.totalProcessed;
             this.lastBackfillTime = index.lastBackfillTime;
         }
-        catch (error) {
+        catch (_error) {
             // Index doesn't exist yet, will be created on save
         }
         // Scan token-tracking.jsonl to ensure all existing entries are marked
@@ -42,12 +42,12 @@ export class BackfillDedup {
                         this.totalProcessed++;
                     }
                 }
-                catch (parseError) {
+                catch (_parseError) {
                     // Skip malformed lines
                 }
             }
         }
-        catch (error) {
+        catch (_error) {
             // Log file doesn't exist yet, which is fine
         }
     }
@@ -98,7 +98,7 @@ export class BackfillDedup {
         try {
             await fs.unlink(DEDUP_INDEX_FILE);
         }
-        catch (error) {
+        catch (_error) {
             // File might not exist, which is fine
         }
     }

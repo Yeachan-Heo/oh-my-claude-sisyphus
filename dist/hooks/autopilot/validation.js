@@ -5,7 +5,7 @@
  * Aggregates verdicts and determines if autopilot can complete.
  * Also generates human-readable summaries when autopilot completes.
  */
-import { readAutopilotState, writeAutopilotState } from './state.js';
+import { readAutopilotState, writeAutopilotState, } from './state.js';
 /** Number of architects required for validation consensus */
 export const REQUIRED_ARCHITECTS = 3;
 /**
@@ -167,7 +167,7 @@ Wait for all three architects to complete, then aggregate verdicts.
 /**
  * Format validation results for display
  */
-export function formatValidationResults(state, sessionId) {
+export function formatValidationResults(state, _sessionId) {
     const lines = [
         '## Validation Results',
         `Round: ${state.validation.validation_rounds}`,

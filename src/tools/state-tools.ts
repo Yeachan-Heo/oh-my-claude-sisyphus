@@ -8,7 +8,6 @@
 import { z } from 'zod';
 import { existsSync, readFileSync, unlinkSync } from 'fs';
 import {
-  getWorktreeRoot,
   resolveStatePath,
   ensureOmcDir,
   validateWorkingDirectory,
@@ -16,7 +15,6 @@ import {
   ensureSessionStateDir,
   listSessionIds,
   validateSessionId,
-  getSessionStateDir,
 } from '../lib/worktree-paths.js';
 import { atomicWriteJsonSync } from '../lib/atomic-write.js';
 import {
@@ -26,7 +24,6 @@ import {
   clearModeState,
   getStateFilePath,
   MODE_CONFIGS,
-  isModeActiveInAnySession,
   getActiveSessionsForMode,
   type ExecutionMode
 } from '../hooks/mode-registry/index.js';

@@ -6,7 +6,7 @@
  */
 
 import { writeFileSync, mkdirSync } from 'fs';
-import { dirname, normalize, resolve } from 'path';
+import { dirname, normalize } from 'path';
 import { homedir } from 'os';
 import type { SessionMetrics } from './index.js';
 import {

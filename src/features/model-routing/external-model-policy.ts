@@ -169,7 +169,7 @@ function getDefaultModelForProvider(
 export function buildFallbackChain(
   provider: ExternalModelProvider,
   resolvedModel: string,
-  config?: ExternalModelsConfig
+  _config?: ExternalModelsConfig
 ): string[] {
   const defaultChain =
     provider === 'codex' ? CODEX_MODEL_FALLBACKS : GEMINI_MODEL_FALLBACKS;

@@ -8,10 +8,9 @@
  */
 
 import { readFileSync, existsSync } from 'fs';
-import { homedir } from 'os';
 import { join, dirname } from 'path';
 import * as jsonc from 'jsonc-parser';
-import type { PluginConfig, ExternalModelsConfig, DelegationRoutingConfig } from '../shared/types.js';
+import type { PluginConfig, ExternalModelsConfig } from '../shared/types.js';
 import { getConfigDir } from '../utils/paths.js';
 
 /**

@@ -130,7 +130,6 @@ export function stripAnsi(str: string): string {
   // ANSI escape code pattern: ESC [ ... m (SGR sequences)
   // Also handles other common sequences
   return str.replace(
-    // eslint-disable-next-line no-control-regex
     /\x1b\[[0-9;]*[a-zA-Z]|\x1b\][^\x07]*\x07/g,
     ""
   );

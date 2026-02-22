@@ -14,7 +14,7 @@
 
 import { Command } from 'commander';
 import chalk from 'chalk';
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs';
+import { writeFileSync, mkdirSync, existsSync } from 'fs';
 import * as fs from 'fs/promises';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -118,7 +118,7 @@ async function displayAnalyticsBanner() {
     ].join('\n'));
     console.log(banner);
     console.log('');
-  } catch (error) {
+  } catch (_error) {
     // Fallback if gradient-string not installed
     console.log('╔═══════════════════════════════════════╗');
     console.log('║   Oh-My-ClaudeCode - Analytics Dashboard   ║');
@@ -641,7 +641,7 @@ Examples:
 /**
  * Config stop-callback subcommand - Configure stop hook callbacks
  */
-const configStopCallback = program
+const _configStopCallback = program
   .command('config-stop-callback <type>')
   .description('Configure stop hook callbacks (file/telegram/discord/slack)')
   .option('--enable', 'Enable callback')

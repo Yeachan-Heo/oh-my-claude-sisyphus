@@ -136,7 +136,7 @@ function getDefaultModelForProvider(provider, config) {
 /**
  * Build deduplicated fallback chain for a provider
  */
-export function buildFallbackChain(provider, resolvedModel, config) {
+export function buildFallbackChain(provider, resolvedModel, _config) {
     const defaultChain = provider === 'codex' ? CODEX_MODEL_FALLBACKS : GEMINI_MODEL_FALLBACKS;
     // Combine resolved model with default chain, removing duplicates
     const chain = [resolvedModel, ...defaultChain];

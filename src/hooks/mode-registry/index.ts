@@ -12,7 +12,7 @@
 import { existsSync, readFileSync, writeFileSync, unlinkSync, mkdirSync, readdirSync, statSync, rmdirSync, rmSync } from 'fs';
 import { join, dirname } from 'path';
 import type { ExecutionMode, ModeConfig, ModeStatus, CanStartResult } from './types.js';
-import { listSessionIds, resolveSessionStatePath, getSessionStateDir, validateSessionId } from '../../lib/worktree-paths.js';
+import { listSessionIds, resolveSessionStatePath, getSessionStateDir } from '../../lib/worktree-paths.js';
 
 export type { ExecutionMode, ModeConfig, ModeStatus, CanStartResult } from './types.js';
 
@@ -129,7 +129,7 @@ export function getMarkerFilePath(cwd: string, mode: ExecutionMode): string | nu
  * @deprecated Global state is no longer supported. All modes use local-only state in .omc/state/
  * @returns Always returns null
  */
-export function getGlobalStateFilePath(mode: ExecutionMode): string | null {
+export function getGlobalStateFilePath(_mode: ExecutionMode): string | null {
   // Global state is deprecated - all modes now use local-only state
   return null;
 }

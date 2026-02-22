@@ -117,7 +117,7 @@ export async function spawnWorkers(cwd, subtasks, config) {
     if (!state) {
         throw new Error('Ultrapilot not initialized');
     }
-    const mergedConfig = { ...DEFAULT_CONFIG, ...config };
+    const _mergedConfig = { ...DEFAULT_CONFIG, ...config };
     const workers = [];
     for (let i = 0; i < subtasks.length; i++) {
         const workerId = `worker-${i + 1}`;

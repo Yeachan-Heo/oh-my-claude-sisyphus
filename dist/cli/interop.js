@@ -76,7 +76,7 @@ export function launchInteropSession(cwd = process.cwd()) {
     // Generate session ID
     const sessionId = `interop-${randomUUID().split('-')[0]}`;
     // Initialize interop session
-    const config = initInteropSession(sessionId, cwd, hasCodex ? cwd : undefined);
+    const _config = initInteropSession(sessionId, cwd, hasCodex ? cwd : undefined);
     console.log(`Initializing interop session: ${sessionId}`);
     console.log(`Working directory: ${cwd}`);
     console.log(`Config saved to: ${cwd}/.omc/state/interop/config.json\n`);
@@ -88,7 +88,7 @@ export function launchInteropSession(cwd = process.cwd()) {
         });
         currentPaneId = output.trim();
     }
-    catch (error) {
+    catch (_error) {
         console.error('Error: Failed to get current tmux pane ID');
         process.exit(1);
     }

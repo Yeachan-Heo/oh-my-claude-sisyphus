@@ -38,7 +38,6 @@ function getPackageDir(): string {
   }
   // CJS bundle path: __dirname is available natively in CJS.
   // From bridge/ go up 1 level to package root.
-  // eslint-disable-next-line no-undef
   if (typeof __dirname !== 'undefined') {
     return join(__dirname, '..');
   }

@@ -270,7 +270,7 @@ function estimateComplexity(task, type) {
     }
     return Math.min(1, score);
 }
-function extractAreas(task, type) {
+function extractAreas(task, _type) {
     const areas = [];
     const areaKeywords = {
         frontend: ['frontend', 'ui', 'react', 'vue', 'angular', 'component'],
@@ -320,7 +320,7 @@ function extractTechnologies(task, context) {
     }
     return Array.from(new Set(techs));
 }
-function extractFilePatterns(task, context) {
+function extractFilePatterns(task, _context) {
     const patterns = [];
     // Look for explicit paths
     const pathRegex = /(?:^|\s)([\w\-/]+\.[\w]+)/g;
@@ -337,7 +337,7 @@ function extractFilePatterns(task, context) {
         patterns.push('**/components/**');
     return patterns;
 }
-function analyzeDependencies(areas, type) {
+function analyzeDependencies(areas, _type) {
     const deps = [];
     // Common dependencies
     if (areas.includes('frontend') && areas.includes('backend')) {
@@ -376,7 +376,7 @@ function selectStrategy(analysis) {
 const fullstackStrategy = {
     name: 'Fullstack App',
     applicableTypes: ['fullstack-app'],
-    decompose: (analysis, context) => {
+    decompose: (analysis, _context) => {
         const components = [];
         // Frontend component
         if (analysis.areas.includes('frontend') || analysis.areas.includes('ui')) {
@@ -434,7 +434,7 @@ const fullstackStrategy = {
 const refactoringStrategy = {
     name: 'Refactoring',
     applicableTypes: ['refactoring'],
-    decompose: (analysis, context) => {
+    decompose: (analysis, _context) => {
         const components = [];
         // Group by module/directory
         for (const area of analysis.areas) {
@@ -455,7 +455,7 @@ const refactoringStrategy = {
 const bugFixStrategy = {
     name: 'Bug Fix',
     applicableTypes: ['bug-fix'],
-    decompose: (analysis, context) => {
+    decompose: (analysis, _context) => {
         // Bug fixes usually not parallelizable
         const components = [
             {
@@ -475,7 +475,7 @@ const bugFixStrategy = {
 const featureStrategy = {
     name: 'Feature',
     applicableTypes: ['feature'],
-    decompose: (analysis, context) => {
+    decompose: (analysis, _context) => {
         const components = [];
         // Break down by feature area
         for (const area of analysis.areas) {
@@ -496,7 +496,7 @@ const featureStrategy = {
 const defaultStrategy = {
     name: 'Default',
     applicableTypes: [],
-    decompose: (analysis, context) => {
+    decompose: (analysis, _context) => {
         const components = [
             {
                 id: 'main',
@@ -515,7 +515,7 @@ const defaultStrategy = {
 // ============================================================================
 // Subtask Generation Helpers
 // ============================================================================
-function generatePromptForComponent(component, analysis, context) {
+function generatePromptForComponent(component, analysis, _context) {
     let prompt = `${component.description}\n\n`;
     prompt += `CONTEXT:\n`;
     prompt += `- Task Type: ${analysis.type}\n`;
@@ -555,7 +555,7 @@ function selectModelTier(component) {
         return 'medium';
     return 'high';
 }
-function generateAcceptanceCriteria(component, analysis) {
+function generateAcceptanceCriteria(component, _analysis) {
     const criteria = [];
     criteria.push(`${component.name} implementation is complete`);
     criteria.push('Code compiles without errors');
@@ -574,7 +574,7 @@ function generateAcceptanceCriteria(component, analysis) {
     }
     return criteria;
 }
-function generateVerificationSteps(component, analysis) {
+function generateVerificationSteps(component, _analysis) {
     const steps = [];
     steps.push('Run the project type check command');
     steps.push('Run the project lint command');
@@ -587,7 +587,7 @@ function generateVerificationSteps(component, analysis) {
     }
     return steps;
 }
-function inferFilePatterns(component, context) {
+function inferFilePatterns(component, _context) {
     const patterns = [];
     switch (component.role) {
         case 'frontend':
@@ -615,7 +615,7 @@ function inferFilePatterns(component, context) {
     }
     return patterns;
 }
-function inferSpecificFiles(component, context) {
+function inferSpecificFiles(_component, _context) {
     const files = [];
     // Component-specific files can be added here
     return files;

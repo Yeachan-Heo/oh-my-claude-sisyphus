@@ -62,7 +62,7 @@ export class MetricsCollector {
       const limit = query.limit || events.length;
 
       return events.slice(offset, offset + limit);
-    } catch (error) {
+    } catch (_error) {
       return [];
     }
   }

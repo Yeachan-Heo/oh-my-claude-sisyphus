@@ -5,7 +5,7 @@
  * dynamically from agent metadata. Adding a new agent automatically updates the orchestrator.
  */
 
-import type { AgentConfig, AgentPromptMetadata, AgentCategory } from '../types.js';
+import type { AgentConfig, AgentCategory } from '../types.js';
 
 /**
  * Build the header section with core orchestrator identity

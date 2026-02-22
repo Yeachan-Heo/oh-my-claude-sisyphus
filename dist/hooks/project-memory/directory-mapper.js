@@ -111,7 +111,7 @@ export async function mapDirectoryStructure(projectRoot) {
             }
         }
     }
-    catch (error) {
+    catch (_error) {
         // Return empty map on error
     }
     return directoryMap;

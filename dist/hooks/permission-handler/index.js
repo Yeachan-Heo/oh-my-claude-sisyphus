@@ -100,7 +100,7 @@ export function isActiveModeRunning(directory) {
                     return true;
                 }
             }
-            catch (error) {
+            catch (_error) {
                 // Ignore parse errors, continue checking
                 continue;
             }

@@ -32,9 +32,6 @@ export function buildAgentsOverlay(directory, options) {
     if (!result.map) {
         return { message: '', hasCodebaseMap: false };
     }
-    const truncationNote = result.truncated
-        ? `\n[Map truncated at ${mergedOptions.maxFiles} files — use Glob/Grep for full search]`
-        : '';
     const message = `<session-restore>
 
 [CODEBASE MAP]
@@ -42,7 +39,7 @@ export function buildAgentsOverlay(directory, options) {
 Project structure for: ${directory}
 Use this map to navigate efficiently. Prefer Glob/Grep over blind file exploration.
 
-${result.map}${truncationNote}
+${result.map}
 
 </session-restore>
 

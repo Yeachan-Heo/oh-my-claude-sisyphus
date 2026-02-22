@@ -19,7 +19,7 @@ function getAgentCounts(directory) {
         const completed = tracking.agents?.filter((a) => a.status === 'completed').length || 0;
         return { spawned, completed };
     }
-    catch (error) {
+    catch (_error) {
         return { spawned: 0, completed: 0 };
     }
 }
@@ -101,7 +101,7 @@ export function getSessionStartTime(directory, sessionId) {
             }
             // else: state has a different session_id — stale, skip
         }
-        catch (error) {
+        catch (_error) {
             continue;
         }
     }
@@ -131,7 +131,7 @@ export function recordSessionMetrics(directory, input) {
             const endTime = new Date(endedAt).getTime();
             metrics.duration_ms = endTime - startTime;
         }
-        catch (error) {
+        catch (_error) {
             // Invalid date, skip duration
         }
     }
@@ -153,7 +153,7 @@ export function cleanupTransientState(directory) {
             fs.unlinkSync(trackingPath);
             filesRemoved++;
         }
-        catch (error) {
+        catch (_error) {
             // Ignore removal errors
         }
     }
@@ -173,7 +173,7 @@ export function cleanupTransientState(directory) {
                 }
             }
         }
-        catch (error) {
+        catch (_error) {
             // Ignore cleanup errors
         }
     }
@@ -192,7 +192,7 @@ export function cleanupTransientState(directory) {
                 }
             }
         }
-        catch (error) {
+        catch (_error) {
             // Ignore errors
         }
     };
@@ -337,7 +337,7 @@ export function exportSessionSummary(directory, metrics) {
     try {
         fs.writeFileSync(sessionFile, JSON.stringify(metrics, null, 2), 'utf-8');
     }
-    catch (error) {
+    catch (_error) {
         // Ignore write errors
     }
 }

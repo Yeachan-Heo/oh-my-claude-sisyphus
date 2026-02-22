@@ -101,7 +101,7 @@ async function recordTokenUsage(stdin, transcriptData) {
  *
  * @returns Analytics fields or null if no token data available
  */
-async function getTokenTrackerFallback(sessionId, durationMs) {
+async function _getTokenTrackerFallback(sessionId, durationMs) {
     const tracker = getTokenTracker(sessionId);
     const stats = tracker.getSessionStats();
     if (stats.totalInputTokens === 0 && stats.totalCacheCreation === 0) {
@@ -257,7 +257,7 @@ async function main() {
         const autopilot = readAutopilotStateForHud(cwd);
         // Read HUD state for background tasks
         const hudState = readHudState(cwd);
-        const backgroundTasks = hudState?.backgroundTasks || [];
+        const _backgroundTasks = hudState?.backgroundTasks || [];
         // Persist session start time to survive tail-parsing resets (#528)
         // When tail parsing kicks in for large transcripts, sessionStart comes from
         // the first entry in the tail chunk rather than the actual session start.

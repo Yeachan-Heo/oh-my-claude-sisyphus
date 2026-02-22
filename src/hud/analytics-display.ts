@@ -79,7 +79,7 @@ export async function getAnalyticsDisplay(): Promise<AnalyticsDisplay> {
       cacheEfficiency,
       costColor
     };
-  } catch (error) {
+  } catch (_error) {
     // Return safe defaults if analytics not yet initialized
     return {
       sessionCost: '$0.00',
@@ -174,7 +174,7 @@ export async function getSessionInfo(): Promise<string> {
     const tags = session.tags.join(',');
 
     return `Session: ${session.id.slice(-8)} | ${durationMinutes}m | Tags: ${tags}`;
-  } catch (error) {
+  } catch (_error) {
     return 'Session info unavailable';
   }
 }

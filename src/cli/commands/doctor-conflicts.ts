@@ -7,7 +7,6 @@ import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 import { getClaudeConfigDir } from '../../utils/paths.js';
 import { isOmcHook } from '../../installer/index.js';
-import type { PluginConfig } from '../../shared/types.js';
 import { colors } from '../utils/formatting.js';
 
 export interface ConflictReport {
@@ -55,7 +54,7 @@ function collectHooksFromSettings(settingsPath: string): ConflictReport['hookCon
         }
       }
     }
-  } catch (error) {
+  } catch (_error) {
     // Ignore parse errors, will be reported separately
   }
 
@@ -128,7 +127,7 @@ export function checkClaudeMdStatus(): ConflictReport['claudeMdStatus'] {
       hasUserContent,
       path: claudeMdPath
     };
-  } catch (error) {
+  } catch (_error) {
     return null;
   }
 }
@@ -191,7 +190,7 @@ export function checkConfigIssues(): ConflictReport['configIssues'] {
         unknownFields.push(field);
       }
     }
-  } catch (error) {
+  } catch (_error) {
     // Ignore parse errors
   }
 

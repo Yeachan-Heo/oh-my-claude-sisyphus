@@ -389,7 +389,7 @@ async function checkRalphLoop(sessionId, directory) {
     const prdInstruction = prdStatus.hasPrd
         ? `2. Check prd.json - are ALL stories marked passes: true?`
         : `2. Check your todo list - are ALL items marked complete?`;
-    let continuationPrompt = `<ralph-continuation>
+    const continuationPrompt = `<ralph-continuation>
 ${errorGuidance ? errorGuidance + '\n' : ''}
 [RALPH - ITERATION ${newState.iteration}/${newState.max_iterations}]
 
@@ -423,7 +423,7 @@ ${newState.prompt ? `Original task: ${newState.prompt}` : ''}
 /**
  * Check Ultrawork state and determine if it should reinforce
  */
-async function checkUltrawork(sessionId, directory, hasIncompleteTodos) {
+async function checkUltrawork(sessionId, directory, _hasIncompleteTodos) {
     const state = readUltraworkState(directory, sessionId);
     if (!state || !state.active) {
         return null;
@@ -452,7 +452,7 @@ async function checkUltrawork(sessionId, directory, hasIncompleteTodos) {
  * Check for incomplete todos (baseline enforcement)
  * Includes max-attempts counter to prevent infinite loops when agent is stuck
  */
-async function checkTodoContinuation(sessionId, directory) {
+async function _checkTodoContinuation(sessionId, directory) {
     const result = await checkIncompleteTodos(sessionId, directory);
     if (result.count === 0) {
         // Reset counter when todos are cleared
@@ -464,7 +464,7 @@ async function checkTodoContinuation(sessionId, directory) {
     // Track continuation attempts to prevent infinite loops
     const attemptCount = sessionId ? trackTodoContinuationAttempt(sessionId) : 1;
     // Use dynamic label based on source (Tasks vs todos)
-    const sourceLabel = result.source === 'task' ? 'Tasks' : 'todos';
+    const _sourceLabel = result.source === 'task' ? 'Tasks' : 'todos';
     const sourceLabelLower = result.source === 'task' ? 'tasks' : 'todos';
     if (attemptCount > MAX_TODO_CONTINUATION_ATTEMPTS) {
         // Too many attempts - agent appears stuck, allow stop but warn

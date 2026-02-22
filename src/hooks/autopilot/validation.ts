@@ -9,7 +9,6 @@
 import {
   readAutopilotState,
   writeAutopilotState,
-  updateValidation
 } from './state.js';
 import type {
   AutopilotState,
@@ -222,7 +221,7 @@ Wait for all three architects to complete, then aggregate verdicts.
 /**
  * Format validation results for display
  */
-export function formatValidationResults(state: AutopilotState, sessionId?: string): string {
+export function formatValidationResults(state: AutopilotState, _sessionId?: string): string {
   const lines: string[] = [
     '## Validation Results',
     `Round: ${state.validation.validation_rounds}`,

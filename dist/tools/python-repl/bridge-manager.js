@@ -52,7 +52,6 @@ function getBridgeScriptPath() {
     catch {
         // Fallback for CJS context (bundled MCP server)
         // In CJS bundle, __dirname points to the bundle's directory
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
         moduleDir = typeof __dirname !== 'undefined' ? __dirname : process.cwd();
     }
     // From src/tools/python-repl/ -> ../../.. -> package root -> bridge/

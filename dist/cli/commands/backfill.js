@@ -15,7 +15,7 @@ function renderProgressBar(current, total, width = 40) {
 /**
  * Format file size in human-readable format
  */
-function formatFileSize(bytes) {
+function _formatFileSize(bytes) {
     if (bytes < 1024)
         return `${bytes} B`;
     if (bytes < 1024 * 1024)
@@ -63,9 +63,9 @@ export async function backfillCommand(options) {
     // Initialize engine
     const engine = new BackfillEngine();
     // Setup progress handler
-    let lastProgress = null;
+    let _lastProgress = null;
     engine.on('progress', (progress) => {
-        lastProgress = progress;
+        _lastProgress = progress;
         if (!options.json && !options.verbose) {
             // Show progress bar
             clearLine();
@@ -101,7 +101,7 @@ export async function backfillCommand(options) {
         console.log('');
     }
     // Run backfill
-    const startTime = Date.now();
+    const _startTime = Date.now();
     const result = await engine.run(backfillOptions);
     // Clear progress line
     if (!options.json && !options.verbose) {

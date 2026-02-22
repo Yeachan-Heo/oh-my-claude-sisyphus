@@ -18,7 +18,7 @@ import { createStdoutCollector, safeWriteOutputFile } from './shared-exec.js';
 import { detectGeminiCli } from './cli-detection.js';
 import { getWorktreeRoot } from '../lib/worktree-paths.js';
 import { isExternalPromptAllowed } from './mcp-config.js';
-import { resolveSystemPrompt, buildPromptWithSystemContext, wrapUntrustedCliResponse, isValidAgentRoleName, VALID_AGENT_ROLES, singleErrorBlock, inlineSuccessBlocks } from './prompt-injection.js';
+import { resolveSystemPrompt, buildPromptWithSystemContext, wrapUntrustedCliResponse, isValidAgentRoleName, VALID_AGENT_ROLES, singleErrorBlock, inlineSuccessBlocks, validateContextFilePaths } from './prompt-injection.js';
 import { persistPrompt, persistResponse, getExpectedResponsePath, getPromptsDir, generatePromptId, slugify } from './prompt-persistence.js';
 import { writeJobStatus, getStatusFilePath, readJobStatus } from './prompt-persistence.js';
 import { resolveExternalModel, buildFallbackChain, GEMINI_MODEL_FALLBACKS, } from '../features/model-routing/external-model-policy.js';
@@ -513,10 +513,16 @@ ${resolvedPrompt}`;
     }
     // Resolve system prompt from agent role
     const resolvedSystemPrompt = resolveSystemPrompt(undefined, agent_role, 'gemini');
-    // Build file context
+    // Build file context — validate paths first to prevent path traversal and prompt injection
     let fileContext;
     if (files && files.length > 0) {
-        fileContext = `The following files are available for reference. Use your file tools to read them as needed:\n${files.map(f => `- ${f}`).join('\n')}`;
+        const { validPaths, errors } = validateContextFilePaths(files, baseDirReal, isExternalPromptAllowed());
+        if (errors.length > 0) {
+            console.warn('[gemini-core] files validation rejected paths:', errors.join('; '));
+        }
+        if (validPaths.length > 0) {
+            fileContext = `The following files are available for reference. Use your file tools to read them as needed:\n${validPaths.map(f => `- ${f}`).join('\n')}`;
+        }
     }
     // Combine: system prompt > file context > user prompt
     const fullPrompt = buildPromptWithSystemContext(userPrompt, fileContext, resolvedSystemPrompt);

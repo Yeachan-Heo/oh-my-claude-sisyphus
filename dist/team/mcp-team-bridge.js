@@ -513,7 +513,7 @@ export async function runBridge(config) {
                 }
                 // --- 7. Build prompt ---
                 const prompt = buildTaskPrompt(task, messages, config);
-                const promptFile = writePromptFile(config, task.id, prompt);
+                const _promptFile = writePromptFile(config, task.id, prompt);
                 const outputFile = getOutputPath(config, task.id);
                 log(`[bridge] Executing task ${task.id}: ${task.subject}`);
                 // --- 8. Execute CLI (with permission enforcement) ---

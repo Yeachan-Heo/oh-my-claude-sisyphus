@@ -56,7 +56,6 @@ function getPackageDir(): string {
     // import.meta.url unavailable — fall through to CJS path
   }
   // CJS bundle path: from bridge/ go up 1 level to package root
-  // eslint-disable-next-line no-undef
   if (typeof __dirname !== 'undefined') {
     return join(__dirname, '..');
   }

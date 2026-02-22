@@ -42,7 +42,7 @@ export declare function getValidationSpawnPrompt(specPath: string): string;
 /**
  * Format validation results for display
  */
-export declare function formatValidationResults(state: AutopilotState, sessionId?: string): string;
+export declare function formatValidationResults(state: AutopilotState, _sessionId?: string): string;
 /**
  * Generate a summary of the autopilot run
  */

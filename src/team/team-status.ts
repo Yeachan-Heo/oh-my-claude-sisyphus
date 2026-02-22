@@ -14,7 +14,7 @@ import { listMcpWorkers } from './team-registration.js';
 import { readHeartbeat, isWorkerAlive } from './heartbeat.js';
 import { listTaskIds, readTask } from './task-file-ops.js';
 import { sanitizeName } from './tmux-session.js';
-import type { HeartbeatData, TaskFile, OutboxMessage, McpWorkerMember } from './types.js';
+import type { HeartbeatData, TaskFile, OutboxMessage } from './types.js';
 
 /**
  * Read the last N messages from a worker's outbox file without advancing any cursor.

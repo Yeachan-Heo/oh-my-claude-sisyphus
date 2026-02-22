@@ -191,7 +191,7 @@ function generateContinuationPrompt(state, directory, sessionId) {
         specPath: state.expansion.spec_path || `${OmcPaths.AUTOPILOT}/spec.md`,
         planPath: state.planning.plan_path || `${OmcPaths.PLANS}/autopilot-impl.md`
     });
-    let continuationPrompt = `<autopilot-continuation>
+    const continuationPrompt = `<autopilot-continuation>
 ${errorGuidance ? errorGuidance + '\n' : ''}
 [AUTOPILOT - PHASE: ${state.phase.toUpperCase()} | ITERATION ${state.iteration}/${state.max_iterations}]
 

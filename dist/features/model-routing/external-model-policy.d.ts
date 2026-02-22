@@ -23,5 +23,5 @@ export declare function resolveExternalModel(config: ExternalModelsConfig | unde
 /**
  * Build deduplicated fallback chain for a provider
  */
-export declare function buildFallbackChain(provider: ExternalModelProvider, resolvedModel: string, config?: ExternalModelsConfig): string[];
+export declare function buildFallbackChain(provider: ExternalModelProvider, resolvedModel: string, _config?: ExternalModelsConfig): string[];
 //# sourceMappingURL=external-model-policy.d.ts.map

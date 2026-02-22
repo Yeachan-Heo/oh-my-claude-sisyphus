@@ -669,7 +669,7 @@ async function pollLoop() {
  *
  * @param config - Daemon config (used only for validation, daemon reads config independently)
  */
-export function startReplyListener(config) {
+export function startReplyListener(_config) {
     // Check if already running (idempotent)
     if (isDaemonRunning()) {
         const state = readDaemonState();

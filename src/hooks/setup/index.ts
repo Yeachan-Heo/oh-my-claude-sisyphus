@@ -8,7 +8,7 @@
  */
 
 import { existsSync, mkdirSync, readdirSync, statSync, unlinkSync, readFileSync, appendFileSync } from 'fs';
-import { join, dirname } from 'path';
+import { join } from 'path';
 
 import { registerBeadsContext } from '../beads-context/index.js';
 
@@ -74,7 +74,7 @@ export function ensureDirectoryStructure(directory: string): string[] {
       try {
         mkdirSync(fullPath, { recursive: true });
         created.push(fullPath);
-      } catch (err) {
+      } catch (_err) {
         // Will be reported in errors
       }
     }

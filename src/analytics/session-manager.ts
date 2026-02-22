@@ -2,7 +2,6 @@ import { readState, writeState, clearState, StateLocation } from '../features/st
 import { SessionMetadata, SessionAnalytics, SessionHistory, SessionSummary, SessionTag } from './session-types.js';
 import { getTokenTracker } from './token-tracker.js';
 import { getGitDiffStats } from '../hooks/omc-orchestrator/index.js';
-import * as fs from 'fs/promises';
 import * as path from 'path';
 
 const SESSION_HISTORY_FILE = 'session-history';

@@ -6,7 +6,7 @@
  * Ported from oh-my-opencode's boulder-state.
  */
 
-import { existsSync, readFileSync, writeFileSync, mkdirSync, readdirSync, statSync, unlinkSync } from 'fs';
+import { existsSync, readFileSync, mkdirSync, readdirSync, statSync, unlinkSync } from 'fs';
 import { dirname, join, basename } from 'path';
 import type { BoulderState, PlanProgress, PlanSummary } from './types.js';
 import { BOULDER_DIR, BOULDER_FILE, PLANNER_PLANS_DIR, PLAN_EXTENSION } from './constants.js';
