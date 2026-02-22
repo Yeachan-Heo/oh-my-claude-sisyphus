@@ -325,6 +325,35 @@ export function runTests(directory: string): { success: boolean; message: string
 }
 
 // =============================================================================
+// PROJECT-LEVEL LINT RUNNER PATTERN
+// =============================================================================
+
+/**
+ * Run project-level lint checks
+ */
+export function runLint(directory: string): { success: boolean; message: string } {
+  const packageJsonPath = join(directory, 'package.json');
+
+  if (existsSync(packageJsonPath)) {
+    try {
+      const pkg = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
+      if (pkg.scripts?.lint) {
+        try {
+          execSync('npm run lint', { cwd: directory, encoding: 'utf-8', stdio: 'pipe' });
+          return { success: true, message: 'Lint passed' };
+        } catch (_error) {
+          return { success: false, message: 'Lint errors found' };
+        }
+      }
+    } catch {
+      // Could not read package.json
+    }
+  }
+
+  return { success: true, message: 'No lint script found' };
+}
+
+// =============================================================================
 // PRE-COMMIT VALIDATION HOOK
 // =============================================================================
 
@@ -352,6 +381,22 @@ export function runPreCommitChecks(
     name: 'Type Check',
     passed: typeCheck.success,
     message: typeCheck.message
+  });
+
+  // Test runner
+  const testCheck = runTests(directory);
+  checks.push({
+    name: 'Tests',
+    passed: testCheck.success,
+    message: testCheck.message
+  });
+
+  // Lint
+  const lintCheck = runLint(directory);
+  checks.push({
+    name: 'Lint',
+    passed: lintCheck.success,
+    message: lintCheck.message
   });
 
   // Commit message validation

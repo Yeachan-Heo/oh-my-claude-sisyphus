@@ -459,6 +459,7 @@ export {
   validateCommitMessage,
   runTypeCheck,
   runTests,
+  runLint,
   runPreCommitChecks,
   getPreCommitReminderMessage,
   getAutoFormatMessage,

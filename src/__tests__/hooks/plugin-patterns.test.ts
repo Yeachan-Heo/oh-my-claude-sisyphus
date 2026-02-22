@@ -1,5 +1,18 @@
-import { describe, it, expect } from 'vitest';
-import { validateCommitMessage } from '../../hooks/plugin-patterns/index.js';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { mkdirSync, writeFileSync, rmSync } from 'fs';
+import { join } from 'path';
+import { tmpdir } from 'os';
+import {
+  validateCommitMessage,
+  runPreCommitChecks,
+  runLint,
+} from '../../hooks/plugin-patterns/index.js';
+
+function makeTempDir(): string {
+  const dir = join(tmpdir(), `omc-plugin-patterns-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+  mkdirSync(dir, { recursive: true });
+  return dir;
+}
 
 describe('validateCommitMessage', () => {
   describe('default types (no config)', () => {
@@ -112,5 +125,139 @@ describe('validateCommitMessage', () => {
       const result = validateCommitMessage('   ', { types: ['ship'] });
       expect(result.valid).toBe(false);
     });
+  });
+});
+
+describe('runPreCommitChecks', () => {
+  let testDir: string;
+
+  beforeEach(() => {
+    testDir = makeTempDir();
+  });
+
+  afterEach(() => {
+    rmSync(testDir, { recursive: true, force: true });
+    vi.restoreAllMocks();
+  });
+
+  it('includes a Tests check in results', () => {
+    const result = runPreCommitChecks(testDir);
+    const names = result.checks.map(c => c.name);
+    expect(names).toContain('Tests');
+  });
+
+  it('includes a Lint check in results', () => {
+    const result = runPreCommitChecks(testDir);
+    const names = result.checks.map(c => c.name);
+    expect(names).toContain('Lint');
+  });
+
+  it('includes a Type Check in results', () => {
+    const result = runPreCommitChecks(testDir);
+    const names = result.checks.map(c => c.name);
+    expect(names).toContain('Type Check');
+  });
+
+  it('returns canCommit: false when tests fail', () => {
+    writeFileSync(
+      join(testDir, 'package.json'),
+      JSON.stringify({ scripts: { test: 'exit 1' } })
+    );
+
+    const result = runPreCommitChecks(testDir);
+
+    const testCheck = result.checks.find(c => c.name === 'Tests');
+    expect(testCheck).toBeDefined();
+    expect(testCheck!.passed).toBe(false);
+    expect(result.canCommit).toBe(false);
+  });
+
+  it('returns canCommit: false when lint fails', () => {
+    writeFileSync(
+      join(testDir, 'package.json'),
+      JSON.stringify({ scripts: { lint: 'exit 1' } })
+    );
+
+    const result = runPreCommitChecks(testDir);
+
+    const lintCheck = result.checks.find(c => c.name === 'Lint');
+    expect(lintCheck).toBeDefined();
+    expect(lintCheck!.passed).toBe(false);
+    expect(result.canCommit).toBe(false);
+  });
+
+  it('returns canCommit: true when no test runner and no lint script found', () => {
+    const result = runPreCommitChecks(testDir);
+
+    expect(result.canCommit).toBe(true);
+    const testCheck = result.checks.find(c => c.name === 'Tests');
+    const lintCheck = result.checks.find(c => c.name === 'Lint');
+    expect(testCheck!.passed).toBe(true);
+    expect(lintCheck!.passed).toBe(true);
+  });
+
+  it('returns canCommit: false when commit message is invalid', () => {
+    const result = runPreCommitChecks(testDir, 'bad commit message without type');
+
+    const commitCheck = result.checks.find(c => c.name === 'Commit Message');
+    expect(commitCheck).toBeDefined();
+    expect(commitCheck!.passed).toBe(false);
+    expect(result.canCommit).toBe(false);
+  });
+
+  it('includes Commit Message check only when commitMessage is provided', () => {
+    const withoutMsg = runPreCommitChecks(testDir);
+    expect(withoutMsg.checks.find(c => c.name === 'Commit Message')).toBeUndefined();
+
+    const withMsg = runPreCommitChecks(testDir, 'feat(scope): add feature');
+    expect(withMsg.checks.find(c => c.name === 'Commit Message')).toBeDefined();
+  });
+});
+
+describe('runLint', () => {
+  let testDir: string;
+
+  beforeEach(() => {
+    testDir = makeTempDir();
+  });
+
+  afterEach(() => {
+    rmSync(testDir, { recursive: true, force: true });
+  });
+
+  it('returns success when no package.json exists', () => {
+    const result = runLint(testDir);
+    expect(result.success).toBe(true);
+    expect(result.message).toContain('No lint script found');
+  });
+
+  it('returns success when package.json has no lint script', () => {
+    writeFileSync(
+      join(testDir, 'package.json'),
+      JSON.stringify({ scripts: { test: 'vitest' } })
+    );
+    const result = runLint(testDir);
+    expect(result.success).toBe(true);
+    expect(result.message).toContain('No lint script found');
+  });
+
+  it('returns failure when lint script exits with error', () => {
+    writeFileSync(
+      join(testDir, 'package.json'),
+      JSON.stringify({ scripts: { lint: 'exit 1' } })
+    );
+    const result = runLint(testDir);
+    expect(result.success).toBe(false);
+    expect(result.message).toContain('Lint errors found');
+  });
+
+  it('returns success when lint script passes', () => {
+    writeFileSync(
+      join(testDir, 'package.json'),
+      JSON.stringify({ scripts: { lint: 'exit 0' } })
+    );
+    const result = runLint(testDir);
+    expect(result.success).toBe(true);
+    expect(result.message).toContain('Lint passed');
   });
 });
