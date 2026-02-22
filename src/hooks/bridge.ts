@@ -1148,7 +1148,19 @@ export async function processHook(
           return { continue: true };
         }
         const { handleSessionEnd } = await import("./session-end/index.js");
-        return await handleSessionEnd(input as SessionEndInput);
+        // De-normalize: SessionEndInput expects snake_case fields (session_id, cwd).
+        // normalizeHookInput mapped session_id→sessionId and cwd→directory, so we
+        // must reconstruct the snake_case shape before calling the handler.
+        const rawSE = input as unknown as Record<string, unknown>;
+        const sessionEndInput: SessionEndInput = {
+          session_id: (rawSE.sessionId ?? rawSE.session_id) as string,
+          cwd: (rawSE.directory ?? rawSE.cwd) as string,
+          transcript_path: rawSE.transcript_path as string,
+          permission_mode: (rawSE.permission_mode ?? "default") as string,
+          hook_event_name: "SessionEnd",
+          reason: (rawSE.reason as SessionEndInput["reason"]) ?? "other",
+        };
+        return await handleSessionEnd(sessionEndInput);
       }
 
       case "subagent-start": {
@@ -1209,7 +1221,18 @@ export async function processHook(
           return { continue: true };
         }
         const { processPreCompact } = await import("./pre-compact/index.js");
-        return await processPreCompact(input as PreCompactInput);
+        // De-normalize: PreCompactInput expects snake_case fields (session_id, cwd).
+        const rawPC = input as unknown as Record<string, unknown>;
+        const preCompactInput: PreCompactInput = {
+          session_id: (rawPC.sessionId ?? rawPC.session_id) as string,
+          cwd: (rawPC.directory ?? rawPC.cwd) as string,
+          transcript_path: rawPC.transcript_path as string,
+          permission_mode: (rawPC.permission_mode ?? "default") as string,
+          hook_event_name: "PreCompact",
+          trigger: (rawPC.trigger as "manual" | "auto") ?? "auto",
+          custom_instructions: rawPC.custom_instructions as string | undefined,
+        };
+        return await processPreCompact(preCompactInput);
       }
 
       case "setup-init":
@@ -1218,11 +1241,17 @@ export async function processHook(
           return { continue: true };
         }
         const { processSetup } = await import("./setup/index.js");
-        return await processSetup({
-          ...(input as SetupInput),
-          trigger: hookType === "setup-init" ? "init" : "maintenance",
+        // De-normalize: SetupInput expects snake_case fields (session_id, cwd).
+        const rawSetup = input as unknown as Record<string, unknown>;
+        const setupInput: SetupInput = {
+          session_id: (rawSetup.sessionId ?? rawSetup.session_id) as string,
+          cwd: (rawSetup.directory ?? rawSetup.cwd) as string,
+          transcript_path: rawSetup.transcript_path as string,
+          permission_mode: (rawSetup.permission_mode ?? "default") as string,
           hook_event_name: "Setup",
-        });
+          trigger: hookType === "setup-init" ? "init" : "maintenance",
+        };
+        return await processSetup(setupInput);
       }
 
       case "permission-request": {
@@ -1232,7 +1261,20 @@ export async function processHook(
           return { continue: true };
         }
         const { handlePermissionRequest } = await import("./permission-handler/index.js");
-        return await handlePermissionRequest(input as PermissionRequestInput);
+        // De-normalize: PermissionRequestInput expects snake_case fields
+        // (session_id, cwd, tool_name, tool_input).
+        const rawPR = input as unknown as Record<string, unknown>;
+        const permissionInput: PermissionRequestInput = {
+          session_id: (rawPR.sessionId ?? rawPR.session_id) as string,
+          cwd: (rawPR.directory ?? rawPR.cwd) as string,
+          tool_name: (rawPR.toolName ?? rawPR.tool_name) as string,
+          tool_input: (rawPR.toolInput ?? rawPR.tool_input) as PermissionRequestInput["tool_input"],
+          transcript_path: rawPR.transcript_path as string,
+          permission_mode: (rawPR.permission_mode ?? "default") as string,
+          hook_event_name: "PermissionRequest",
+          tool_use_id: rawPR.tool_use_id as string,
+        };
+        return await handlePermissionRequest(permissionInput);
       }
 
       case "code-simplifier": {
