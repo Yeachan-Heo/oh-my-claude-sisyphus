@@ -173,9 +173,15 @@ export function inlineSuccessBlocks(metadataText: string, wrappedResponse: strin
 }
 
 /**
+ * Header prepended to all prompts sent to subagent CLIs (Codex/Gemini).
+ * Prevents recursive subagent spawning and rate limit cascade issues.
+ */
+export const SUBAGENT_HEADER = '[SUBAGENT MODE] You are running as a subagent. DO NOT spawn additional subagents or call Codex/Gemini CLI recursively. Focus only on your assigned task.';
+
+/**
  * Build the full prompt with system prompt prepended.
  *
- * Order: system_prompt > file_context > user_prompt
+ * Order: subagent_header > system_prompt > file_context > user_prompt
  *
  * Uses clear XML-like delimiters so the external model can distinguish sections.
  * File context is wrapped with untrusted data warnings to mitigate prompt injection.
@@ -186,6 +192,8 @@ export function buildPromptWithSystemContext(
   systemPrompt: string | undefined
 ): string {
   const parts: string[] = [];
+
+  parts.push(SUBAGENT_HEADER);
 
   if (systemPrompt) {
     parts.push(`<system-instructions>\n${systemPrompt}\n</system-instructions>`);

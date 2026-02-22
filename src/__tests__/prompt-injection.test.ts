@@ -1,5 +1,5 @@
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
-import { resolveSystemPrompt, buildPromptWithSystemContext, VALID_AGENT_ROLES, getValidAgentRoles, isValidAgentRoleName } from '../mcp/prompt-injection.js';
+import { resolveSystemPrompt, buildPromptWithSystemContext, VALID_AGENT_ROLES, getValidAgentRoles, isValidAgentRoleName, SUBAGENT_HEADER } from '../mcp/prompt-injection.js';
 
 describe('prompt-injection', () => {
   describe('VALID_AGENT_ROLES', () => {
@@ -149,9 +149,9 @@ describe('prompt-injection', () => {
   });
 
   describe('buildPromptWithSystemContext', () => {
-    test('returns just user prompt when no extras', () => {
+    test('returns subagent header + user prompt when no extras', () => {
       const result = buildPromptWithSystemContext('Hello', undefined, undefined);
-      expect(result).toBe('Hello');
+      expect(result).toBe(`${SUBAGENT_HEADER}\n\nHello`);
     });
 
     test('prepends system prompt with delimiters', () => {
