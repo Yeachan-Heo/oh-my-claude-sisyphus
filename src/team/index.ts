@@ -168,3 +168,54 @@ export {
 } from './permissions.js';
 
 export type { WorkerPermissions } from './permissions.js';
+
+export { TeamPaths, absPath, teamStateRoot } from './state-paths.js';
+
+// New tmux-based multi-CLI team modules
+// model-contract: getWorkerEnv is exported via worker-bootstrap (single source of truth)
+export type { CliAgentType, CliAgentContract, WorkerLaunchConfig } from './model-contract.js';
+export {
+  getContract,
+  isCliAvailable as isCliAvailableForAgent,
+  validateCliAvailable as validateCliAvailableForAgent,
+  buildLaunchArgs,
+  buildWorkerCommand,
+  parseCliOutput,
+} from './model-contract.js';
+
+// cli-detection: only export symbols not already covered by model-contract
+export type { CliInfo } from './cli-detection.js';
+export { detectCli, detectAllClis } from './cli-detection.js';
+
+// worker-bootstrap
+export type { WorkerBootstrapParams } from './worker-bootstrap.js';
+export {
+  generateWorkerOverlay,
+  composeInitialInbox,
+  appendToInbox,
+  getWorkerEnv,
+  ensureWorkerStateDir,
+  writeWorkerOverlay,
+} from './worker-bootstrap.js';
+
+// tmux-comm
+export {
+  sendTmuxTrigger,
+  queueInboxInstruction,
+  queueDirectMessage,
+  queueBroadcastMessage,
+  readMailbox,
+} from './tmux-comm.js';
+
+// phase-controller
+export type { TeamPhase, PhaseableTask } from './phase-controller.js';
+export { inferPhase, getPhaseTransitionLog, isTerminalPhase } from './phase-controller.js';
+
+// runtime: WorkerStatus conflicts with team-status.ts; export as RuntimeWorkerStatus
+export type {
+  TeamConfig,
+  TeamRuntime,
+  WorkerStatus as RuntimeWorkerStatus,
+  TeamSnapshot,
+} from './runtime.js';
+export { startTeam, monitorTeam, assignTask, shutdownTeam, resumeTeam } from './runtime.js';

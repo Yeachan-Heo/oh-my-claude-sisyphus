@@ -83,7 +83,7 @@ export const DEFAULT_CONFIG = {
     externalModels: {
         defaults: {
             codexModel: process.env.OMC_CODEX_DEFAULT_MODEL || 'gpt-5.3-codex',
-            geminiModel: process.env.OMC_GEMINI_DEFAULT_MODEL || 'gemini-3-pro-preview',
+            geminiModel: process.env.OMC_GEMINI_DEFAULT_MODEL || 'gemini-3.1-pro-preview',
         },
         fallbackPolicy: {
             onModelFailure: 'provider_chain',
@@ -484,7 +484,7 @@ export function generateConfigSchema() {
                             },
                             geminiModel: {
                                 type: 'string',
-                                default: 'gemini-3-pro-preview',
+                                default: 'gemini-3.1-pro-preview',
                                 description: 'Default Gemini model'
                             }
                         }

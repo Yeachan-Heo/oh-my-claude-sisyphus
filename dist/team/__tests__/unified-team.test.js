@@ -15,7 +15,7 @@ describe('unified-team', () => {
         rmSync(testDir, { recursive: true, force: true });
     });
     function registerWorker(name, agentType = 'mcp-codex') {
-        registerMcpWorker(teamName, name, agentType === 'mcp-codex' ? 'codex' : 'gemini', agentType === 'mcp-codex' ? 'gpt-5.3-codex' : 'gemini-3-pro-preview', `tmux-${name}`, testDir, testDir);
+        registerMcpWorker(teamName, name, agentType === 'mcp-codex' ? 'codex' : 'gemini', agentType === 'mcp-codex' ? 'gpt-5.3-codex' : 'gemini-3.1-pro-preview', `tmux-${name}`, testDir, testDir);
     }
     describe('getTeamMembers', () => {
         it('returns empty array when no members exist', () => {

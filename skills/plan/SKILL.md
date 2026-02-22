@@ -68,8 +68,8 @@ Jumping into code without understanding requirements leads to rework, scope cree
    - **Request changes** — return to step 1 with user feedback incorporated
    - **Skip review** — go directly to final approval (step 7)
    If NOT running with `--interactive`, automatically proceed to review (step 3).
-3. **Architect** reviews for architectural soundness (prefer `ask_codex` with `architect` role). **Wait for this step to complete before proceeding to step 4.** Do NOT run steps 3 and 4 in parallel — parallel `ask_codex` calls can trigger a sibling cascade failure if one receives a 429 rate-limit error. If `ask_codex` fails with a rate-limit or 429 error, wait 5–10 seconds and retry once; if it fails again, fall back to spawning a `Task` with `subagent_type="oh-my-claudecode:architect"`.
-4. **Critic** evaluates against quality criteria (prefer `ask_codex` with `critic` role). Run only after step 3 is complete. Apply the same retry/fallback rule: on rate-limit error, retry once after a short delay; on second failure, fall back to `Task` with `subagent_type="oh-my-claudecode:critic"`.
+3. **Architect** reviews for architectural soundness using `Task(subagent_type="oh-my-claudecode:architect", ...)`. **Wait for this step to complete before proceeding to step 4.** Do NOT run steps 3 and 4 in parallel.
+4. **Critic** evaluates against quality criteria using `Task(subagent_type="oh-my-claudecode:critic", ...)`. Run only after step 3 is complete.
 5. **Re-review loop** (max 5 iterations): If Critic rejects, execute this closed loop:
    a. Collect all rejection feedback from Architect + Critic
    b. Pass feedback to Planner to produce a revised plan
@@ -98,7 +98,7 @@ Jumping into code without understanding requirements leads to rework, scope cree
 ### Review Mode (`--review`)
 
 1. Read plan file from `.omc/plans/`
-2. Evaluate via Critic (prefer `ask_codex` with `critic` role)
+2. Evaluate via Critic using `Task(subagent_type="oh-my-claudecode:critic", ...)`
 3. Return verdict: APPROVED, REVISE (with specific feedback), or REJECT (replanning required)
 
 ### Plan Output Format
@@ -114,16 +114,13 @@ Plans are saved to `.omc/plans/`. Drafts go to `.omc/drafts/`.
 </Steps>
 
 <Tool_Usage>
-- Before first MCP tool use, run the 3-step discovery: (1) `ToolSearch("mcp")`, (2) select the full name from results (e.g., `mcp__x__ask_codex`), (3) fall back to the equivalent Claude agent only if step 1 returns empty. Never use `ToolSearch("ask_codex")` as the primary search -- it can return false negatives even when MCP tools are present.
 - Use `AskUserQuestion` for preference questions (scope, priority, timeline, risk tolerance) -- provides clickable UI
 - Use plain text for questions needing specific values (port numbers, names, follow-up clarifications)
 - Use `explore` agent (Haiku, 30s timeout) to gather codebase facts before asking the user
-- Use `ask_codex` with `agent_role: "planner"` for planning validation on large-scope plans
-- Use `ask_codex` with `agent_role: "analyst"` for requirements analysis
-- Use `ask_codex` with `agent_role: "critic"` for plan review in consensus and review modes
-- If ToolSearch finds no MCP tools or Codex is unavailable, fall back to equivalent Claude agents -- never block on external tools
-- **CRITICAL — Consensus mode `ask_codex` calls MUST be sequential, never parallel.** Claude Code cancels sibling tool calls when one fails ("Sibling tool call errored"), so running Architect and Critic `ask_codex` calls in the same tool-call batch will cause a cascade failure if either hits a 429 rate-limit. Always await the Architect call result before issuing the Critic call.
-- On `ask_codex` rate-limit (429) error: wait 5–10 s and retry once. If the second attempt also fails, fall back to the equivalent Claude agent (`Task` with `subagent_type="oh-my-claudecode:architect"` or `"oh-my-claudecode:critic"`).
+- Use `Task(subagent_type="oh-my-claudecode:planner", ...)` for planning validation on large-scope plans
+- Use `Task(subagent_type="oh-my-claudecode:analyst", ...)` for requirements analysis
+- Use `Task(subagent_type="oh-my-claudecode:critic", ...)` for plan review in consensus and review modes
+- **CRITICAL — Consensus mode agent calls MUST be sequential, never parallel.** Always await the Architect Task result before issuing the Critic Task.
 - In consensus mode with `--interactive`: use `AskUserQuestion` for the user feedback step (step 2) and the final approval step (step 7) -- never ask for approval in plain text. Without `--interactive`, skip both prompts and output the final plan.
 - In consensus mode with `--interactive`, on user approval **MUST** invoke `Skill("oh-my-claudecode:ralph")` for execution (step 9) -- never implement directly in the planning agent
 - When user selects "Clear context and implement" in step 7 (--interactive only): invoke `Skill("compact")` first to compress the accumulated planning context, then immediately invoke `Skill("oh-my-claudecode:ralph")` with the plan path -- the compact step is critical to free up context before the implementation loop begins

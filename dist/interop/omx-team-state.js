@@ -137,6 +137,9 @@ export async function listOmxMailboxMessages(teamName, workerName, cwd) {
 }
 /**
  * Send a direct message to an omx worker's mailbox
+ *
+ * @deprecated Interop active write path must go through broker -> OMX team_* MCP APIs.
+ * Kept for legacy compatibility and observe-mode tooling only.
  */
 export async function sendOmxDirectMessage(teamName, fromWorker, toWorker, body, cwd) {
     const msg = {
@@ -162,6 +165,8 @@ export async function sendOmxDirectMessage(teamName, fromWorker, toWorker, body,
 }
 /**
  * Broadcast a message to all workers in an omx team
+ *
+ * @deprecated Interop active write path must go through broker -> OMX team_* MCP APIs.
  */
 export async function broadcastOmxMessage(teamName, fromWorker, body, cwd) {
     const config = await readOmxTeamConfig(teamName, cwd);
@@ -177,6 +182,8 @@ export async function broadcastOmxMessage(teamName, fromWorker, body, cwd) {
 }
 /**
  * Mark a message as delivered in an omx worker's mailbox
+ *
+ * @deprecated Interop active write path must go through broker -> OMX team_* MCP APIs.
  */
 export async function markOmxMessageDelivered(teamName, workerName, messageId, cwd) {
     const mailbox = await readOmxMailbox(teamName, workerName, cwd);
@@ -244,6 +251,8 @@ export async function listOmxTasks(teamName, cwd) {
 // ============================================================================
 /**
  * Append an event to the omx team event log
+ *
+ * @deprecated Interop active write path must go through broker -> OMX team_* MCP APIs.
  */
 export async function appendOmxTeamEvent(teamName, event, cwd) {
     const full = {

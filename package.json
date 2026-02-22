@@ -22,8 +22,6 @@
     "agents",
     "bridge",
     "bridge/mcp-server.cjs",
-    "bridge/codex-server.cjs",
-    "bridge/gemini-server.cjs",
     "bridge/team-bridge.cjs",
     "commands",
     "hooks",
@@ -37,10 +35,10 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "tsc && node scripts/build-skill-bridge.mjs && node scripts/build-mcp-server.mjs && node scripts/build-codex-server.mjs && node scripts/build-gemini-server.mjs && node scripts/build-bridge-entry.mjs && npm run compose-docs",
+    "build": "tsc && node scripts/build-skill-bridge.mjs && node scripts/build-mcp-server.mjs && node scripts/build-bridge-entry.mjs && npm run compose-docs",
     "build:bridge": "node scripts/build-skill-bridge.mjs",
-    "build:codex": "node scripts/build-codex-server.mjs",
-    "build:gemini": "node scripts/build-gemini-server.mjs",
+    "build:codex": "echo '[deprecated] Codex MCP server removed in v5.0 - use tmux team workers instead'",
+    "build:gemini": "echo '[deprecated] Gemini MCP server removed in v5.0 - use tmux team workers instead'",
     "build:bridge-entry": "node scripts/build-bridge-entry.mjs",
     "compose-docs": "node scripts/compose-docs.mjs",
     "dev": "tsc --watch",

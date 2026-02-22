@@ -79,6 +79,10 @@ describe('OMC_DISABLE_TOOLS', () => {
                 const result = parseDisabledGroups('skills');
                 expect(result.has(TOOL_CATEGORIES.SKILLS)).toBe(true);
             });
+            it('disables interop group', () => {
+                const result = parseDisabledGroups('interop');
+                expect(result.has(TOOL_CATEGORIES.INTEROP)).toBe(true);
+            });
             it('accepts codex group (reserved, no tools in t server)', () => {
                 const result = parseDisabledGroups('codex');
                 expect(result.has(TOOL_CATEGORIES.CODEX)).toBe(true);
@@ -160,7 +164,7 @@ describe('OMC_DISABLE_TOOLS', () => {
     });
     describe('DISABLE_TOOLS_GROUP_MAP', () => {
         it('contains all issue-722 specified group names', () => {
-            const requiredGroups = ['lsp', 'ast', 'python-repl', 'gemini', 'codex', 'trace', 'state', 'notepad', 'project-memory'];
+            const requiredGroups = ['lsp', 'ast', 'python-repl', 'gemini', 'codex', 'trace', 'state', 'notepad', 'project-memory', 'interop'];
             for (const group of requiredGroups) {
                 expect(DISABLE_TOOLS_GROUP_MAP).toHaveProperty(group);
             }

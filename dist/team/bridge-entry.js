@@ -1,5 +1,9 @@
 // src/team/bridge-entry.ts
 //
+// @deprecated The MCP x/g servers have been removed. This entry point now
+// launches the tmux-based CLI bridge daemon, not an MCP server bridge.
+// Retained for the tmux bridge daemon functionality.
+//
 // Entry point for the bridge daemon, invoked from tmux:
 //   node dist/team/bridge-entry.js --config /path/to/config.json
 //

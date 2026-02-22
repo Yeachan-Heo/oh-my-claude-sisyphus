@@ -1,0 +1,103 @@
+import { spawnSync } from 'child_process';
+const CONTRACTS = {
+    claude: {
+        agentType: 'claude',
+        binary: 'claude',
+        installInstructions: 'Install Claude CLI: https://claude.ai/download',
+        buildLaunchArgs(model, extraFlags = []) {
+            const args = ['--dangerously-skip-permissions'];
+            if (model)
+                args.push('--model', model);
+            return [...args, ...extraFlags];
+        },
+        parseOutput(rawOutput) {
+            return rawOutput.trim();
+        },
+    },
+    codex: {
+        agentType: 'codex',
+        binary: 'codex',
+        installInstructions: 'Install Codex CLI: npm install -g @openai/codex',
+        buildLaunchArgs(model, extraFlags = []) {
+            const args = ['--full-auto'];
+            if (model)
+                args.push('--model', model);
+            return [...args, ...extraFlags];
+        },
+        parseOutput(rawOutput) {
+            // Codex outputs JSONL — extract the last assistant message
+            const lines = rawOutput.trim().split('\n').filter(Boolean);
+            for (let i = lines.length - 1; i >= 0; i--) {
+                try {
+                    const parsed = JSON.parse(lines[i]);
+                    if (parsed.type === 'message' && parsed.role === 'assistant') {
+                        return parsed.content ?? rawOutput;
+                    }
+                    if (parsed.type === 'result' || parsed.output) {
+                        return parsed.output ?? parsed.result ?? rawOutput;
+                    }
+                }
+                catch {
+                    // not JSON, skip
+                }
+            }
+            return rawOutput.trim();
+        },
+    },
+    gemini: {
+        agentType: 'gemini',
+        binary: 'gemini',
+        installInstructions: 'Install Gemini CLI: npm install -g @google/gemini-cli',
+        buildLaunchArgs(model, extraFlags = []) {
+            const args = ['--yolo'];
+            if (model)
+                args.push('--model', model);
+            return [...args, ...extraFlags];
+        },
+        parseOutput(rawOutput) {
+            return rawOutput.trim();
+        },
+    },
+};
+export function getContract(agentType) {
+    const contract = CONTRACTS[agentType];
+    if (!contract) {
+        throw new Error(`Unknown agent type: ${agentType}. Supported: ${Object.keys(CONTRACTS).join(', ')}`);
+    }
+    return contract;
+}
+export function isCliAvailable(agentType) {
+    const contract = getContract(agentType);
+    try {
+        const result = spawnSync(contract.binary, ['--version'], { timeout: 5000 });
+        return result.status === 0;
+    }
+    catch {
+        return false;
+    }
+}
+export function validateCliAvailable(agentType) {
+    if (!isCliAvailable(agentType)) {
+        const contract = getContract(agentType);
+        throw new Error(`CLI agent '${agentType}' not found. ${contract.installInstructions}`);
+    }
+}
+export function buildLaunchArgs(agentType, config) {
+    return getContract(agentType).buildLaunchArgs(config.model, config.extraFlags);
+}
+export function buildWorkerCommand(agentType, config) {
+    const contract = getContract(agentType);
+    const args = buildLaunchArgs(agentType, config);
+    return `${contract.binary} ${args.join(' ')}`;
+}
+export function getWorkerEnv(teamName, workerName, agentType) {
+    return {
+        OMC_TEAM_WORKER: `${teamName}/${workerName}`,
+        OMC_TEAM_NAME: teamName,
+        OMC_WORKER_AGENT_TYPE: agentType,
+    };
+}
+export function parseCliOutput(agentType, rawOutput) {
+    return getContract(agentType).parseOutput(rawOutput);
+}
+//# sourceMappingURL=model-contract.js.map

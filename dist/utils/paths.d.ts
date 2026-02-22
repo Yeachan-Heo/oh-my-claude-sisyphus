@@ -46,4 +46,16 @@ export declare function safeUnlinkSync(filePath: string): boolean;
  * Safely remove a directory recursively, ignoring errors.
  */
 export declare function safeRmSync(dirPath: string): boolean;
+/**
+ * Result of a plugin cache purge operation.
+ */
+export interface PurgeCacheResult {
+    /** Number of stale version directories removed */
+    removed: number;
+    /** Paths that were removed */
+    removedPaths: string[];
+    /** Errors encountered (non-fatal) */
+    errors: string[];
+}
+export declare function purgeStalePluginCacheVersions(): PurgeCacheResult;
 //# sourceMappingURL=paths.d.ts.map

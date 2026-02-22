@@ -8,18 +8,19 @@ describe('resolveDelegation', () => {
     afterEach(() => {
         consoleWarnSpy.mockRestore();
     });
-    // Test 1: Explicit tool takes highest precedence
-    it('should use explicit tool when provided', () => {
+    // Test 1: Explicit deprecated tool falls back to claude with deprecation warning
+    it('should fall back to claude Task when explicit tool is ask_gemini (deprecated)', () => {
         const result = resolveDelegation({
             agentRole: 'explore',
             explicitTool: 'ask_gemini',
             config: { enabled: true, roles: { explore: { provider: 'codex', tool: 'ask_codex', model: 'gpt-5' } } }
         });
-        expect(result.tool).toBe('ask_gemini');
-        expect(result.provider).toBe('gemini');
+        expect(result.tool).toBe('Task');
+        expect(result.provider).toBe('claude');
+        expect(consoleWarnSpy).toHaveBeenCalledWith(expect.stringContaining('deprecated'));
     });
-    // Test 2: Config roles are respected
-    it('should use configured route when no explicit tool', () => {
+    // Test 2: Config roles with deprecated gemini provider fall back to claude
+    it('should fall back to claude when configured route uses deprecated gemini provider', () => {
         const result = resolveDelegation({
             agentRole: 'explore',
             config: {
@@ -27,9 +28,10 @@ describe('resolveDelegation', () => {
                 roles: { explore: { provider: 'gemini', tool: 'ask_gemini', model: 'gemini-3-flash' } }
             }
         });
-        expect(result.provider).toBe('gemini');
-        expect(result.tool).toBe('ask_gemini');
+        expect(result.provider).toBe('claude');
+        expect(result.tool).toBe('Task');
         expect(result.agentOrModel).toBe('gemini-3-flash');
+        expect(consoleWarnSpy).toHaveBeenCalledWith(expect.stringContaining('deprecated'));
     });
     // Test 3: Disabled routing falls back to defaults
     it('should use default when routing is disabled', () => {
@@ -40,16 +42,17 @@ describe('resolveDelegation', () => {
         expect(result.provider).toBe('claude');
         expect(result.tool).toBe('Task');
     });
-    // Test 4: Unknown roles use defaults
-    it('should handle unknown roles with defaults', () => {
+    // Test 4: Unknown roles with deprecated codex defaultProvider fall back to claude
+    it('should handle unknown roles with deprecated codex defaultProvider by falling back to claude', () => {
         const result = resolveDelegation({
             agentRole: 'unknown-role',
             config: { enabled: true, defaultProvider: 'codex' }
         });
-        expect(result.provider).toBe('codex');
-        expect(result.tool).toBe('ask_codex');
-        expect(result.agentOrModel).toBe('gpt-5.3-codex');
-        expect(result.reason).toContain('Fallback to default provider');
+        expect(result.provider).toBe('claude');
+        expect(result.tool).toBe('Task');
+        expect(result.agentOrModel).toBe('unknown-role');
+        expect(result.reason).toContain('Fallback to Claude Task');
+        expect(consoleWarnSpy).toHaveBeenCalledWith(expect.stringContaining('deprecated'));
     });
     // Test 5: Empty config uses defaults
     it('should use defaults when config is empty', () => {
@@ -58,48 +61,51 @@ describe('resolveDelegation', () => {
         expect(result.tool).toBe('Task');
         expect(result.agentOrModel).toBe('architect');
     });
-    // Test 6: Explicit ask_codex tool
-    it('should resolve ask_codex explicit tool with default model', () => {
+    // Test 6: Explicit ask_codex tool falls back to claude (deprecated)
+    it('should fall back to claude Task for explicit ask_codex (deprecated)', () => {
         const result = resolveDelegation({
             agentRole: 'explore',
             explicitTool: 'ask_codex'
         });
-        expect(result.provider).toBe('codex');
-        expect(result.tool).toBe('ask_codex');
-        expect(result.agentOrModel).toBe('gpt-5.3-codex');
+        expect(result.provider).toBe('claude');
+        expect(result.tool).toBe('Task');
+        expect(result.agentOrModel).toBe('explore');
         expect(result.reason).toContain('Explicit tool invocation');
+        expect(result.reason).toContain('deprecated');
+        expect(consoleWarnSpy).toHaveBeenCalledWith(expect.stringContaining('deprecated'));
     });
-    // Test 7: Explicit ask_codex with custom model
-    it('should resolve ask_codex explicit tool with custom model', () => {
+    // Test 7: Explicit ask_codex with custom model still falls back to claude (deprecated)
+    it('should fall back to claude Task for explicit ask_codex with custom model (deprecated)', () => {
         const result = resolveDelegation({
             agentRole: 'explore',
             explicitTool: 'ask_codex',
             explicitModel: 'gpt-custom'
         });
-        expect(result.provider).toBe('codex');
-        expect(result.tool).toBe('ask_codex');
-        expect(result.agentOrModel).toBe('gpt-custom');
+        expect(result.provider).toBe('claude');
+        expect(result.tool).toBe('Task');
+        expect(consoleWarnSpy).toHaveBeenCalledWith(expect.stringContaining('deprecated'));
     });
-    // Test 8: Explicit ask_gemini with default model
-    it('should resolve ask_gemini explicit tool with default model', () => {
+    // Test 8: Explicit ask_gemini with default model falls back to claude (deprecated)
+    it('should fall back to claude Task for explicit ask_gemini (deprecated)', () => {
         const result = resolveDelegation({
             agentRole: 'explore',
             explicitTool: 'ask_gemini'
         });
-        expect(result.provider).toBe('gemini');
-        expect(result.tool).toBe('ask_gemini');
-        expect(result.agentOrModel).toBe('gemini-3-pro-preview');
+        expect(result.provider).toBe('claude');
+        expect(result.tool).toBe('Task');
+        expect(result.agentOrModel).toBe('explore');
+        expect(consoleWarnSpy).toHaveBeenCalledWith(expect.stringContaining('deprecated'));
     });
-    // Test 9: Explicit ask_gemini with custom model
-    it('should resolve ask_gemini explicit tool with custom model', () => {
+    // Test 9: Explicit ask_gemini with custom model still falls back to claude (deprecated)
+    it('should fall back to claude Task for explicit ask_gemini with custom model (deprecated)', () => {
         const result = resolveDelegation({
             agentRole: 'explore',
             explicitTool: 'ask_gemini',
             explicitModel: 'gemini-custom'
         });
-        expect(result.provider).toBe('gemini');
-        expect(result.tool).toBe('ask_gemini');
-        expect(result.agentOrModel).toBe('gemini-custom');
+        expect(result.provider).toBe('claude');
+        expect(result.tool).toBe('Task');
+        expect(consoleWarnSpy).toHaveBeenCalledWith(expect.stringContaining('deprecated'));
     });
     // Test 10: Explicit Task tool
     it('should resolve Task explicit tool', () => {
@@ -111,8 +117,8 @@ describe('resolveDelegation', () => {
         expect(result.tool).toBe('Task');
         expect(result.agentOrModel).toBe('architect');
     });
-    // Test 11: Explicit tool takes precedence over enabled config for same role
-    it('should have explicit tool take precedence over enabled config for same role', () => {
+    // Test 11: Explicit deprecated tool still falls back to claude (takes precedence over config)
+    it('should fall back to claude Task for explicit ask_codex even when config has gemini route', () => {
         const result = resolveDelegation({
             agentRole: 'explore',
             explicitTool: 'ask_codex',
@@ -123,9 +129,11 @@ describe('resolveDelegation', () => {
                 }
             }
         });
-        expect(result.provider).toBe('codex');
-        expect(result.tool).toBe('ask_codex');
+        expect(result.provider).toBe('claude');
+        expect(result.tool).toBe('Task');
         expect(result.reason).toContain('Explicit tool invocation');
+        expect(result.reason).toContain('deprecated');
+        expect(consoleWarnSpy).toHaveBeenCalledWith(expect.stringContaining('deprecated'));
     });
     // Test 12: Role with default mapping uses Claude subagent
     it('should use default heuristic for mapped roles', () => {
@@ -151,8 +159,8 @@ describe('resolveDelegation', () => {
         });
         expect(result.agentOrModel).toBe('explore');
     });
-    // Test 13: Config with fallback chain
-    it('should include fallback chain in decision', () => {
+    // Test 13: Config with deprecated gemini provider falls back to claude but preserves fallback chain
+    it('should fall back to claude for deprecated gemini route but preserve fallback chain', () => {
         const result = resolveDelegation({
             agentRole: 'explore',
             config: {
@@ -167,21 +175,24 @@ describe('resolveDelegation', () => {
                 }
             }
         });
-        expect(result.provider).toBe('gemini');
-        expect(result.tool).toBe('ask_gemini');
+        expect(result.provider).toBe('claude');
+        expect(result.tool).toBe('Task');
         expect(result.agentOrModel).toBe('gemini-2.5-pro');
         expect(result.reason).toContain('Configured routing');
+        expect(result.reason).toContain('deprecated');
         expect(result.fallbackChain).toEqual(['claude:explore', 'codex:gpt-5']);
+        expect(consoleWarnSpy).toHaveBeenCalledWith(expect.stringContaining('deprecated'));
     });
-    // Test 14: defaultProvider set to gemini
-    it('should use gemini as default provider when configured', () => {
+    // Test 14: defaultProvider set to gemini falls back to claude (deprecated)
+    it('should fall back to claude when deprecated gemini defaultProvider is configured', () => {
         const result = resolveDelegation({
             agentRole: 'unknown-role',
             config: { enabled: true, defaultProvider: 'gemini' }
         });
-        expect(result.provider).toBe('gemini');
-        expect(result.tool).toBe('ask_gemini');
-        expect(result.agentOrModel).toBe('gemini-3-pro-preview');
+        expect(result.provider).toBe('claude');
+        expect(result.tool).toBe('Task');
+        expect(result.agentOrModel).toBe('unknown-role');
+        expect(consoleWarnSpy).toHaveBeenCalledWith(expect.stringContaining('deprecated'));
     });
     // Test 15: Config enabled but role not in roles map
     it('should fallback to defaults when role not in config roles', () => {
@@ -291,29 +302,31 @@ describe('resolveDelegation', () => {
         expect(consoleWarnSpy).toHaveBeenCalledWith(expect.stringContaining('claude'));
         expect(consoleWarnSpy).toHaveBeenCalledWith(expect.stringContaining('ask_codex'));
     });
-    // Test: Unknown role + defaultProvider: 'gemini' with full assertion
-    it('should handle unknown role with gemini defaultProvider', () => {
+    // Test: Unknown role + defaultProvider: 'gemini' falls back to claude (deprecated)
+    it('should handle unknown role with gemini defaultProvider by falling back to claude', () => {
         const result = resolveDelegation({
             agentRole: 'totally-unknown-role',
             config: { enabled: true, defaultProvider: 'gemini' }
         });
-        expect(result.provider).toBe('gemini');
-        expect(result.tool).toBe('ask_gemini');
-        expect(result.agentOrModel).toBe('gemini-3-pro-preview');
-        expect(result.reason).toContain('Fallback to default provider: gemini');
+        expect(result.provider).toBe('claude');
+        expect(result.tool).toBe('Task');
+        expect(result.agentOrModel).toBe('totally-unknown-role');
+        expect(result.reason).toContain('Fallback to Claude Task');
         expect(result.fallbackChain).toBeUndefined();
+        expect(consoleWarnSpy).toHaveBeenCalledWith(expect.stringContaining('deprecated'));
     });
-    // Test: Unknown role + defaultProvider: 'codex' with full assertion
-    it('should handle unknown role with codex defaultProvider', () => {
+    // Test: Unknown role + defaultProvider: 'codex' falls back to claude (deprecated)
+    it('should handle unknown role with codex defaultProvider by falling back to claude', () => {
         const result = resolveDelegation({
             agentRole: 'totally-unknown-role',
             config: { enabled: true, defaultProvider: 'codex' }
         });
-        expect(result.provider).toBe('codex');
-        expect(result.tool).toBe('ask_codex');
-        expect(result.agentOrModel).toBe('gpt-5.3-codex');
-        expect(result.reason).toContain('Fallback to default provider: codex');
+        expect(result.provider).toBe('claude');
+        expect(result.tool).toBe('Task');
+        expect(result.agentOrModel).toBe('totally-unknown-role');
+        expect(result.reason).toContain('Fallback to Claude Task');
         expect(result.fallbackChain).toBeUndefined();
+        expect(consoleWarnSpy).toHaveBeenCalledWith(expect.stringContaining('deprecated'));
     });
     // Test: Unknown role + defaultProvider: 'claude' (explicit) with full assertion
     it('should handle unknown role with claude defaultProvider', () => {

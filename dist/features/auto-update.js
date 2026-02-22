@@ -14,6 +14,7 @@ import { join, dirname } from 'path';
 import { execSync } from 'child_process';
 import { install as installOmc, HOOKS_DIR, isProjectScopedPlugin, isRunningAsPlugin } from '../installer/index.js';
 import { getConfigDir } from '../utils/config-dir.js';
+import { purgeStalePluginCacheVersions } from '../utils/paths.js';
 /** GitHub repository information */
 export const REPO_OWNER = 'Yeachan-Heo';
 export const REPO_NAME = 'oh-my-claudecode';
@@ -288,6 +289,21 @@ export function reconcileUpdateRuntime(options) {
     catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         errors.push(`Failed to refresh installer artifacts: ${message}`);
+    }
+    // Purge stale plugin cache versions (non-fatal)
+    try {
+        const purgeResult = purgeStalePluginCacheVersions();
+        if (purgeResult.removed > 0 && options?.verbose) {
+            console.log(`[omc] Purged ${purgeResult.removed} stale plugin cache version(s)`);
+        }
+        if (purgeResult.errors.length > 0 && options?.verbose) {
+            for (const err of purgeResult.errors) {
+                console.warn(`[omc] Cache purge warning: ${err}`);
+            }
+        }
+    }
+    catch {
+        // Cache purge is best-effort; never block reconciliation
     }
     if (errors.length > 0) {
         return {

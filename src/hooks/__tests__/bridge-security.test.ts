@@ -15,7 +15,7 @@ import { tmpdir } from 'os';
 import {
   buildPromptWithSystemContext,
   resolveSystemPrompt,
-} from '../../mcp/prompt-injection.js';
+} from '../../agents/prompt-helpers.js';
 import {
   isSafeCommand,
   processPermissionRequest,

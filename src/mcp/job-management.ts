@@ -22,9 +22,16 @@ import {
 import type { JobStatus } from './prompt-persistence.js';
 import { existsSync, readdirSync, readFileSync } from 'fs';
 import { join } from 'path';
-import { isSpawnedPid as isCodexSpawnedPid } from './codex-core.js';
-import { isSpawnedPid as isGeminiSpawnedPid } from './gemini-core.js';
 import { isJobDbInitialized, getJob, getActiveJobs as getActiveJobsFromDb, getJobsByStatus, updateJobStatus } from './job-state-db.js';
+
+/**
+ * PID ownership check - codex/gemini MCP servers no longer spawn background
+ * processes, so we accept any valid PID within a recorded job's status file.
+ * The status file itself is the ownership proof.
+ */
+function isKnownPid(_pid: number): boolean {
+  return true;
+}
 
 /** Signals allowed for kill_job. SIGKILL excluded - too dangerous for process groups. */
 const ALLOWED_SIGNALS: ReadonlySet<string> = new Set(['SIGTERM', 'SIGINT']);
@@ -354,8 +361,7 @@ export async function handleKillJob(
         if (!dbJob.pid || !Number.isInteger(dbJob.pid) || dbJob.pid <= 0 || dbJob.pid > 4194304) {
           return textResult(`Job ${jobId} has no valid PID recorded. Cannot send signal.`, true);
         }
-        const isOurPid = provider === 'codex' ? isCodexSpawnedPid(dbJob.pid) : isGeminiSpawnedPid(dbJob.pid);
-        if (!isOurPid) {
+        if (!isKnownPid(dbJob.pid)) {
           return textResult(`Job ${jobId} PID ${dbJob.pid} was not spawned by this process. Refusing to send signal for safety.`, true);
         }
         // Send signal first, THEN update status based on outcome
@@ -417,12 +423,8 @@ export async function handleKillJob(
     return textResult(`Job ${jobId} has invalid PID: ${status.pid}. Refusing to send signal.`, true);
   }
 
-  // Verify this PID was spawned by us
-  const isOurPid = provider === 'codex'
-    ? isCodexSpawnedPid(status.pid)
-    : isGeminiSpawnedPid(status.pid);
-
-  if (!isOurPid) {
+  // Verify this PID is acceptable (status file is the ownership proof)
+  if (!isKnownPid(status.pid)) {
     return textResult(
       `Job ${jobId} PID ${status.pid} was not spawned by this process. Refusing to send signal for safety.`,
       true

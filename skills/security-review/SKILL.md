@@ -86,15 +86,15 @@ Output: Security review report with:
 )
 ```
 
-## External Model Consultation (Preferred)
+## External Consultation (Optional)
 
-The security-reviewer agent SHOULD consult Codex for cross-validation.
+The security-reviewer agent MAY consult a Claude Task agent for cross-validation.
 
 ### Protocol
 1. **Form your OWN security analysis FIRST** - Complete the review independently
-2. **Consult for validation** - Cross-check findings with Codex
+2. **Consult for validation** - Cross-check findings via a Claude Task agent
 3. **Critically evaluate** - Never blindly adopt external findings
-4. **Graceful fallback** - Never block if tools unavailable
+4. **Graceful fallback** - Never block if delegation is unavailable
 
 ### When to Consult
 - Authentication/authorization code
@@ -110,8 +110,7 @@ The security-reviewer agent SHOULD consult Codex for cross-validation.
 - Code with existing security tests
 
 ### Tool Usage
-Before first MCP tool use, run the 3-step discovery: (1) `ToolSearch("mcp")`, (2) look for `mcp__x__ask_codex` in the results, (3) fall back to the `security-reviewer` Claude agent only if step 1 returns empty. Never use `ToolSearch("ask_codex")` as the primary search -- it can return false negatives even when MCP tools are present.
-Use `mcp__x__ask_codex` with `agent_role: "security-reviewer"`.
+Use `Task(subagent_type="oh-my-claudecode:security-reviewer", ...)` for cross-validation.
 
 **Note:** Security second opinions are high-value. Consider consulting for CRITICAL/HIGH findings.
 
