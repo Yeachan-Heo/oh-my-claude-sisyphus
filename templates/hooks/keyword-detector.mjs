@@ -18,9 +18,7 @@
  * 10. ultrathink: Extended reasoning
  * 11. deepsearch: Codebase search (restricted patterns)
  * 12. analyze: Analysis mode (restricted patterns)
- * 13. codex/gpt: Delegate to Codex MCP (ask_codex)
- * 14. gemini: Delegate to Gemini MCP (ask_gemini)
- * 8. ccg: Claude-Codex-Gemini tri-model orchestration
+ * 13. ccg: Claude-Codex-Gemini tri-model orchestration
  */
 
 import { writeFileSync, mkdirSync, existsSync, unlinkSync, readFileSync } from 'fs';
@@ -204,62 +202,14 @@ IMPORTANT: Invoke ALL skills listed above. Start with the first skill IMMEDIATEL
 }
 
 /**
- * Create MCP delegation message (NOT a skill invocation)
+ * Create combined output for multiple skill matches
  */
-function createMcpDelegation(provider, originalPrompt) {
-  const configs = {
-    codex: {
-      tool: 'ask_codex',
-      roles: 'architect, planner, critic, analyst, code-reviewer, security-reviewer, tdd-guide',
-      defaultRole: 'architect',
-    },
-    gemini: {
-      tool: 'ask_gemini',
-      roles: 'designer, writer, vision',
-      defaultRole: 'designer',
-    },
-  };
-  const config = configs[provider];
-  if (!config) return '';
-
-  return `[MAGIC KEYWORD: ${provider.toUpperCase()}]
-
-You MUST delegate this task to the ${provider === 'codex' ? 'Codex' : 'Gemini'} MCP tool.
-
-Steps:
-1. Call ToolSearch("mcp") to discover available MCP tools (required -- they are deferred and not in your tool list by default)
-2. Write a prompt file to \`.omc/prompts/${provider}-{purpose}-{timestamp}.md\` containing clear task instructions derived from the user's request
-3. Determine the appropriate agent_role from: ${config.roles}
-4. Call the \`${config.tool}\` MCP tool with:
-   - agent_role: <detected or default "${config.defaultRole}">
-   - prompt_file: <path you wrote>
-   - output_file: <corresponding -summary.md path>
-   - context_files: <relevant files from user's request>
-
-If ToolSearch returns no MCP tools, the MCP server is not configured. Fall back to the equivalent Claude agent instead.
-
-User request:
-${originalPrompt}
-
-IMPORTANT: Do NOT invoke a skill. Discover MCP tools via ToolSearch first, then delegate IMMEDIATELY.`;
-}
-
-/**
- * Create combined output for skills + MCP delegations
- */
-function createCombinedOutput(skillMatches, delegationMatches, originalPrompt) {
+function createCombinedOutput(skillMatches, originalPrompt) {
   const parts = [];
-
   if (skillMatches.length > 0) {
     parts.push('## Section 1: Skill Invocations\n\n' + createMultiSkillInvocation(skillMatches, originalPrompt));
   }
-
-  if (delegationMatches.length > 0) {
-    const delegationParts = delegationMatches.map(d => createMcpDelegation(d.name, originalPrompt));
-    parts.push('## Section ' + (skillMatches.length > 0 ? '2' : '1') + ': MCP Delegations\n\n' + delegationParts.join('\n\n---\n\n'));
-  }
-
-  const allNames = [...skillMatches, ...delegationMatches].map(m => m.name.toUpperCase());
+  const allNames = skillMatches.map(m => m.name.toUpperCase());
   return `[MAGIC KEYWORDS DETECTED: ${allNames.join(', ')}]\n\n${parts.join('\n\n---\n\n')}\n\nIMPORTANT: Complete ALL sections above in order.`;
 }
 
@@ -291,9 +241,7 @@ function resolveConflicts(matches) {
 
   // Sort by priority order
 const priorityOrder = ['cancel','ralph','autopilot','team','ultrawork',
-    'pipeline','ralplan','plan','tdd','ultrathink','deepsearch','analyze',
-    'pipeline','ccg','ralplan','plan','tdd','research','ultrathink','deepsearch','analyze',
-    'codex','gemini'];
+    'pipeline','ccg','ralplan','plan','tdd','research','ultrathink','deepsearch','analyze'];
   resolved.sort((a, b) => priorityOrder.indexOf(a.name) - priorityOrder.indexOf(b.name));
 
   return resolved;
@@ -426,16 +374,6 @@ async function main() {
       matches.push({ name: 'analyze', args: '' });
     }
 
-    // Codex keywords (intent-phrase only)
-    if (/\b(ask|use|delegate\s+to)\s+(codex|gpt)\b/i.test(cleanPrompt)) {
-      matches.push({ name: 'codex', args: '' });
-    }
-
-    // Gemini keywords (intent-phrase only)
-    if (/\b(ask|use|delegate\s+to)\s+gemini\b/i.test(cleanPrompt)) {
-      matches.push({ name: 'gemini', args: '' });
-    }
-
     // No matches - pass through
     if (matches.length === 0) {
       console.log(JSON.stringify({ continue: true, suppressOutput: true }));
@@ -500,20 +438,8 @@ async function main() {
       return;
     }
 
-    // Split resolved into skills vs MCP delegations
-    const MCP_KEYWORDS = ['codex', 'gemini'];
-    const skillMatches = resolved.filter(m => !MCP_KEYWORDS.includes(m.name));
-    const delegationMatches = resolved.filter(m => MCP_KEYWORDS.includes(m.name));
-
-    if (skillMatches.length > 0 && delegationMatches.length > 0) {
-      // Combined: skills + MCP delegations
-      console.log(JSON.stringify(createHookOutput(createCombinedOutput(skillMatches, delegationMatches, prompt))));
-    } else if (delegationMatches.length > 0) {
-      // MCP delegation only
-      const delegationParts = delegationMatches.map(d => createMcpDelegation(d.name, prompt));
-      console.log(JSON.stringify(createHookOutput(delegationParts.join('\n\n---\n\n'))));
-    } else {
-      // Skills only (existing behavior)
+    const skillMatches = resolved;
+    if (skillMatches.length > 0) {
       console.log(JSON.stringify(createHookOutput(createMultiSkillInvocation(skillMatches, prompt))));
     }
   } catch (error) {
