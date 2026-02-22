@@ -362,6 +362,18 @@ function executeCommand(command: string): { stdout: string; error: boolean } {
   }
 }
 
+// ─── HTML Escaping ───────────────────────────────────────────────────────────
+
+/** Escape characters that are special in XML/HTML attributes and content. */
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 // ─── Output Formatting ──────────────────────────────────────────────────────
 
 function formatOutput(
@@ -370,6 +382,8 @@ function formatOutput(
   error: boolean,
   format: OutputFormat,
 ): string {
+  const escapedCommand = escapeHtml(command);
+  const escapedOutput = escapeHtml(output);
   const formatAttr = format ? ` format="${format}"` : "";
   const errorAttr = error ? ' error="true"' : "";
 
@@ -381,10 +395,10 @@ function formatOutput(
         l.replace(DIFF_HEADER_PREFIX_PATTERN, ""),
       ),
     ).size;
-    return `<live-data command="${command}"${formatAttr} files="${files}" +="${addLines}" -="${delLines}"${errorAttr}>${output}</live-data>`;
+    return `<live-data command="${escapedCommand}"${formatAttr} files="${files}" +="${addLines}" -="${delLines}"${errorAttr}>${escapedOutput}</live-data>`;
   }
 
-  return `<live-data command="${command}"${formatAttr}${errorAttr}>${output}</live-data>`;
+  return `<live-data command="${escapedCommand}"${formatAttr}${errorAttr}>${escapedOutput}</live-data>`;
 }
 
 // ─── Multi-line Script Support ───────────────────────────────────────────────
@@ -458,7 +472,7 @@ export function resolveLiveData(content: string): string {
     if (!security.allowed) {
       scriptReplacements.set(
         block.startLine,
-        `<live-data command="script:${block.shell}" error="true">blocked: ${security.reason}</live-data>`,
+        `<live-data command="script:${escapeHtml(block.shell)}" error="true">blocked: ${escapeHtml(security.reason ?? "")}</live-data>`,
       );
       continue;
     }
@@ -474,7 +488,7 @@ export function resolveLiveData(content: string): string {
       });
       scriptReplacements.set(
         block.startLine,
-        `<live-data command="script:${block.shell}">${result ?? ""}</live-data>`,
+        `<live-data command="script:${escapeHtml(block.shell)}">${escapeHtml(result ?? "")}</live-data>`,
       );
     } catch (err: unknown) {
       const message =
@@ -483,7 +497,7 @@ export function resolveLiveData(content: string): string {
           : String(err);
       scriptReplacements.set(
         block.startLine,
-        `<live-data command="script:${block.shell}" error="true">${message}</live-data>`,
+        `<live-data command="script:${escapeHtml(block.shell)}" error="true">${escapeHtml(message)}</live-data>`,
       );
     }
   }
@@ -510,7 +524,7 @@ export function resolveLiveData(content: string): string {
     const security = checkSecurity(directive.command);
     if (!security.allowed) {
       result.push(
-        `<live-data command="${directive.command}" error="true">blocked: ${security.reason}</live-data>`,
+        `<live-data command="${escapeHtml(directive.command)}" error="true">blocked: ${escapeHtml(security.reason ?? "")}</live-data>`,
       );
       continue;
     }
@@ -519,7 +533,7 @@ export function resolveLiveData(content: string): string {
       case "if-modified": {
         if (!checkIfModified(directive.pattern!)) {
           result.push(
-            `<live-data command="${directive.command}" skipped="true">condition not met: no files matching '${directive.pattern}' modified</live-data>`,
+            `<live-data command="${escapeHtml(directive.command)}" skipped="true">condition not met: no files matching '${escapeHtml(directive.pattern!)}' modified</live-data>`,
           );
         } else {
           const { stdout, error } = executeCommand(directive.command);
@@ -531,7 +545,7 @@ export function resolveLiveData(content: string): string {
       case "if-branch": {
         if (!checkIfBranch(directive.pattern!)) {
           result.push(
-            `<live-data command="${directive.command}" skipped="true">condition not met: branch does not match '${directive.pattern}'</live-data>`,
+            `<live-data command="${escapeHtml(directive.command)}" skipped="true">condition not met: branch does not match '${escapeHtml(directive.pattern!)}'</live-data>`,
           );
         } else {
           const { stdout, error } = executeCommand(directive.command);
@@ -543,7 +557,7 @@ export function resolveLiveData(content: string): string {
       case "only-once": {
         if (onceCommands.has(directive.command)) {
           result.push(
-            `<live-data command="${directive.command}" skipped="true">already executed this session</live-data>`,
+            `<live-data command="${escapeHtml(directive.command)}" skipped="true">already executed this session</live-data>`,
           );
         } else {
           onceCommands.add(directive.command);
