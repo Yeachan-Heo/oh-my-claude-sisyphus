@@ -630,7 +630,7 @@ The lead runs #1 (Codex analysis), then #2 and #3 in parallel (Codex refactors b
 
 For large ambiguous tasks, run analysis before team creation:
 
-1. Call `ToolSearch("mcp")` to discover deferred MCP tools (required before first use)
+1. Call `ToolSearch("mcp")` to discover deferred MCP tools; from the results, confirm `mcp__x__ask_codex` is present before proceeding. Never use `ToolSearch("ask_codex")` as the primary search -- it can return false negatives even when MCP tools are present.
 2. Call `ask_codex` (planner role) with task description + codebase context
 3. Use the analysis to produce better task decomposition
 4. Create team and tasks with enriched context

@@ -91,10 +91,12 @@ Compatibility aliases may still be normalized during routing, but canonical runt
 <mcp_routing>
 For read-only analysis tasks, prefer MCP tools over spawning Claude agents -- they are faster and cheaper.
 
-**IMPORTANT -- Deferred Tool Discovery:** MCP tools (`ask_codex`, `ask_gemini`, and their job management tools) are deferred and NOT in your tool list at session start. Before your first use of any MCP tool, you MUST call `ToolSearch` to discover it:
-- `ToolSearch("mcp")` -- discovers all MCP tools (preferred, do this once early)
-- `ToolSearch("ask_codex")` -- discovers Codex tools specifically
-- `ToolSearch("ask_gemini")` -- discovers Gemini tools specifically
+**IMPORTANT -- Deferred Tool Discovery:** MCP tools (`ask_codex`, `ask_gemini`, and their job management tools) are deferred and NOT in your tool list at session start. Use this 3-step discovery sequence before your first MCP tool use:
+1. `ToolSearch("mcp")` -- broad search; finds all deferred MCP tools at once
+2. From results, select the full tool name: look for `mcp__x__ask_codex` or `mcp__g__ask_gemini`
+3. Fall back to the equivalent Claude agent **only if** step 1 returns no results
+
+**Never use `ToolSearch("ask_codex")` or `ToolSearch("ask_gemini")` as the primary search** -- narrow searches can return false negatives even when MCP tools are present. Always start with `ToolSearch("mcp")`.
 If ToolSearch returns no results, the MCP server is not configured -- fall back to the equivalent Claude agent. Never block on unavailable MCP tools.
 
 Available MCP providers:

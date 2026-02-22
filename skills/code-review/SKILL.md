@@ -92,9 +92,8 @@ The code-reviewer agent SHOULD consult Codex for cross-validation.
 - Small, isolated changes
 
 ### Tool Usage
-Before first MCP tool use, call `ToolSearch("mcp")` to discover deferred MCP tools.
+Before first MCP tool use, run the 3-step discovery: (1) `ToolSearch("mcp")`, (2) look for `mcp__x__ask_codex` in the results, (3) fall back to the `code-reviewer` Claude agent only if step 1 returns empty. Never use `ToolSearch("ask_codex")` as the primary search -- it can return false negatives even when MCP tools are present.
 Use `mcp__x__ask_codex` with `agent_role: "code-reviewer"`.
-If ToolSearch finds no MCP tools, fall back to the `code-reviewer` Claude agent.
 
 **Note:** Codex calls can take up to 1 hour. Consider the review timeline before consulting.
 

@@ -43,7 +43,7 @@ Deep investigation requires a different approach than quick lookups or code chan
 </Steps>
 
 <Tool_Usage>
-- Before first MCP tool use, call `ToolSearch("mcp")` to discover deferred MCP tools
+- Before first MCP tool use, run the 3-step discovery: (1) `ToolSearch("mcp")`, (2) select the full name from results (e.g., `mcp__x__ask_codex`), (3) fall back to the equivalent Claude agent only if step 1 returns empty. Never use `ToolSearch("ask_codex")` as the primary search -- it can return false negatives even when MCP tools are present.
 - Use `ask_codex` with `agent_role: "architect"` as the preferred analysis route
 - Pass `context_files` with all relevant source files for grounded analysis
 - Use `Task(subagent_type="oh-my-claudecode:architect", model="opus", ...)` as fallback when ToolSearch finds no MCP tools or Codex is unavailable

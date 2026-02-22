@@ -110,7 +110,7 @@ Plans are saved to `.omc/plans/`. Drafts go to `.omc/drafts/`.
 </Steps>
 
 <Tool_Usage>
-- Before first MCP tool use, call `ToolSearch("mcp")` to discover deferred MCP tools
+- Before first MCP tool use, run the 3-step discovery: (1) `ToolSearch("mcp")`, (2) select the full name from results (e.g., `mcp__x__ask_codex`), (3) fall back to the equivalent Claude agent only if step 1 returns empty. Never use `ToolSearch("ask_codex")` as the primary search -- it can return false negatives even when MCP tools are present.
 - Use `AskUserQuestion` for preference questions (scope, priority, timeline, risk tolerance) -- provides clickable UI
 - Use plain text for questions needing specific values (port numbers, names, follow-up clarifications)
 - Use `explore` agent (Haiku, 30s timeout) to gather codebase facts before asking the user
