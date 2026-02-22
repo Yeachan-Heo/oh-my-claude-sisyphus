@@ -1,7 +1,7 @@
 /**
  * Background Agent Manager
  *
- * Manages background tasks for the Sisyphus system.
+ * Manages background tasks for the OMC system.
  * This is a simplified version that tracks tasks launched via Claude Code's
  * native Task tool with run_in_background: true.
  *
@@ -29,7 +29,7 @@ const DEFAULT_TASK_TTL_MS = 30 * 60 * 1000;
 const BACKGROUND_TASKS_DIR = join(getClaudeConfigDir(), '.omc', 'background-tasks');
 
 /**
- * Manages background tasks for the Sisyphus system.
+ * Manages background tasks for the OMC system.
  */
 export class BackgroundManager {
   private tasks: Map<string, BackgroundTask> = new Map();

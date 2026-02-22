@@ -570,7 +570,7 @@ export function install(options = {}) {
                     '  ',
                     '  // 3. npm package (global or local install)',
                     '  try {',
-                    '    await import("oh-my-claude-sisyphus/dist/hud/index.js");',
+                    '    await import("oh-my-claudecode/dist/hud/index.js");',
                     '    return;',
                     '  } catch { /* continue */ }',
                     '  ',

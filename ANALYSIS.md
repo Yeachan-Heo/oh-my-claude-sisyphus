@@ -36,7 +36,7 @@
 ## 2. Delegation & Agent Orchestration
 
 ### Hephaestus (OMO)
-- **CAN delegate** to specialized agents (explore, librarian)
+- **CAN delegate** to specialized agents (explore, document-specialist)
 - **Delegation template**: 6-section mandatory structure (TASK, EXPECTED OUTCOME, REQUIRED TOOLS, MUST DO, MUST NOT DO, CONTEXT)
 - **Parallel exploration**: Fires 2-5 background exploration agents before executing
 - **Session continuity**: Reuses session IDs across multi-turn delegations
@@ -66,7 +66,7 @@
 | Capability | Hephaestus | Deep-Executor |
 |------------|------------|---------------|
 | **Delegation** | Yes (via 6-section template) | No (hard blocked) |
-| **Parallel agents** | 2-5 background explore/librarian | None |
+| **Parallel agents** | 2-5 background explore/document-specialist | None |
 | **Session continuity** | Yes (session ID reuse) | N/A (no delegation) |
 | **Tool ecosystem** | Can invoke specialized agents | Uses only own tools |
 
@@ -120,7 +120,7 @@
 ### Hephaestus (OMO)
 **EXPLORE → PLAN → DECIDE → EXECUTE**
 
-1. **EXPLORE**: Fire 2-5 parallel background agents (explore/librarian)
+1. **EXPLORE**: Fire 2-5 parallel background agents (explore/document-specialist)
 2. **PLAN**: Create explicit work plan identifying all files/dependencies
 3. **DECIDE**: Determine direct execution vs delegation
 4. **EXECUTE**: Implement or delegate with verification
@@ -163,7 +163,7 @@
 ### Hephaestus (OMO)
 **Exploration Agents:**
 - **Explore agent** (gpt-5-nano): Fast grep for internal codebase
-- **Librarian agent** (big-pickle): External docs, GitHub, OSS research
+- **Document-Specialist agent** (big-pickle): External docs, GitHub, OSS research
 - **Execution**: Background parallel (2-5 agents)
 - **Framing**: "Grep, not consultants"
 
@@ -203,7 +203,7 @@
 | **Exploration method** | Delegate to specialized agents | Use own tools directly |
 | **Parallelism** | 2-5 background agents | Sequential tool calls |
 | **Model efficiency** | Cheaper models for exploration | Same expensive model |
-| **External research** | Librarian for docs/OSS | No external research capability |
+| **External research** | Document-Specialist for docs/OSS | No external research capability |
 | **Tool framing** | "Grep not consultants" | Structured exploration questions |
 
 **Cost Implications:**
@@ -373,12 +373,12 @@ The focus is on verification and completion, but no specific guidance on TODO ma
 
 ### Hephaestus (OMO)
 **Failure Recovery Protocol:**
-- Max 3 iterations before consulting Oracle
+- Max 3 iterations before consulting Architect
 - After 3 consecutive failures:
   1. STOP all edits immediately
   2. REVERT to last known working state
   3. DOCUMENT attempts and failures
-  4. CONSULT Oracle with full context
+  4. CONSULT Architect with full context
   5. Ask user before proceeding further
 
 **Philosophy:**
@@ -402,15 +402,15 @@ When blocked:
 | Aspect | Hephaestus | Deep-Executor |
 |--------|------------|---------------|
 | **Max attempts** | 3 iterations before escalation | No explicit limit |
-| **Escalation** | Consult Oracle (delegation) | Report to user |
+| **Escalation** | Consult Architect (delegation) | Report to user |
 | **Revert policy** | Explicit REVERT to last working state | Not mentioned |
 | **Documentation** | DOCUMENT all attempts | Explain what was tried |
 
-**Key Difference:** Hephaestus has a **structured escalation path** (Oracle consultation) while Deep-Executor can only report to the user.
+**Key Difference:** Hephaestus has a **structured escalation path** (Architect consultation) while Deep-Executor can only report to the user.
 
 **Advantage Hephaestus:**
 - Automatic escalation prevents infinite loops
-- Oracle consultation can unblock without user intervention
+- Architect consultation can unblock without user intervention
 - Explicit revert policy prevents broken code states
 
 **Advantage Deep-Executor:**
@@ -483,7 +483,7 @@ When blocked:
 ```
 "Judicious Initiative: Makes implementation decisions independently"
 "May only ask questions after exhausting: direct tools, exploration agents,
-librarian agents, context inference, technical problem-solving"
+document-specialist agents, context inference, technical problem-solving"
 ```
 
 **Role:**
@@ -592,12 +592,12 @@ stopping after partial implementation"
 **Framework:** OpenCode plugin
 **Ecosystem:**
 - Part of multi-agent orchestration system
-- Sisyphus/Atlas as primary orchestrators
-- Specialized agents: Oracle, Librarian, Explore, Prometheus, Metis, Momus
+- OMC/Coordinator as primary orchestrators
+- Specialized agents: Architect, Document-Specialist, Explore, Planner, Analyst, Critic
 - Can be invoked by orchestrators for deep work
 
 **Integration:**
-- Receives delegated tasks from Sisyphus/Atlas
+- Receives delegated tasks from OMC/Coordinator
 - Works alongside other specialized agents
 - Part of larger workflow orchestration
 
@@ -617,8 +617,8 @@ stopping after partial implementation"
 | Aspect | Hephaestus (OMO) | Deep-Executor (OMC) |
 |--------|------------------|---------------------|
 | **Primary usage** | Delegated deep work | Direct OR delegated |
-| **Orchestration** | Sisyphus/Atlas invoke | Multiple modes can invoke |
-| **Agent collaboration** | Can delegate to explore/librarian | Fully isolated |
+| **Orchestration** | OMC/Coordinator invoke | Multiple modes can invoke |
+| **Agent collaboration** | Can delegate to explore/document-specialist | Fully isolated |
 | **Framework scope** | Part of OpenCode ecosystem | Part of Claude Code ecosystem |
 
 **Key Insight:** Hephaestus is designed as a **delegated specialist** in a multi-agent system, while Deep-Executor can function as both a **standalone agent** and a **delegated specialist**.
@@ -633,11 +633,11 @@ stopping after partial implementation"
    - **Impact:** High token cost, slower exploration
    - **Recommendation:** Add explore/researcher delegation capability
 
-2. **External Research (Librarian)**
+2. **External Research (Document-Specialist)**
    - **Impact:** Cannot fetch official docs, GitHub examples, Stack Overflow
    - **Recommendation:** Add researcher agent delegation for external context
 
-3. **Structured Escalation (Oracle Consultation)**
+3. **Structured Escalation (Architect Consultation)**
    - **Impact:** Can get stuck with no automatic unblocking
    - **Recommendation:** Add architect consultation after 3 failures
 
@@ -929,7 +929,7 @@ Standardize Hephaestus completion output with markdown templates:
 
 ### Hephaestus (OMO)
 **Exploration Phase:**
-- Fires 2-5 parallel agents (gpt-5-nano for explore, big-pickle for librarian)
+- Fires 2-5 parallel agents (gpt-5-nano for explore, big-pickle for document-specialist)
 - Main agent (GPT 5.2 Codex Medium) waits or continues planning
 - **Cost**: Low (cheap models for exploration)
 
@@ -959,7 +959,7 @@ Standardize Hephaestus completion output with markdown templates:
 | Phase | Hephaestus | Deep-Executor |
 |-------|------------|---------------|
 | **Explore files** | 2 explore agents (nano) | Opus Glob + Grep + Read |
-| **Research patterns** | 1 librarian (big-pickle) | N/A (no external research) |
+| **Research patterns** | 1 document-specialist (big-pickle) | N/A (no external research) |
 | **Plan** | Codex Medium | Opus |
 | **Implement** | Codex Medium | Opus |
 | **Verify** | Codex Medium | Opus |
@@ -984,10 +984,10 @@ Standardize Hephaestus completion output with markdown templates:
 
 **Ideal Scenarios:**
 1. **Complex multi-file refactoring** - Benefits from parallel exploration
-2. **Unfamiliar codebase** - Librarian can fetch external context
-3. **Architecture-heavy tasks** - Oracle consultation available for unblocking
+2. **Unfamiliar codebase** - Document-Specialist can fetch external context
+3. **Architecture-heavy tasks** - Architect consultation available for unblocking
 4. **Token budget constrained** - Efficient model routing
-5. **Tasks requiring external research** - Librarian agent capability
+5. **Tasks requiring external research** - Document-Specialist agent capability
 
 **Example Tasks:**
 - "Implement OAuth2 authentication following best practices"
@@ -1041,8 +1041,8 @@ Standardize Hephaestus completion output with markdown templates:
 ### What Hephaestus Does Better (vs Deep-Executor)
 
 1. ✅ **Parallel exploration** - Token-efficient, faster
-2. ✅ **External research** - Librarian for docs/examples
-3. ✅ **Structured escalation** - Oracle consultation for unblocking
+2. ✅ **External research** - Document-Specialist for docs/examples
+3. ✅ **Structured escalation** - Architect consultation for unblocking
 4. ✅ **Adaptive reasoning** - Cost optimization
 5. ✅ **Explicit code style guidance** - Better quality
 6. ✅ **Communication efficiency rules** - Less token waste
@@ -1132,7 +1132,7 @@ BEST OF BOTH WORLDS:
 | **Verification** | 7-criteria checklist | 4-criteria + per-change |
 | **Completion** | Evidence described | Markdown template |
 | **TODO** | Not mentioned | NON-NEGOTIABLE discipline |
-| **Failure** | 3 max → Oracle | Diagnose → Pivot → Report |
+| **Failure** | 3 max → Architect | Diagnose → Pivot → Report |
 | **Code Quality** | Pattern search, minimal, style matching | Anti-patterns list |
 | **Communication** | 4 hard rules (concise, no flattery) | Not defined |
 | **Memory** | Session IDs for delegation | `<remember>` tags |
@@ -1159,7 +1159,7 @@ BEST OF BOTH WORLDS:
 | **Execution** | Bash | - |
 | **LSP** | lsp_diagnostics, lsp_diagnostics_directory | - |
 | **AST** | ast_grep_search, ast_grep_replace | - |
-| **Delegation** | (Can delegate to explore/librarian) | task, delegate_task |
+| **Delegation** | (Can delegate to explore/document-specialist) | task, delegate_task |
 | **TODO** | - | TodoWrite (not mentioned) |
 | **Questions** | Allowed (last resort) | - |
 
@@ -1194,7 +1194,7 @@ BEST OF BOTH WORLDS:
 
 2. **Supporting Documentation**:
    - README.md - Project overview and philosophy
-   - Sisyphus prompt - Orchestrator patterns
+   - OMC prompt - Orchestrator patterns
    - AGENTS.md - Agent definitions and relationships
 
 3. **Key Insights**:

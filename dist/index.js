@@ -1,11 +1,11 @@
 /**
- * Oh-My-Claude-Sisyphus
+ * Oh-My-ClaudeCode
  *
  * A multi-agent orchestration system for the Claude Agent SDK.
  * Inspired by oh-my-opencode, reimagined for Claude Code.
  *
  * Main features:
- * - Sisyphus: Primary orchestrator that delegates to specialized subagents
+ * - OMC: Primary orchestrator that delegates to specialized subagents
  * - Parallel execution: Background agents run concurrently
  * - LSP/AST tools: IDE-like capabilities for agents
  * - Context management: Auto-injection from AGENTS.md/CLAUDE.md
@@ -44,15 +44,15 @@ export { isGptModel, isClaudeModel, getDefaultModelForCategory,
 // Utilities
 createAgentToolRestrictions, mergeAgentConfig, buildDelegationTable, buildUseAvoidSection, createEnvContext, getAvailableAgents, buildKeyTriggersSection, validateAgentConfig, deepMerge, loadAgentPrompt, 
 // Individual agents with metadata (rebranded intuitive names)
-architectAgent, ARCHITECT_PROMPT_METADATA, exploreAgent, EXPLORE_PROMPT_METADATA, researcherAgent, DOCUMENT_SPECIALIST_PROMPT_METADATA, executorAgent, SISYPHUS_JUNIOR_PROMPT_METADATA, designerAgent, FRONTEND_ENGINEER_PROMPT_METADATA, writerAgent, DOCUMENT_WRITER_PROMPT_METADATA, criticAgent, CRITIC_PROMPT_METADATA, analystAgent, ANALYST_PROMPT_METADATA, plannerAgent, PLANNER_PROMPT_METADATA, 
+architectAgent, ARCHITECT_PROMPT_METADATA, exploreAgent, EXPLORE_PROMPT_METADATA, researcherAgent, DOCUMENT_SPECIALIST_PROMPT_METADATA, executorAgent, EXECUTOR_PROMPT_METADATA, designerAgent, FRONTEND_ENGINEER_PROMPT_METADATA, writerAgent, DOCUMENT_WRITER_PROMPT_METADATA, criticAgent, CRITIC_PROMPT_METADATA, analystAgent, ANALYST_PROMPT_METADATA, plannerAgent, PLANNER_PROMPT_METADATA, 
 // Deprecated (backward compat - will be removed in v4.0.0)
-coordinatorAgent, ORCHESTRATOR_SISYPHUS_PROMPT_METADATA } from './agents/index.js';
+coordinatorAgent, ORCHESTRATOR_COORDINATOR_PROMPT_METADATA } from './agents/index.js';
 // Command expansion utilities for SDK integration
 export { expandCommand, expandCommandPrompt, getCommand, getAllCommands, listCommands, commandExists, expandCommands, getCommandsDir } from './commands/index.js';
 // Installer exports
 export { install, isInstalled, getInstallInfo, isClaudeInstalled, CLAUDE_CONFIG_DIR as INSTALLER_CLAUDE_CONFIG_DIR, AGENTS_DIR, COMMANDS_DIR, VERSION as INSTALLER_VERSION } from './installer/index.js';
 /**
- * Create a Sisyphus orchestration session
+ * Create a OMC orchestration session
  *
  * This prepares all the configuration and options needed
  * to run a query with the Claude Agent SDK.
@@ -62,7 +62,7 @@ export { install, isInstalled, getInstallInfo, isClaudeInstalled, CLAUDE_CONFIG_
  * import { createOmcSession } from 'oh-my-claudecode';
  * import { query } from '@anthropic-ai/claude-agent-sdk';
  *
- * const session = createSisyphusSession();
+ * const session = createOmcSession();
  *
  * // Use with Claude Agent SDK
  * for await (const message of query({
@@ -73,7 +73,7 @@ export { install, isInstalled, getInstallInfo, isClaudeInstalled, CLAUDE_CONFIG_
  * }
  * ```
  */
-export function createSisyphusSession(options) {
+export function createOmcSession(options) {
     // Load configuration
     const loadedConfig = options?.skipConfigLoad ? {} : loadConfig();
     const config = {
@@ -171,7 +171,7 @@ export function createSisyphusSession(options) {
     };
 }
 /**
- * Quick helper to process a prompt with Sisyphus enhancements
+ * Quick helper to process a prompt with OMC enhancements
  */
 export function enhancePrompt(prompt, config) {
     const processor = createMagicKeywordProcessor(config?.magicKeywords);

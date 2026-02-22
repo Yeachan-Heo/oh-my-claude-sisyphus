@@ -12,7 +12,7 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { execSync } from 'child_process';
-import { install as installSisyphus, HOOKS_DIR, isProjectScopedPlugin, isRunningAsPlugin } from '../installer/index.js';
+import { install as installOmc, HOOKS_DIR, isProjectScopedPlugin, isRunningAsPlugin } from '../installer/index.js';
 import { getConfigDir } from '../utils/config-dir.js';
 /** GitHub repository information */
 export const REPO_OWNER = 'Yeachan-Heo';
@@ -129,15 +129,15 @@ export function getInstalledVersion() {
         // Try to detect version from package.json if installed via npm
         try {
             // Check if we can find the package in node_modules
-            const result = execSync('npm list -g oh-my-claude-sisyphus --json', {
+            const result = execSync('npm list -g oh-my-claudecode --json', {
                 encoding: 'utf-8',
                 timeout: 5000,
                 stdio: 'pipe'
             });
             const data = JSON.parse(result);
-            if (data.dependencies?.['oh-my-claude-sisyphus']?.version) {
+            if (data.dependencies?.['oh-my-claudecode']?.version) {
                 return {
-                    version: data.dependencies['oh-my-claude-sisyphus'].version,
+                    version: data.dependencies['oh-my-claudecode'].version,
                     installedAt: new Date().toISOString(),
                     installMethod: 'npm'
                 };
@@ -274,7 +274,7 @@ export function reconcileUpdateRuntime(options) {
         }
     }
     try {
-        const installResult = installSisyphus({
+        const installResult = installOmc({
             force: true,
             verbose: options?.verbose ?? false,
             skipClaudeCheck: true,
@@ -322,7 +322,7 @@ export async function performUpdate(options) {
         const newVersion = release.tag_name.replace(/^v/, '');
         // Use npm for updates on all platforms (install.sh was removed)
         try {
-            execSync('npm install -g oh-my-claude-sisyphus@latest', {
+            execSync('npm install -g oh-my-claudecode@latest', {
                 encoding: 'utf-8',
                 stdio: options?.verbose ? 'inherit' : 'pipe',
                 timeout: 120000, // 2 minute timeout for npm
@@ -335,7 +335,7 @@ export async function performUpdate(options) {
             }
             // CRITICAL FIX: After npm updates the global package, the current process
             // still has OLD code loaded in memory. We must re-exec to run reconciliation
-            // with the NEW code. Otherwise, installSisyphus() runs OLD logic against NEW files.
+            // with the NEW code. Otherwise, installOmc() runs OLD logic against NEW files.
             if (!process.env.OMC_UPDATE_RECONCILE) {
                 // Set flag to prevent infinite loop
                 process.env.OMC_UPDATE_RECONCILE = '1';
@@ -398,7 +398,7 @@ export async function performUpdate(options) {
         }
         catch (npmError) {
             throw new Error('Auto-update via npm failed. Please run manually:\n' +
-                '  npm install -g oh-my-claude-sisyphus@latest\n' +
+                '  npm install -g oh-my-claudecode@latest\n' +
                 'Or use: /plugin install oh-my-claudecode\n' +
                 `Error: ${npmError instanceof Error ? npmError.message : npmError}`);
         }

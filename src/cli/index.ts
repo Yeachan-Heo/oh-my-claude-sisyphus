@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
 /**
- * Oh-My-Claude-Sisyphus CLI
+ * Oh-My-ClaudeCode CLI
  *
- * Command-line interface for the Sisyphus multi-agent system.
+ * Command-line interface for the OMC multi-agent system.
  *
  * Commands:
  * - run: Start an interactive session
@@ -24,7 +24,7 @@ import {
   getConfigPaths,
   generateConfigSchema
 } from '../config/loader.js';
-import { createSisyphusSession } from '../index.js';
+import { createOmcSession } from '../index.js';
 import {
   checkForUpdates,
   performUpdate,
@@ -36,7 +36,7 @@ import {
   type OMCConfig,
 } from '../features/auto-update.js';
 import {
-  install as installSisyphus,
+  install as installOmc,
   isInstalled,
   getInstallInfo
 } from '../installer/index.js';
@@ -422,7 +422,7 @@ Examples:
  */
 program
   .command('init')
-  .description('Initialize Sisyphus configuration in the current directory')
+  .description('Initialize OMC configuration in the current directory')
   .option('-g, --global', 'Initialize global user configuration')
   .option('-f, --force', 'Overwrite existing configuration')
   .addHelpText('after', `
@@ -457,11 +457,11 @@ Examples:
     const configContent = `// Oh-My-ClaudeCode Configuration
 // See: https://github.com/Yeachan-Heo/oh-my-claudecode for documentation
 {
-  "$schema": "./sisyphus-schema.json",
+  "$schema": "./omc-schema.json",
 
   // Agent model configurations
   "agents": {
-    "sisyphus": {
+    "omc": {
       // Main orchestrator - uses the most capable model
       "model": "claude-opus-4-6-20260205"
     },
@@ -533,7 +533,7 @@ Examples:
     console.log(chalk.green(`Created configuration: ${targetPath}`));
 
     // Also create the JSON schema for editor support
-    const schemaPath = join(targetDir, 'sisyphus-schema.json');
+    const schemaPath = join(targetDir, 'omc-schema.json');
     writeFileSync(schemaPath, JSON.stringify(generateConfigSchema(), null, 2));
     console.log(chalk.green(`Created JSON schema: ${schemaPath}`));
 
@@ -1055,7 +1055,7 @@ program
 Examples:
   $ omc info                     Show agents, features, and MCP servers`)
   .action(async () => {
-    const session = createSisyphusSession();
+    const session = createOmcSession();
 
     console.log(chalk.blue.bold('\nOh-My-ClaudeCode System Information\n'));
     console.log(chalk.gray('━'.repeat(50)));
@@ -1103,7 +1103,7 @@ Examples:
   $ omc test-prompt "ultrawork fix bugs"    See how magic keywords are detected
   $ omc test-prompt "analyze this code"     Test prompt enhancement`)
   .action(async (prompt: string) => {
-    const session = createSisyphusSession();
+    const session = createOmcSession();
 
     console.log(chalk.blue('Original prompt:'));
     console.log(chalk.gray(prompt));
@@ -1270,7 +1270,7 @@ Examples:
  */
 program
   .command('install')
-  .description('Install Sisyphus agents and commands to Claude Code config (~/.claude/)')
+  .description('Install OMC agents and commands to Claude Code config (~/.claude/)')
   .option('-f, --force', 'Overwrite existing files')
   .option('-q, --quiet', 'Suppress output except for errors')
   .option('--skip-claude-check', 'Skip checking if Claude Code is installed')
@@ -1292,7 +1292,7 @@ Examples:
     if (isInstalled() && !options.force) {
       const info = getInstallInfo();
       if (!options.quiet) {
-        console.log(chalk.yellow('Sisyphus is already installed.'));
+        console.log(chalk.yellow('OMC is already installed.'));
         if (info) {
           console.log(chalk.gray(`  Version: ${info.version}`));
           console.log(chalk.gray(`  Installed: ${info.installedAt}`));
@@ -1303,7 +1303,7 @@ Examples:
     }
 
     // Run installation
-    const result = installSisyphus({
+    const result = installOmc({
       force: options.force,
       verbose: !options.quiet,
       skipClaudeCheck: options.skipClaudeCheck
@@ -1322,9 +1322,9 @@ Examples:
         console.log('  claude                        # Start Claude Code normally');
         console.log('');
         console.log(chalk.yellow('Slash Commands:'));
-        console.log('  /sisyphus <task>              # Activate Sisyphus orchestration mode');
-        console.log('  /sisyphus-default             # Configure for current project');
-        console.log('  /sisyphus-default-global      # Configure globally');
+        console.log('  /omc <task>              # Activate OMC orchestration mode');
+        console.log('  /omc-default             # Configure for current project');
+        console.log('  /omc-default-global      # Configure globally');
         console.log('  /ultrawork <task>             # Maximum performance mode');
         console.log('  /deepsearch <query>           # Thorough codebase search');
         console.log('  /analyze <target>             # Deep analysis mode');
@@ -1341,7 +1341,7 @@ Examples:
         console.log('    vision              - Visual analysis (Sonnet)');
         console.log('    critic               - Plan review (Opus)');
         console.log('    analyst               - Pre-planning analysis (Opus)');
-        console.log('    orchestrator-sisyphus - Todo coordination (Opus)');
+        console.log('    debugger            - Root-cause diagnosis (Sonnet)');
         console.log('    executor            - Focused execution (Sonnet)');
         console.log('    planner          - Strategic planning (Opus)');
         console.log('    qa-tester           - Interactive CLI testing (Sonnet)');
@@ -1354,14 +1354,14 @@ Examples:
         console.log('    designer-low        - Simple styling (Haiku)');
         console.log('');
         console.log(chalk.yellow('After Updates:'));
-        console.log('  Run \'/sisyphus-default\' (project) or \'/sisyphus-default-global\' (global)');
+        console.log('  Run \'/omc-default\' (project) or \'/omc-default-global\' (global)');
         console.log('  to download the latest CLAUDE.md configuration.');
         console.log('  This ensures you get the newest features and agent behaviors.');
         console.log('');
         console.log(chalk.blue('Quick Start:'));
         console.log('  1. Run \'claude\' to start Claude Code');
-        console.log('  2. Type \'/sisyphus-default\' for project or \'/sisyphus-default-global\' for global');
-        console.log('  3. Or use \'/sisyphus <task>\' for one-time activation');
+        console.log('  2. Type \'/omc-default\' for project or \'/omc-default-global\' for global');
+        console.log('  3. Or use \'/omc <task>\' for one-time activation');
       }
     } else {
       console.error(chalk.red(`Installation failed: ${result.message}`));
@@ -1569,7 +1569,7 @@ Examples:
       console.log(chalk.gray('Syncing OMC components...'));
     }
 
-    const result = installSisyphus({
+    const result = installOmc({
       force: !!options.force,
       verbose: !options.quiet,
       skipClaudeCheck: true,
@@ -1624,7 +1624,7 @@ program
   .description('Run post-install setup (called automatically by npm)')
   .action(async () => {
     // Silent install - only show errors
-    const result = installSisyphus({
+    const result = installOmc({
       force: false,
       verbose: false,
       skipClaudeCheck: true
@@ -1633,10 +1633,10 @@ program
     if (result.success) {
       console.log(chalk.green('✓ Oh-My-ClaudeCode installed successfully!'));
       console.log(chalk.gray('  Run "oh-my-claudecode info" to see available agents.'));
-      console.log(chalk.yellow('  Run "/sisyphus-default" (project) or "/sisyphus-default-global" (global) in Claude Code.'));
+      console.log(chalk.yellow('  Run "/omc-default" (project) or "/omc-default-global" (global) in Claude Code.'));
     } else {
       // Don't fail the npm install, just warn
-      console.warn(chalk.yellow('⚠ Could not complete Sisyphus setup:'), result.message);
+      console.warn(chalk.yellow('⚠ Could not complete OMC setup:'), result.message);
       console.warn(chalk.gray('  Run "oh-my-claudecode install" manually to complete setup.'));
     }
   });

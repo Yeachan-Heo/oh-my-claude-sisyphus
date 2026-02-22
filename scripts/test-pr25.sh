@@ -161,11 +161,11 @@ else
     log_fail "qa-tester NOT in compiled definitions.js"
 fi
 
-# Check Oracle handoff section
-if grep -q "QA_Tester_Handoff\|QA-Tester" src/agents/oracle.ts; then
-    log_pass "QA-Tester handoff section in oracle.ts"
+# Check Architect handoff section
+if grep -q "QA_Tester_Handoff\|QA-Tester" src/agents/architect.ts; then
+    log_pass "QA-Tester handoff section in architect.ts"
 else
-    log_fail "QA-Tester handoff section missing from oracle.ts"
+    log_fail "QA-Tester handoff section missing from architect.ts"
 fi
 
 echo ""
@@ -198,10 +198,10 @@ if node dist/cli/index.js postinstall &> /tmp/pr25-postinstall.log; then
             log_fail "qa-tester.md missing tmux content"
         fi
 
-        if grep -q "Oracle" "$HOME/.claude/agents/qa-tester.md"; then
-            log_pass "qa-tester.md contains Oracle collaboration section"
+        if grep -q "Architect" "$HOME/.claude/agents/qa-tester.md"; then
+            log_pass "qa-tester.md contains Architect collaboration section"
         else
-            log_fail "qa-tester.md missing Oracle collaboration section"
+            log_fail "qa-tester.md missing Architect collaboration section"
         fi
     else
         log_fail "qa-tester.md NOT installed to ~/.claude/agents/"
@@ -480,11 +480,11 @@ else
     log_fail "qa-tester NOT in AGENTS.md"
 fi
 
-# Check commands/sisyphus.md updated
-if grep -q "qa-tester" commands/sisyphus.md 2>/dev/null; then
-    log_pass "qa-tester in commands/sisyphus.md"
+# Check commands/omc.md updated
+if grep -q "qa-tester" commands/omc.md 2>/dev/null; then
+    log_pass "qa-tester in commands/omc.md"
 else
-    log_fail "qa-tester NOT in commands/sisyphus.md"
+    log_fail "qa-tester NOT in commands/omc.md"
 fi
 
 # Check commands/ultrawork.md updated

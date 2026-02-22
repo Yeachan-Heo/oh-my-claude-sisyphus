@@ -1080,7 +1080,7 @@ Note: Analytics help you understand where tokens are going and optimize your usa
 
 **Method 2: NPM Global**
 ```bash
-npm install -g oh-my-claude-sisyphus
+npm install -g oh-my-claudecode
 ```
 
 **Method 3: Manual Git Clone**
@@ -1194,7 +1194,7 @@ yeachan-heo.github.io/oh-my-claudecode-website
 
 **NPM Package**
 ```
-npm install -g oh-my-claude-sisyphus
+npm install -g oh-my-claudecode
 ```
 
 **Documentation Directory**

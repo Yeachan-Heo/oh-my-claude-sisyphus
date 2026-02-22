@@ -1,6 +1,6 @@
 #!/bin/bash
-# Oh-My-Claude-Sisyphus Uninstaller
-# Completely removes all Sisyphus-installed files and configurations
+# Oh-My-ClaudeCode Uninstaller
+# Completely removes all OMC-installed files and configurations
 
 set -e
 
@@ -10,18 +10,18 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m'
 
-echo -e "${BLUE}Oh-My-Claude-Sisyphus Uninstaller${NC}"
+echo -e "${BLUE}Oh-My-ClaudeCode Uninstaller${NC}"
 echo ""
 
 # Claude Code config directory (always ~/.claude)
 CLAUDE_CONFIG_DIR="$HOME/.claude"
 
-echo "This will remove ALL Sisyphus components from:"
+echo "This will remove ALL OMC components from:"
 echo "  $CLAUDE_CONFIG_DIR"
 echo ""
 echo "Components to be removed:"
-echo "  - Agents (oracle, librarian, explore, etc.)"
-echo "  - Commands (sisyphus, ultrawork, plan, etc.)"
+echo "  - Agents (architect, document-specialist, explore, etc. + legacy aliases)"
+echo "  - Commands (omc, ultrawork, plan, etc.)"
 echo "  - Skills (ultrawork, git-master, frontend-ui-ux)"
 echo "  - Hooks (keyword-detector, silent-auto-update, stop-continuation)"
 echo "  - Version and state files"
@@ -49,26 +49,27 @@ fi
 
 # Remove agents
 echo -e "${BLUE}Removing agents...${NC}"
-rm -f "$CLAUDE_CONFIG_DIR/agents/oracle.md"
-rm -f "$CLAUDE_CONFIG_DIR/agents/librarian.md"
+rm -f "$CLAUDE_CONFIG_DIR/agents/architect.md"
+rm -f "$CLAUDE_CONFIG_DIR/agents/document-specialist.md"
 rm -f "$CLAUDE_CONFIG_DIR/agents/explore.md"
-rm -f "$CLAUDE_CONFIG_DIR/agents/frontend-engineer.md"
-rm -f "$CLAUDE_CONFIG_DIR/agents/document-writer.md"
-rm -f "$CLAUDE_CONFIG_DIR/agents/multimodal-looker.md"
-rm -f "$CLAUDE_CONFIG_DIR/agents/momus.md"
-rm -f "$CLAUDE_CONFIG_DIR/agents/metis.md"
-rm -f "$CLAUDE_CONFIG_DIR/agents/sisyphus-junior.md"
-rm -f "$CLAUDE_CONFIG_DIR/agents/prometheus.md"
+rm -f "$CLAUDE_CONFIG_DIR/agents/designer.md"
+rm -f "$CLAUDE_CONFIG_DIR/agents/writer.md"
+rm -f "$CLAUDE_CONFIG_DIR/agents/vision.md"
+rm -f "$CLAUDE_CONFIG_DIR/agents/critic.md"
+rm -f "$CLAUDE_CONFIG_DIR/agents/analyst.md"
+rm -f "$CLAUDE_CONFIG_DIR/agents/executor.md"
+rm -f "$CLAUDE_CONFIG_DIR/agents/planner.md"
 
 # Remove commands
 echo -e "${BLUE}Removing commands...${NC}"
-rm -f "$CLAUDE_CONFIG_DIR/commands/sisyphus.md"
+rm -f "$CLAUDE_CONFIG_DIR/commands/coordinator.md"
+rm -f "$CLAUDE_CONFIG_DIR/commands/omc.md"
 rm -f "$CLAUDE_CONFIG_DIR/commands/ultrawork.md"
 rm -f "$CLAUDE_CONFIG_DIR/commands/deepsearch.md"
 rm -f "$CLAUDE_CONFIG_DIR/commands/analyze.md"
 rm -f "$CLAUDE_CONFIG_DIR/commands/plan.md"
 rm -f "$CLAUDE_CONFIG_DIR/commands/review.md"
-rm -f "$CLAUDE_CONFIG_DIR/commands/prometheus.md"
+rm -f "$CLAUDE_CONFIG_DIR/commands/planner.md"
 rm -f "$CLAUDE_CONFIG_DIR/commands/orchestrator.md"
 rm -f "$CLAUDE_CONFIG_DIR/commands/update.md"
 
@@ -99,13 +100,13 @@ if [ -f "$SETTINGS_FILE" ] && command -v jq &> /dev/null; then
     # Create a backup
     cp "$SETTINGS_FILE" "$SETTINGS_FILE.bak"
 
-    # Remove Sisyphus-specific hooks from settings.json
-    # This removes hooks that reference sisyphus hook scripts
+    # Remove OMC-specific hooks from settings.json
+    # This removes hooks that reference omc hook scripts
     TEMP_SETTINGS=$(mktemp)
 
-    # Use jq to filter out Sisyphus hooks
+    # Use jq to filter out OMC hooks
     jq '
-      # Remove Sisyphus hooks from UserPromptSubmit
+      # Remove OMC hooks from UserPromptSubmit
       if .hooks.UserPromptSubmit then
         .hooks.UserPromptSubmit |= map(
           if .hooks then
@@ -115,7 +116,7 @@ if [ -f "$SETTINGS_FILE" ] && command -v jq &> /dev/null; then
         ) | .hooks.UserPromptSubmit |= map(select(.hooks | length > 0))
       else . end |
 
-      # Remove Sisyphus hooks from Stop
+      # Remove OMC hooks from Stop
       if .hooks.Stop then
         .hooks.Stop |= map(
           if .hooks then
@@ -133,12 +134,12 @@ if [ -f "$SETTINGS_FILE" ] && command -v jq &> /dev/null; then
 
     if [ $? -eq 0 ] && [ -s "$TEMP_SETTINGS" ]; then
         mv "$TEMP_SETTINGS" "$SETTINGS_FILE"
-        echo -e "${GREEN}✓ Removed Sisyphus hooks from settings.json${NC}"
+        echo -e "${GREEN}✓ Removed OMC hooks from settings.json${NC}"
         echo -e "${YELLOW}  Backup saved to: $SETTINGS_FILE.bak${NC}"
     else
         rm -f "$TEMP_SETTINGS"
         echo -e "${YELLOW}⚠ Could not modify settings.json automatically${NC}"
-        echo "  Please manually remove Sisyphus hooks from the 'hooks' section"
+        echo "  Please manually remove OMC hooks from the 'hooks' section"
     fi
 else
     if [ -f "$SETTINGS_FILE" ]; then

@@ -1,21 +1,21 @@
 /**
  * Basic Usage Example
  *
- * This example demonstrates how to use Oh-My-Claude-Sisyphus
+ * This example demonstrates how to use Oh-My-ClaudeCode
  * with the Claude Agent SDK.
  */
 
 // Note: In real usage, import from 'oh-my-claudecode'
-import { createSisyphusSession, enhancePrompt } from '../src/index.js';
+import { createOmcSession, enhancePrompt } from '../src/index.js';
 
 // For demonstration - in real usage, import from '@anthropic-ai/claude-agent-sdk'
 // import { query } from '@anthropic-ai/claude-agent-sdk';
 
 async function main() {
-  console.log('=== Oh-My-Claude-Sisyphus Example ===\n');
+  console.log('=== Oh-My-ClaudeCode Example ===\n');
 
-  // Create a Sisyphus session
-  const session = createSisyphusSession({
+  // Create a OMC session
+  const session = createOmcSession({
     // Optional: custom configuration overrides
     config: {
       features: {
@@ -58,7 +58,7 @@ async function main() {
 // Real usage with Claude Agent SDK:
 import { query } from '@anthropic-ai/claude-agent-sdk';
 
-const session = createSisyphusSession();
+const session = createOmcSession();
 
 for await (const message of query({
   prompt: session.processPrompt("ultrawork implement user authentication"),

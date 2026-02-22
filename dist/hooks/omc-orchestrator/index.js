@@ -412,7 +412,7 @@ export function checkBoulderContinuation(directory) {
 /**
  * Create omc orchestrator hook handlers
  */
-export function createSisyphusOrchestratorHook(directory) {
+export function createOmcOrchestratorHook(directory) {
     return {
         /**
          * Hook name identifier

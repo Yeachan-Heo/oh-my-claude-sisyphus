@@ -21,7 +21,7 @@ This directory contains all TypeScript source code organized into modules:
 
 | File | Description |
 |------|-------------|
-| `index.ts` | Main entry point - exports `createSisyphusSession()` |
+| `index.ts` | Main entry point - exports `createOmcSession()` |
 | `shared/types.ts` | Shared TypeScript types used across modules |
 
 ## Subdirectories
@@ -53,7 +53,7 @@ This directory contains all TypeScript source code organized into modules:
 2. **Entry Point Pattern**:
    ```typescript
    // Main export in index.ts
-   export { createSisyphusSession } from './session';
+   export { createOmcSession } from './session';
    export { lspTools, astTools, allCustomTools } from './tools';
    export { getAgentDefinitions, omcSystemPrompt } from './agents/definitions';
    ```

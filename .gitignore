@@ -2,7 +2,7 @@ node_modules/
 *.log
 .DS_Store
 .omc/
-.sisyphus/
+.omc/
 .idea/
 .claude/
 

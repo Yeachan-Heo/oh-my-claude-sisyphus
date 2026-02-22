@@ -27,7 +27,7 @@ jobs:
             - Comment to keep it open
             - Add the `pinned` label to prevent auto-closing
 
-            Thank you for contributing to oh-my-claude-sisyphus!
+            Thank you for contributing to oh-my-claudecode!
 
           close-issue-message: |
             This issue has been automatically closed due to inactivity.

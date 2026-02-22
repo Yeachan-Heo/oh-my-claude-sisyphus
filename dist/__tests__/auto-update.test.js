@@ -136,7 +136,7 @@ describe('auto-update reconciliation', () => {
         mockedExecSync.mockReturnValue('');
         const result = await performUpdate({ verbose: false });
         expect(result.success).toBe(true);
-        expect(mockedExecSync).toHaveBeenCalledWith('npm install -g oh-my-claude-sisyphus@latest', expect.any(Object));
+        expect(mockedExecSync).toHaveBeenCalledWith('npm install -g oh-my-claudecode@latest', expect.any(Object));
         expect(mockedInstall).toHaveBeenCalledWith({
             force: true,
             verbose: false,

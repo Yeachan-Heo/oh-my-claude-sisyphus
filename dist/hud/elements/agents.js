@@ -95,7 +95,7 @@ const AGENT_TYPE_CODES = {
     // ============================================================
     // BACKWARD COMPATIBILITY (Deprecated)
     // ============================================================
-    // Researcher - 'R' for Researcher (deprecated, points to dependency-expert)
+    // Researcher - 'r' for Researcher (deprecated, points to document-specialist)
     researcher: 'r', // sonnet
 };
 /**

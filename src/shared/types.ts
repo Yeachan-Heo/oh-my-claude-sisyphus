@@ -1,5 +1,5 @@
 /**
- * Shared types for Oh-My-Claude-Sisyphus
+ * Shared types for Oh-My-ClaudeCode
  */
 
 export type ModelType = 'sonnet' | 'opus' | 'haiku' | 'inherit';
@@ -30,8 +30,8 @@ export interface PluginConfig {
     // New agents from oh-my-opencode
     critic?: { model?: string; enabled?: boolean };
     analyst?: { model?: string; enabled?: boolean };
-    orchestratorSisyphus?: { model?: string; enabled?: boolean };
-    sisyphusJunior?: { model?: string; enabled?: boolean };
+    coordinator?: { model?: string; enabled?: boolean };
+    executor?: { model?: string; enabled?: boolean };
     planner?: { model?: string; enabled?: boolean };
   };
 

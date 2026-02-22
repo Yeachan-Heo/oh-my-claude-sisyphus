@@ -96,7 +96,7 @@ export declare function checkBoulderContinuation(directory: string): {
 /**
  * Create omc orchestrator hook handlers
  */
-export declare function createSisyphusOrchestratorHook(directory: string): {
+export declare function createOmcOrchestratorHook(directory: string): {
     /**
      * Hook name identifier
      */

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * PreToolUse Hook: Sisyphus Reminder Enforcer (Node.js)
+ * PreToolUse Hook: OMC Reminder Enforcer (Node.js)
  * Injects contextual reminders before every tool execution
  * Cross-platform: Windows, macOS, Linux
  */

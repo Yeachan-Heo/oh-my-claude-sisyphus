@@ -1,7 +1,7 @@
 /**
  * Advanced Usage Example
  *
- * This example demonstrates advanced features of Oh-My-Claude-Sisyphus:
+ * This example demonstrates advanced features of Oh-My-ClaudeCode:
  * - Custom agent configuration
  * - Custom system prompts
  * - Context file injection
@@ -9,23 +9,23 @@
  */
 
 import {
-  createSisyphusSession,
+  createOmcSession,
   getAgentDefinitions,
-  getSisyphusSystemPrompt,
+  getOmcSystemPrompt,
   getDefaultMcpServers
 } from '../src/index.js';
 
 async function main() {
-  console.log('=== Advanced Oh-My-Claude-Sisyphus Example ===\n');
+  console.log('=== Advanced Oh-My-ClaudeCode Example ===\n');
 
   // Example 1: Custom agent configuration
   console.log('Example 1: Custom Agents');
 
-  const customSession = createSisyphusSession({
+  const customSession = createOmcSession({
     config: {
       agents: {
         // Use a faster model for the orchestrator in dev
-        sisyphus: { model: 'claude-sonnet-4-6-20260217' },
+        omc: { model: 'claude-sonnet-4-6-20260217' },
         // Disable some agents
         frontendEngineer: { enabled: false },
         documentWriter: { enabled: false }
@@ -46,8 +46,8 @@ async function main() {
   console.log('Example 2: Agent Definitions');
 
   const agents = getAgentDefinitions({
-    oracle: {
-      // Override oracle's prompt for a specific use case
+    architect: {
+      // Override architect's prompt for a specific use case
       prompt: 'You are a security-focused code reviewer...'
     }
   });
@@ -61,7 +61,7 @@ async function main() {
   // Example 3: Custom system prompt
   console.log('Example 3: Custom System Prompt');
 
-  const customPrompt = getSisyphusSystemPrompt({
+  const customPrompt = getOmcSystemPrompt({
     includeContinuation: true,
     customAddition: `
 ## Project-Specific Instructions
@@ -101,7 +101,7 @@ Always validate user input with Zod schemas.
   // Example 5: Full custom configuration
   console.log('Example 5: Full Custom Session');
 
-  const fullCustomSession = createSisyphusSession({
+  const fullCustomSession = createOmcSession({
     workingDirectory: '/path/to/project',
     skipConfigLoad: true, // Don't load from files
     skipContextInjection: false, // Still inject AGENTS.md
@@ -114,7 +114,7 @@ Always:
 `,
     config: {
       agents: {
-        sisyphus: { model: 'claude-opus-4-6-20260205' }
+        omc: { model: 'claude-opus-4-6-20260205' }
       },
       features: {
         parallelExecution: true,
@@ -173,7 +173,7 @@ const customTools = createSdkMcpServer({
 });
 
 // Create session and merge custom MCP server
-const session = createSisyphusSession();
+const session = createOmcSession();
 const options = {
   ...session.queryOptions.options,
   mcpServers: {

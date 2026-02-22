@@ -5,8 +5,8 @@ import { spawn } from 'child_process';
 
 // Create test directory
 const testDir = join(tmpdir(), `remember-tag-test-${Date.now()}`);
-const sisyphusDir = join(testDir, '.sisyphus');
-mkdirSync(sisyphusDir, { recursive: true });
+const omcDir = join(testDir, '.omc');
+mkdirSync(omcDir, { recursive: true });
 
 console.log('Testing remember tag processing in post-tool-verifier.mjs\n');
 
@@ -50,7 +50,7 @@ try {
 
   await runHook(input1);
 
-  const notepadPath = join(sisyphusDir, 'notepad.md');
+  const notepadPath = join(omcDir, 'notepad.md');
   if (existsSync(notepadPath)) {
     const content = readFileSync(notepadPath, 'utf-8');
     if (content.includes('pnpm') && content.includes('Working Memory')) {
@@ -78,7 +78,7 @@ try {
 
   await runHook(input2);
 
-  const notepadPath = join(sisyphusDir, 'notepad.md');
+  const notepadPath = join(omcDir, 'notepad.md');
   const content = readFileSync(notepadPath, 'utf-8');
   if (content.includes('API endpoint') && content.includes('Priority Context')) {
     console.log('✓ PASS: Priority remember tag saved to Priority Context\n');
@@ -95,7 +95,7 @@ console.log('Test 3: Non-Task tool should not process tags');
 try {
   // Clean up first
   rmSync(testDir, { recursive: true });
-  mkdirSync(sisyphusDir, { recursive: true });
+  mkdirSync(omcDir, { recursive: true });
 
   const input3 = {
     toolName: 'Bash',
@@ -106,7 +106,7 @@ try {
 
   await runHook(input3);
 
-  const notepadPath = join(sisyphusDir, 'notepad.md');
+  const notepadPath = join(omcDir, 'notepad.md');
   if (!existsSync(notepadPath)) {
     console.log('✓ PASS: Bash tool did not trigger remember tag processing\n');
   } else {

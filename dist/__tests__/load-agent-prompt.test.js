@@ -9,7 +9,7 @@ describe('loadAgentPrompt', () => {
             // Should NOT contain frontmatter
             expect(prompt).not.toMatch(/^---/);
             // Should contain actual prompt content
-            expect(prompt).toMatch(/architect|Oracle|debugging/i);
+            expect(prompt).toMatch(/architect|debugging/i);
         });
         test('loads different agents correctly', () => {
             const executor = loadAgentPrompt('executor');

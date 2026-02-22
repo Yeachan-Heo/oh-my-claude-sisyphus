@@ -1,5 +1,5 @@
 <!-- Parent: ../AGENTS.md -->
-<!-- Generated: 2026-01-28 | Updated: 2026-02-19 -->
+<!-- Generated: 2026-01-28 | Updated: 2026-02-22 -->
 
 # agents
 
@@ -244,4 +244,4 @@ None - pure TypeScript definitions.
 | Review | code-reviewer | Code quality |
 | Data | scientist, scientist-high | Data analysis |
 
-<!-- MANUAL: -->
+<!-- MANUAL: Legacy alias wording was removed from active prompts to keep agent naming consistent with current conventions. -->

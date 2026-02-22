@@ -1,5 +1,5 @@
 /**
- * Agent Types for Oh-My-Claude-Sisyphus
+ * Agent Types for Oh-My-ClaudeCode
  *
  * Defines types for agent configuration and metadata used in dynamic prompt generation.
  * Ported from oh-my-opencode's agent type system.

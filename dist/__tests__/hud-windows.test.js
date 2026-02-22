@@ -24,14 +24,14 @@ describe('HUD Windows Compatibility', () => {
             expect(existsSync(sessionStartPath)).toBe(true);
             const content = readFileSync(sessionStartPath, 'utf-8');
             expect(content).toContain('omc-hud.mjs');
-            // Note: May also contain 'sisyphus-hud.mjs' for backward compatibility (dual naming)
+            // Note: May also contain 'omc-hud.mjs' for backward compatibility (dual naming)
         });
         it('installer should create omc-hud.mjs', () => {
             const installerPath = join(packageRoot, 'src', 'installer', 'index.ts');
             expect(existsSync(installerPath)).toBe(true);
             const content = readFileSync(installerPath, 'utf-8');
             expect(content).toContain('omc-hud.mjs');
-            // Note: May also contain 'sisyphus-hud.mjs' for legacy support
+            // Note: May also contain 'omc-hud.mjs' for legacy support
         });
     });
     describe('pathToFileURL for Dynamic Import', () => {

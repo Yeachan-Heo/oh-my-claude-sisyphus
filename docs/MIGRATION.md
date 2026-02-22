@@ -121,14 +121,14 @@ Your old commands still work! But now you don't need them.
 The project was rebranded to better reflect its purpose and improve discoverability.
 
 - **Project/brand name**: `oh-my-claudecode` (GitHub repo, plugin name, commands)
-- **npm package name**: `oh-my-claude-sisyphus` (unchanged)
+- **npm package name**: `oh-my-claudecode` (unchanged)
 
-> **Why the difference?** The npm package name `oh-my-claude-sisyphus` was kept for backward compatibility with existing installations. The project, GitHub repository, plugin, and all commands use `oh-my-claudecode`.
+> **Why the difference?** The npm package name `oh-my-claudecode` was kept for backward compatibility with existing installations. The project, GitHub repository, plugin, and all commands use `oh-my-claudecode`.
 
 #### NPM Install Command (unchanged)
 
 ```bash
-npm install -g oh-my-claude-sisyphus
+npm install -g oh-my-claudecode
 ```
 
 ### What Changed
@@ -162,61 +162,47 @@ Work naturally. Claude detects intent and activates behaviors automatically:
 "commit these changes properly"                     # Auto-activates git expertise
 ```
 
-### Agent Name Mapping
+### Agent Naming Standard
 
-All agent names have been updated from Greek mythology references to intuitive, descriptive names:
+Agent naming is now strictly descriptive and role-based (for example: `architect`, `planner`, `analyst`, `critic`, `document-specialist`, `designer`, `writer`, `vision`, `executor`).
 
-| Old Name (Greek) | New Name (Intuitive) |
-|------------------|----------------------|
-| prometheus | planner |
-| momus | critic |
-| oracle | architect |
-| metis | analyst |
-| mnemosyne | learner |
-| sisyphus-junior | executor |
-| orchestrator-sisyphus | coordinator |
-| librarian | document-specialist |
-| frontend-engineer | designer |
-| document-writer | writer |
-| multimodal-looker | vision |
-| explore | explore (unchanged) |
-| qa-tester | qa-tester (unchanged) |
+Use canonical role names across prompts, commands, docs, and scripts. Avoid introducing alternate myth-style or legacy aliases in new content.
 
 ### Directory Migration
 
 Directory structures have been renamed for consistency with the new package name:
 
 #### Local Project Directories
-- **Old**: `.sisyphus/`
+- **Old**: `.omc/`
 - **New**: `.omc/`
 
 #### Global Directories
-- **Old**: `~/.sisyphus/`
+- **Old**: `~/.omc/`
 - **New**: `~/.omc/`
 
 #### Skills Directory
-- **Old**: `~/.claude/skills/sisyphus-learned/`
+- **Old**: `~/.claude/skills/omc-learned/`
 - **New**: `~/.claude/skills/omc-learned/`
 
 #### Config Files
-- **Old**: `~/.claude/sisyphus/mnemosyne.json`
+- **Old**: `~/.claude/omc/mnemosyne.json`
 - **New**: `~/.claude/omc/learner.json`
 
 ### Environment Variables
 
-All environment variables have been renamed from `SISYPHUS_*` to `OMC_*`:
+All environment variables have been renamed from `OMC_*` to `OMC_*`:
 
 | Old | New |
 |-----|-----|
-| SISYPHUS_USE_NODE_HOOKS | OMC_USE_NODE_HOOKS |
-| SISYPHUS_USE_BASH_HOOKS | OMC_USE_BASH_HOOKS |
-| SISYPHUS_PARALLEL_EXECUTION | OMC_PARALLEL_EXECUTION |
-| SISYPHUS_LSP_TOOLS | OMC_LSP_TOOLS |
-| SISYPHUS_MAX_BACKGROUND_TASKS | OMC_MAX_BACKGROUND_TASKS |
-| SISYPHUS_ROUTING_ENABLED | OMC_ROUTING_ENABLED |
-| SISYPHUS_ROUTING_DEFAULT_TIER | OMC_ROUTING_DEFAULT_TIER |
-| SISYPHUS_ESCALATION_ENABLED | OMC_ESCALATION_ENABLED |
-| SISYPHUS_DEBUG | OMC_DEBUG |
+| OMC_USE_NODE_HOOKS | OMC_USE_NODE_HOOKS |
+| OMC_USE_BASH_HOOKS | OMC_USE_BASH_HOOKS |
+| OMC_PARALLEL_EXECUTION | OMC_PARALLEL_EXECUTION |
+| OMC_LSP_TOOLS | OMC_LSP_TOOLS |
+| OMC_MAX_BACKGROUND_TASKS | OMC_MAX_BACKGROUND_TASKS |
+| OMC_ROUTING_ENABLED | OMC_ROUTING_ENABLED |
+| OMC_ROUTING_DEFAULT_TIER | OMC_ROUTING_DEFAULT_TIER |
+| OMC_ESCALATION_ENABLED | OMC_ESCALATION_ENABLED |
+| OMC_DEBUG | OMC_DEBUG |
 
 ### Command Mapping
 
@@ -293,7 +279,7 @@ Follow these steps to migrate your existing setup:
 #### 1. Uninstall Old Package (if installed via npm)
 
 ```bash
-npm uninstall -g oh-my-claude-sisyphus
+npm uninstall -g oh-my-claudecode
 ```
 
 #### 2. Install via Plugin System (Required)
@@ -312,20 +298,20 @@ If you have existing projects using the old directory structure:
 
 ```bash
 # In each project directory
-mv .sisyphus .omc
+mv .omc .omc
 ```
 
 #### 4. Rename Global Directories
 
 ```bash
 # Global configuration directory
-mv ~/.sisyphus ~/.omc
+mv ~/.omc ~/.omc
 
 # Skills directory
-mv ~/.claude/skills/sisyphus-learned ~/.claude/skills/omc-learned
+mv ~/.claude/skills/omc-learned ~/.claude/skills/omc-learned
 
 # Config directory
-mv ~/.claude/sisyphus ~/.claude/omc
+mv ~/.claude/omc ~/.claude/omc
 ```
 
 #### 5. Update Environment Variables
@@ -333,19 +319,19 @@ mv ~/.claude/sisyphus ~/.claude/omc
 Update your shell configuration files (`.bashrc`, `.zshrc`, etc.):
 
 ```bash
-# Replace all SISYPHUS_* variables with OMC_*
+# Replace all OMC_* variables with OMC_*
 # Example:
-# OLD: export SISYPHUS_ROUTING_ENABLED=true
+# OLD: export OMC_ROUTING_ENABLED=true
 # NEW: export OMC_ROUTING_ENABLED=true
 ```
 
 #### 6. Update Scripts and Configurations
 
 Search for and update any references to:
-- Package name: `oh-my-claude-sisyphus` → `oh-my-claudecode`
+- Package name: `oh-my-claudecode` → `oh-my-claudecode`
 - Agent names: Use the mapping table above
 - Commands: Use the new slash commands
-- Directory paths: Update `.sisyphus` → `.omc`
+- Directory paths: Update `.omc` → `.omc`
 
 #### 7. Run One-Time Setup
 
@@ -364,7 +350,7 @@ After migration, verify your setup:
 
 1. **Check installation**:
    ```bash
-   npm list -g oh-my-claude-sisyphus
+   npm list -g oh-my-claudecode
    ```
 
 2. **Verify directories exist**:
@@ -548,7 +534,7 @@ Background agents can be resumed with full context via `resume-session` tool.
 Version 3.1 is a drop-in upgrade. No migration required!
 
 ```bash
-npm update -g oh-my-claude-sisyphus
+npm update -g oh-my-claudecode
 ```
 
 All existing configurations, plans, and workflows continue working unchanged.
@@ -680,7 +666,7 @@ Users set their default mode preference via `/oh-my-claudecode:omc-setup`.
 Version 3.4.0 is a drop-in upgrade. No migration required!
 
 ```bash
-npm update -g oh-my-claude-sisyphus
+npm update -g oh-my-claudecode
 ```
 
 All existing configurations, plans, and workflows continue working unchanged.
@@ -745,7 +731,7 @@ After upgrading, verify new features:
 
 1. **Check installation**:
    ```bash
-   npm list -g oh-my-claude-sisyphus
+   npm list -g oh-my-claudecode
    ```
 
 2. **Test ultrapilot**:
@@ -804,7 +790,7 @@ Expected timeline: Q1 2026
 
 ### Stay Updated
 
-- Watch the [GitHub repository](https://github.com/Yeachan-Heo/oh-my-claude-sisyphus) for announcements
+- Watch the [GitHub repository](https://github.com/Yeachan-Heo/oh-my-claudecode) for announcements
 - Check [CHANGELOG.md](../CHANGELOG.md) for detailed release notes
 - Join discussions in GitHub Issues
 
@@ -932,7 +918,7 @@ A: Keywords are explicit shortcuts. Natural language triggers auto-detection. Bo
 - **See all commands**: Run `/oh-my-claudecode:omc-help`
 - **View real-time status**: Run `/oh-my-claudecode:hud setup`
 - **Review detailed changelog**: See [CHANGELOG.md](../CHANGELOG.md)
-- **Report bugs**: [GitHub Issues](https://github.com/Yeachan-Heo/oh-my-claude-sisyphus/issues)
+- **Report bugs**: [GitHub Issues](https://github.com/Yeachan-Heo/oh-my-claudecode/issues)
 
 ---
 

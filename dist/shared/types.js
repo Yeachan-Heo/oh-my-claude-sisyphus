@@ -1,5 +1,5 @@
 /**
- * Shared types for Oh-My-Claude-Sisyphus
+ * Shared types for Oh-My-ClaudeCode
  */
 export {};
 //# sourceMappingURL=types.js.map

@@ -27,7 +27,7 @@ oh-my-claudecode enhances Claude Code with:
 | `tsconfig.json` | TypeScript configuration |
 | `CHANGELOG.md` | Version history and release notes |
 | `docs/CLAUDE.md` | End-user orchestration instructions (installed to user projects) |
-| `src/index.ts` | Main entry point - exports `createSisyphusSession()` |
+| `src/index.ts` | Main entry point - exports `createOmcSession()` |
 | `.mcp.json` | MCP server configuration for plugin discovery |
 | `.claude-plugin/plugin.json` | Claude Code plugin manifest |
 
@@ -160,8 +160,8 @@ npm run test:coverage # Coverage report
 
 ```typescript
 // Entry point
-import { createSisyphusSession } from 'oh-my-claudecode';
-const session = createSisyphusSession();
+import { createOmcSession } from 'oh-my-claudecode';
+const session = createOmcSession();
 
 // Agent registration
 import { getAgentDefinitions } from './agents/definitions';

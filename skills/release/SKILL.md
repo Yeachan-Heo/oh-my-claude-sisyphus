@@ -57,7 +57,7 @@ gh release create v<version> --title "v<version> - <title>" --notes "<release no
 ```
 
 ### 7. Verify
-- [ ] npm: https://www.npmjs.com/package/oh-my-claude-sisyphus
+- [ ] npm: https://www.npmjs.com/package/oh-my-claudecode
 - [ ] GitHub: https://github.com/Yeachan-Heo/oh-my-claudecode/releases
 
 ## Version Files Reference

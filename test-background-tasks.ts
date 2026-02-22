@@ -4,7 +4,7 @@
  */
 
 import {
-  createSisyphusSession,
+  createOmcSession,
   shouldRunInBackground,
   DEFAULT_MAX_BACKGROUND_TASKS,
   LONG_RUNNING_PATTERNS,
@@ -161,7 +161,7 @@ test('Unknown command has low confidence', () => {
 console.log(yellow('\n▸ Testing BackgroundTaskManager\n'));
 
 test('Session includes BackgroundTaskManager', () => {
-  const session = createSisyphusSession({ skipConfigLoad: true });
+  const session = createOmcSession({ skipConfigLoad: true });
   return session.backgroundTasks !== undefined &&
          typeof session.backgroundTasks.registerTask === 'function' &&
          typeof session.backgroundTasks.getTasks === 'function' &&
@@ -169,12 +169,12 @@ test('Session includes BackgroundTaskManager', () => {
 });
 
 test('Session includes shouldRunInBackground method', () => {
-  const session = createSisyphusSession({ skipConfigLoad: true });
+  const session = createOmcSession({ skipConfigLoad: true });
   return typeof session.shouldRunInBackground === 'function';
 });
 
 test('Manager tracks registered tasks', () => {
-  const session = createSisyphusSession({ skipConfigLoad: true });
+  const session = createOmcSession({ skipConfigLoad: true });
   const task = session.backgroundTasks.registerTask('test-agent', 'test prompt');
   return task.id !== undefined &&
          task.status === 'pending' &&
@@ -182,7 +182,7 @@ test('Manager tracks registered tasks', () => {
 });
 
 test('Manager enforces capacity limits', () => {
-  const session = createSisyphusSession({
+  const session = createOmcSession({
     skipConfigLoad: true,
     config: { permissions: { maxBackgroundTasks: 2 } }
   });
@@ -196,7 +196,7 @@ test('Manager enforces capacity limits', () => {
 });
 
 test('Manager updates task status', () => {
-  const session = createSisyphusSession({ skipConfigLoad: true });
+  const session = createOmcSession({ skipConfigLoad: true });
   const task = session.backgroundTasks.registerTask('test-agent', 'test prompt');
 
   session.backgroundTasks.completeTask(task.id, 'success result');
@@ -206,7 +206,7 @@ test('Manager updates task status', () => {
 });
 
 test('Manager prunes completed tasks', () => {
-  const session = createSisyphusSession({ skipConfigLoad: true });
+  const session = createOmcSession({ skipConfigLoad: true });
 
   const task1 = session.backgroundTasks.registerTask('agent1', 'prompt1');
   session.backgroundTasks.registerTask('agent2', 'prompt2');
@@ -224,7 +224,7 @@ test('Manager prunes completed tasks', () => {
 console.log(yellow('\n▸ Testing System Prompt Integration\n'));
 
 test('System prompt includes background task guidance', () => {
-  const session = createSisyphusSession({ skipConfigLoad: true });
+  const session = createOmcSession({ skipConfigLoad: true });
   const systemPrompt = session.queryOptions.options.systemPrompt;
 
   return systemPrompt.includes('Background Task Execution') &&
@@ -233,7 +233,7 @@ test('System prompt includes background task guidance', () => {
 });
 
 test('System prompt includes concurrency limit info', () => {
-  const session = createSisyphusSession({ skipConfigLoad: true });
+  const session = createOmcSession({ skipConfigLoad: true });
   const systemPrompt = session.queryOptions.options.systemPrompt;
 
   return systemPrompt.includes('Maximum') &&

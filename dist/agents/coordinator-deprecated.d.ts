@@ -10,7 +10,7 @@ import type { AgentConfig, AgentPromptMetadata } from './types.js';
 /**
  * @deprecated Will be removed in v4.0.0. The coordinator was never a runtime agent.
  */
-export declare const ORCHESTRATOR_SISYPHUS_PROMPT_METADATA: AgentPromptMetadata;
+export declare const ORCHESTRATOR_COORDINATOR_PROMPT_METADATA: AgentPromptMetadata;
 /**
  * @deprecated Will be removed in v4.0.0. The coordinator was never a runtime agent.
  */

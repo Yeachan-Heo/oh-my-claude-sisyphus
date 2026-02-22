@@ -27,21 +27,21 @@ const testCases = [
   { prompt: 'List all functions in utils.ts', agent: 'explore', expectedTier: 'LOW' },
 
   // MEDIUM tier - standard implementation
-  { prompt: 'Add a new button component with hover state', agent: 'frontend-engineer', expectedTier: 'MEDIUM' },
-  { prompt: 'Update the user list component to show email addresses', agent: 'sisyphus-junior', expectedTier: 'MEDIUM' },
+  { prompt: 'Add a new button component with hover state', agent: 'designer', expectedTier: 'MEDIUM' },
+  { prompt: 'Update the user list component to show email addresses', agent: 'executor', expectedTier: 'MEDIUM' },
 
   // HIGH tier - risky refactoring (detected via keywords)
-  { prompt: 'Refactor the user service to use the new database schema and add migrations', agent: 'sisyphus-junior', expectedTier: 'HIGH' },
+  { prompt: 'Refactor the user service to use the new database schema and add migrations', agent: 'executor', expectedTier: 'HIGH' },
 
-  // LOW tier - short or document-writer tasks
-  { prompt: 'Write documentation for the API endpoints', agent: 'document-writer', expectedTier: 'LOW' },
-  { prompt: 'Implement the user profile page', agent: 'sisyphus-junior', expectedTier: 'LOW' },
+  // LOW tier - short or writer tasks
+  { prompt: 'Write documentation for the API endpoints', agent: 'writer', expectedTier: 'LOW' },
+  { prompt: 'Implement the user profile page', agent: 'executor', expectedTier: 'LOW' },
 
   // HIGH tier - complex tasks
-  { prompt: 'Analyze the root cause of the authentication bug affecting production users', agent: 'oracle', expectedTier: 'HIGH' },
-  { prompt: 'Design the architecture for a new microservices system with event sourcing', agent: 'oracle', expectedTier: 'HIGH' },
-  { prompt: 'Refactor the entire API layer to use dependency injection pattern', agent: 'prometheus', expectedTier: 'HIGH' },
-  { prompt: 'Debug the critical security vulnerability in the payment system', agent: 'oracle', expectedTier: 'HIGH' },
+  { prompt: 'Analyze the root cause of the authentication bug affecting production users', agent: 'architect', expectedTier: 'HIGH' },
+  { prompt: 'Design the architecture for a new microservices system with event sourcing', agent: 'architect', expectedTier: 'HIGH' },
+  { prompt: 'Refactor the entire API layer to use dependency injection pattern', agent: 'planner', expectedTier: 'HIGH' },
+  { prompt: 'Debug the critical security vulnerability in the payment system', agent: 'architect', expectedTier: 'HIGH' },
 ];
 
 console.log('--- Test 1: Basic Routing ---\n');
@@ -76,7 +76,7 @@ console.log(`\n--- Results: ${passed}/${testCases.length} passed ---\n`);
 
 console.log('--- Test 2: Agent Quick Tier Lookup ---\n');
 
-const agents = ['oracle', 'prometheus', 'momus', 'explore', 'document-writer', 'frontend-engineer', 'sisyphus-junior'];
+const agents = ['architect', 'planner', 'critic', 'explore', 'writer', 'designer', 'executor'];
 for (const agent of agents) {
   const tier = quickTierForAgent(agent);
   console.log(`  ${agent}: ${tier} → ${TIER_MODELS[tier]}`);
@@ -86,22 +86,22 @@ console.log('\n--- Test 3: Proactive Model Selection (getModelForTask) ---\n');
 
 const modelTestCases = [
   // Worker agents - adaptive based on task
-  { agent: 'sisyphus-junior', prompt: 'Fix this typo in the README', expectedModel: 'haiku' },
-  { agent: 'sisyphus-junior', prompt: 'Refactor payment system with migration scripts for production data', expectedModel: 'opus' },
+  { agent: 'executor', prompt: 'Fix this typo in the README', expectedModel: 'haiku' },
+  { agent: 'executor', prompt: 'Refactor payment system with migration scripts for production data', expectedModel: 'opus' },
 
-  // Oracle - adaptive: lookup → haiku, complex → opus
-  { agent: 'oracle', prompt: 'Where is the auth middleware configured?', expectedModel: 'haiku' },
-  { agent: 'oracle', prompt: 'Debug this race condition in the payment system', expectedModel: 'opus' },
+  // Architect - adaptive: lookup → haiku, complex → opus
+  { agent: 'architect', prompt: 'Where is the auth middleware configured?', expectedModel: 'haiku' },
+  { agent: 'architect', prompt: 'Debug this race condition in the payment system', expectedModel: 'opus' },
 
-  // Prometheus - adaptive: simple → haiku, strategic → opus
-  { agent: 'prometheus', prompt: 'List the steps to add a button', expectedModel: 'haiku' },
-  { agent: 'prometheus', prompt: 'Design the migration strategy for our monolith to microservices with risk analysis', expectedModel: 'opus' },
+  // Planner - adaptive: simple → haiku, strategic → opus
+  { agent: 'planner', prompt: 'List the steps to add a button', expectedModel: 'haiku' },
+  { agent: 'planner', prompt: 'Design the migration strategy for our monolith to microservices with risk analysis', expectedModel: 'opus' },
 
   // Explore - adaptive (not fixed to haiku anymore)
   { agent: 'explore', prompt: 'Find all .ts files', expectedModel: 'haiku' },
 
-  // Orchestrator - ONLY fixed tier (always opus)
-  { agent: 'orchestrator-sisyphus', prompt: 'Simple task', expectedModel: 'opus' },
+  // Reviewer agents can still route down for simple prompts
+  { agent: 'critic', prompt: 'Simple task', expectedModel: 'haiku' },
 ];
 
 console.log('Orchestrator proactively selects model based on task complexity:\n');
@@ -144,7 +144,7 @@ const complexPrompt = `
 `;
 
 console.log('Complex prompt signals:');
-const signals = extractAllSignals(complexPrompt, 'oracle');
+const signals = extractAllSignals(complexPrompt, 'architect');
 console.log(JSON.stringify(signals, null, 2));
 
 const score = calculateComplexityScore(signals);
@@ -154,14 +154,14 @@ console.log('\n--- Test 6: Routing Explanation ---\n');
 
 const explanation = explainRouting({
   taskPrompt: complexPrompt,
-  agentType: 'oracle',
+  agentType: 'architect',
 });
 console.log(explanation);
 
 console.log('\n--- Test 7: Complexity Analysis Helper ---\n');
 
 const analysisPrompt = 'Refactor the payment processing module to support multiple payment providers and add migration scripts for existing transactions';
-const analysis = analyzeTaskComplexity(analysisPrompt, 'sisyphus-junior');
+const analysis = analyzeTaskComplexity(analysisPrompt, 'executor');
 
 console.log('Task:', analysisPrompt.substring(0, 60) + '...');
 console.log('\nAnalysis Result:');

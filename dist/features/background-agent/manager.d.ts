@@ -1,7 +1,7 @@
 /**
  * Background Agent Manager
  *
- * Manages background tasks for the Sisyphus system.
+ * Manages background tasks for the OMC system.
  * This is a simplified version that tracks tasks launched via Claude Code's
  * native Task tool with run_in_background: true.
  *
@@ -9,7 +9,7 @@
  */
 import type { BackgroundTask, BackgroundTaskStatus, BackgroundTaskConfig, LaunchInput, ResumeInput, TaskProgress, ResumeContext } from './types.js';
 /**
- * Manages background tasks for the Sisyphus system.
+ * Manages background tasks for the OMC system.
  */
 export declare class BackgroundManager {
     private tasks;

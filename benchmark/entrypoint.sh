@@ -29,7 +29,7 @@ if [ "$RUN_MODE" = "omc" ]; then
         cd /workspace/omc-source && npm install && npm link
     else
         echo "Installing OMC from npm..."
-        npm install -g oh-my-claude-sisyphus
+        npm install -g oh-my-claudecode
     fi
 
     # Initialize OMC configuration

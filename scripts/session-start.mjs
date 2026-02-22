@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Sisyphus Session Start Hook (Node.js)
+ * OMC Session Start Hook (Node.js)
  * Restores persistent mode states when session starts
  * Cross-platform: Windows, macOS, Linux
  */
@@ -176,7 +176,7 @@ async function checkNpmUpdate(currentVersion) {
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 2000);
-    const response = await fetch('https://registry.npmjs.org/oh-my-claude-sisyphus/latest', {
+    const response = await fetch('https://registry.npmjs.org/oh-my-claudecode/latest', {
       signal: controller.signal
     });
     clearTimeout(timeoutId);
@@ -200,16 +200,16 @@ async function checkNpmUpdate(currentVersion) {
 // Check if HUD is properly installed (with retry for race conditions)
 async function checkHudInstallation(retryCount = 0) {
   const hudDir = join(configDir, 'hud');
-  // Support both legacy (sisyphus-hud.mjs) and current (omc-hud.mjs) naming
+  // Support both legacy (omc-hud.mjs) and current (omc-hud.mjs) naming
   const hudScriptOmc = join(hudDir, 'omc-hud.mjs');
-  const hudScriptSisyphus = join(hudDir, 'sisyphus-hud.mjs');
+  const hudScriptLegacy = join(hudDir, 'omc-hud.mjs');
   const settingsFile = join(configDir, 'settings.json');
 
   const MAX_RETRIES = 2;
   const RETRY_DELAY_MS = 100;
 
   // Check if HUD script exists (either naming convention)
-  const hudScriptExists = existsSync(hudScriptOmc) || existsSync(hudScriptSisyphus);
+  const hudScriptExists = existsSync(hudScriptOmc) || existsSync(hudScriptLegacy);
   if (!hudScriptExists) {
     return { installed: false, reason: 'HUD script missing' };
   }
@@ -290,7 +290,7 @@ async function main() {
     const hudCheck = await checkHudInstallation();
     if (!hudCheck.installed) {
       messages.push(`<system-reminder>
-[Sisyphus] HUD not configured (${hudCheck.reason}). Run /hud setup then restart Claude Code.
+[OMC] HUD not configured (${hudCheck.reason}). Run /hud setup then restart Claude Code.
 </system-reminder>`);
     }
 

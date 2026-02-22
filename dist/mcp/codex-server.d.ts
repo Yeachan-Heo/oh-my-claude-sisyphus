@@ -12,7 +12,7 @@
  *
  * Tools will be available as mcp__x__ask_codex
  */
-export declare const codexMcpServer: import("@anthropic-ai/claude-agent-sdk").McpSdkServerConfigWithInstance;
+export declare const codexMcpServer: any;
 /**
  * Tool names for allowedTools configuration
  */

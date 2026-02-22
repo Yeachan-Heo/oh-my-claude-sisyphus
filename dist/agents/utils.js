@@ -148,7 +148,7 @@ export function mergeAgentConfig(base, override) {
     return merged;
 }
 /**
- * Build delegation table section for Sisyphus prompt
+ * Build delegation table section for OMC prompt
  */
 export function buildDelegationTable(availableAgents) {
     if (availableAgents.length === 0) {
@@ -219,7 +219,7 @@ export function getAvailableAgents(agents) {
     }));
 }
 /**
- * Build key triggers section for Sisyphus prompt
+ * Build key triggers section for OMC prompt
  */
 export function buildKeyTriggersSection(availableAgents) {
     const triggers = [];

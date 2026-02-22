@@ -132,7 +132,7 @@ Before claiming completion:
 - **GitHub:** github.com/Yeachan-Heo/oh-my-claudecode
 - **Docs:** /docs/REFERENCE.md
 - **Website:** yeachan-heo.github.io/oh-my-claudecode-website
-- **NPM:** `npm i -g oh-my-claude-sisyphus`
+- **NPM:** `npm i -g oh-my-claudecode`
 - **Discord:** (community support - link in GitHub)
 
 ---

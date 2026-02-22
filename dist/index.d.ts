@@ -1,11 +1,11 @@
 /**
- * Oh-My-Claude-Sisyphus
+ * Oh-My-ClaudeCode
  *
  * A multi-agent orchestration system for the Claude Agent SDK.
  * Inspired by oh-my-opencode, reimagined for Claude Code.
  *
  * Main features:
- * - Sisyphus: Primary orchestrator that delegates to specialized subagents
+ * - OMC: Primary orchestrator that delegates to specialized subagents
  * - Parallel execution: Background agents run concurrently
  * - LSP/AST tools: IDE-like capabilities for agents
  * - Context management: Auto-injection from AGENTS.md/CLAUDE.md
@@ -26,13 +26,13 @@ export { type VersionMetadata, type ReleaseInfo, type UpdateCheckResult, type Up
 export * from './shared/types.js';
 export * from './hooks/index.js';
 export { type BoulderState, type PlanProgress, type PlanSummary, BOULDER_DIR, BOULDER_FILE, BOULDER_STATE_PATH, NOTEPAD_DIR, NOTEPAD_BASE_PATH, PLANNER_PLANS_DIR, PLAN_EXTENSION, getBoulderFilePath, readBoulderState, writeBoulderState, appendSessionId, clearBoulderState, findPlannerPlans, getPlanProgress, getPlanName, createBoulderState, getPlanSummaries, hasBoulder, getActivePlanPath, ContextCollector, contextCollector, injectPendingContext, injectContextIntoText, createContextInjectorHook, type ContextSourceType, type ContextPriority, type ContextEntry, type RegisterContextOptions, type PendingContext, type MessageContext, type OutputPart, type InjectionStrategy, type InjectionResult } from './features/index.js';
-export { type ModelType, type AgentCost, type AgentCategory, type DelegationTrigger, type AgentPromptMetadata, type AgentConfig, type FullAgentConfig, type AgentOverrideConfig, type AgentOverrides, type AgentFactory, type AvailableAgent, isGptModel, isClaudeModel, getDefaultModelForCategory, createAgentToolRestrictions, mergeAgentConfig, buildDelegationTable, buildUseAvoidSection, createEnvContext, getAvailableAgents, buildKeyTriggersSection, validateAgentConfig, deepMerge, loadAgentPrompt, architectAgent, ARCHITECT_PROMPT_METADATA, exploreAgent, EXPLORE_PROMPT_METADATA, researcherAgent, DOCUMENT_SPECIALIST_PROMPT_METADATA, executorAgent, SISYPHUS_JUNIOR_PROMPT_METADATA, designerAgent, FRONTEND_ENGINEER_PROMPT_METADATA, writerAgent, DOCUMENT_WRITER_PROMPT_METADATA, criticAgent, CRITIC_PROMPT_METADATA, analystAgent, ANALYST_PROMPT_METADATA, plannerAgent, PLANNER_PROMPT_METADATA, coordinatorAgent, ORCHESTRATOR_SISYPHUS_PROMPT_METADATA } from './agents/index.js';
+export { type ModelType, type AgentCost, type AgentCategory, type DelegationTrigger, type AgentPromptMetadata, type AgentConfig, type FullAgentConfig, type AgentOverrideConfig, type AgentOverrides, type AgentFactory, type AvailableAgent, isGptModel, isClaudeModel, getDefaultModelForCategory, createAgentToolRestrictions, mergeAgentConfig, buildDelegationTable, buildUseAvoidSection, createEnvContext, getAvailableAgents, buildKeyTriggersSection, validateAgentConfig, deepMerge, loadAgentPrompt, architectAgent, ARCHITECT_PROMPT_METADATA, exploreAgent, EXPLORE_PROMPT_METADATA, researcherAgent, DOCUMENT_SPECIALIST_PROMPT_METADATA, executorAgent, EXECUTOR_PROMPT_METADATA, designerAgent, FRONTEND_ENGINEER_PROMPT_METADATA, writerAgent, DOCUMENT_WRITER_PROMPT_METADATA, criticAgent, CRITIC_PROMPT_METADATA, analystAgent, ANALYST_PROMPT_METADATA, plannerAgent, PLANNER_PROMPT_METADATA, coordinatorAgent, ORCHESTRATOR_COORDINATOR_PROMPT_METADATA } from './agents/index.js';
 export { expandCommand, expandCommandPrompt, getCommand, getAllCommands, listCommands, commandExists, expandCommands, getCommandsDir, type CommandInfo, type ExpandedCommand } from './commands/index.js';
 export { install, isInstalled, getInstallInfo, isClaudeInstalled, CLAUDE_CONFIG_DIR as INSTALLER_CLAUDE_CONFIG_DIR, AGENTS_DIR, COMMANDS_DIR, VERSION as INSTALLER_VERSION, type InstallResult, type InstallOptions } from './installer/index.js';
 /**
- * Options for creating a Sisyphus session
+ * Options for creating a OMC session
  */
-export interface SisyphusOptions {
+export interface OmcOptions {
     /** Custom configuration (merged with loaded config) */
     config?: Partial<PluginConfig>;
     /** Working directory (default: process.cwd()) */
@@ -47,9 +47,9 @@ export interface SisyphusOptions {
     apiKey?: string;
 }
 /**
- * Result of creating a Sisyphus session
+ * Result of creating a OMC session
  */
-export interface SisyphusSession {
+export interface OmcSession {
     /** The query options to pass to Claude Agent SDK */
     queryOptions: {
         options: {
@@ -82,7 +82,7 @@ export interface SisyphusSession {
     shouldRunInBackground: (command: string) => TaskExecutionDecision;
 }
 /**
- * Create a Sisyphus orchestration session
+ * Create a OMC orchestration session
  *
  * This prepares all the configuration and options needed
  * to run a query with the Claude Agent SDK.
@@ -92,7 +92,7 @@ export interface SisyphusSession {
  * import { createOmcSession } from 'oh-my-claudecode';
  * import { query } from '@anthropic-ai/claude-agent-sdk';
  *
- * const session = createSisyphusSession();
+ * const session = createOmcSession();
  *
  * // Use with Claude Agent SDK
  * for await (const message of query({
@@ -103,9 +103,9 @@ export interface SisyphusSession {
  * }
  * ```
  */
-export declare function createSisyphusSession(options?: SisyphusOptions): SisyphusSession;
+export declare function createOmcSession(options?: OmcOptions): OmcSession;
 /**
- * Quick helper to process a prompt with Sisyphus enhancements
+ * Quick helper to process a prompt with OMC enhancements
  */
 export declare function enhancePrompt(prompt: string, config?: PluginConfig): string;
 /**

@@ -106,8 +106,8 @@ async function main() {
 
   // 2. Development paths
   const devPaths = [
-    join(home, "Workspace/oh-my-claude-sisyphus/dist/hud/index.js"),
-    join(home, "workspace/oh-my-claude-sisyphus/dist/hud/index.js"),
+    join(home, "Workspace/oh-my-claudecode/dist/hud/index.js"),
+    join(home, "workspace/oh-my-claudecode/dist/hud/index.js"),
     join(home, "Workspace/oh-my-claudecode/dist/hud/index.js"),
     join(home, "workspace/oh-my-claudecode/dist/hud/index.js"),
   ];
@@ -174,7 +174,7 @@ Use the Edit tool to add/update this field while preserving other settings.
 
 **Step 5:** Clean up old HUD scripts (if any):
 ```bash
-node -e "const p=require('path'),f=require('fs'),d=process.env.CLAUDE_CONFIG_DIR||p.join(require('os').homedir(),'.claude'),t=p.join(d,'hud','sisyphus-hud.mjs');try{if(f.existsSync(t)){f.unlinkSync(t);console.log('Removed legacy script')}else{console.log('No legacy script found')}}catch{}"
+node -e "const p=require('path'),f=require('fs'),d=process.env.CLAUDE_CONFIG_DIR||p.join(require('os').homedir(),'.claude'),t=p.join(d,'hud','omc-hud.mjs');try{if(f.existsSync(t)){f.unlinkSync(t);console.log('Removed legacy script')}else{console.log('No legacy script found')}}catch{}"
 ```
 
 **Step 6:** Tell the user to restart Claude Code for changes to take effect.

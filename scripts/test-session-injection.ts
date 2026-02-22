@@ -4,8 +4,8 @@ import { join } from 'path';
 
 // Create test notepad
 const testDir = join(tmpdir(), `session-test-${Date.now()}`);
-const sisyphusDir = join(testDir, '.sisyphus');
-mkdirSync(sisyphusDir, { recursive: true });
+const omcDir = join(testDir, '.omc');
+mkdirSync(omcDir, { recursive: true });
 
 const notepadContent = `# Notepad
 
@@ -22,10 +22,10 @@ Some working memory entry
 User notes here
 `;
 
-writeFileSync(join(sisyphusDir, 'notepad.md'), notepadContent);
+writeFileSync(join(omcDir, 'notepad.md'), notepadContent);
 
 // Test priority context extraction (mimics session-start.mjs logic)
-const content = readFileSync(join(sisyphusDir, 'notepad.md'), 'utf-8');
+const content = readFileSync(join(omcDir, 'notepad.md'), 'utf-8');
 const priorityMatch = content.match(/## Priority Context\n([\s\S]*?)(?=\n## [^#]|$)/);
 const cleanContent = priorityMatch ? priorityMatch[1].replace(/<!--[\s\S]*?-->/g, '').trim() : '';
 

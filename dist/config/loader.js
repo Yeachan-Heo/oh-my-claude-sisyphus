@@ -2,8 +2,8 @@
  * Configuration Loader
  *
  * Handles loading and merging configuration from multiple sources:
- * - User config: ~/.config/claude-sisyphus/config.jsonc
- * - Project config: .claude/sisyphus.jsonc
+ * - User config: ~/.config/claude-omc/config.jsonc
+ * - Project config: .claude/omc.jsonc
  * - Environment variables
  */
 import { readFileSync, existsSync } from 'fs';
@@ -25,8 +25,8 @@ export const DEFAULT_CONFIG = {
         // New agents from oh-my-opencode
         critic: { model: 'claude-opus-4-6-20260205', enabled: true },
         analyst: { model: 'claude-opus-4-6-20260205', enabled: true },
-        orchestratorSisyphus: { model: 'claude-sonnet-4-6-20260217', enabled: true },
-        sisyphusJunior: { model: 'claude-sonnet-4-6-20260217', enabled: true },
+        coordinator: { model: 'claude-sonnet-4-6-20260217', enabled: true },
+        executor: { model: 'claude-sonnet-4-6-20260217', enabled: true },
         planner: { model: 'claude-opus-4-6-20260205', enabled: true }
     },
     features: {
@@ -117,8 +117,8 @@ export const DEFAULT_CONFIG = {
 export function getConfigPaths() {
     const userConfigDir = getConfigDir();
     return {
-        user: join(userConfigDir, 'claude-sisyphus', 'config.jsonc'),
-        project: join(process.cwd(), '.claude', 'sisyphus.jsonc')
+        user: join(userConfigDir, 'claude-omc', 'config.jsonc'),
+        project: join(process.cwd(), '.claude', 'omc.jsonc')
     };
 }
 /**
@@ -355,14 +355,14 @@ export function loadContextFromFiles(files) {
 export function generateConfigSchema() {
     return {
         $schema: 'http://json-schema.org/draft-07/schema#',
-        title: 'Oh-My-Claude-Sisyphus Configuration',
+        title: 'Oh-My-ClaudeCode Configuration',
         type: 'object',
         properties: {
             agents: {
                 type: 'object',
                 description: 'Agent model and feature configuration',
                 properties: {
-                    sisyphus: {
+                    omc: {
                         type: 'object',
                         properties: {
                             model: { type: 'string', description: 'Model ID for the main orchestrator' }

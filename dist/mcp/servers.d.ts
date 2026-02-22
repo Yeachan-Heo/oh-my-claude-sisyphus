@@ -39,7 +39,7 @@ export declare function createFilesystemServer(allowedPaths: string[]): McpServe
  */
 export declare function createMemoryServer(): McpServerConfig;
 /**
- * Get all default MCP servers for the Sisyphus system
+ * Get all default MCP servers for the OMC system
  */
 export interface McpServersConfig {
     exa?: McpServerConfig;

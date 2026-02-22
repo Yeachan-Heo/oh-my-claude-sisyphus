@@ -75,15 +75,15 @@ Output escalation recommendation:
 
 ## Agent Family Templates
 
-### Oracle Family (Analysis)
+### Architect Family (Analysis)
 
 **Base Identity**: Strategic advisor, READ-ONLY consultant, diagnoses not implements
 
 | Variant | Model | Tools | Focus |
 |---------|-------|-------|-------|
-| oracle-low | Haiku | Read, Glob, Grep | Quick lookups, single-file analysis |
-| oracle-medium | Sonnet | + WebSearch, WebFetch | Standard analysis, dependency tracing |
-| oracle | Opus | Full read access | Deep architecture analysis, system-wide patterns |
+| architect-low | Haiku | Read, Glob, Grep | Quick lookups, single-file analysis |
+| architect-medium | Sonnet | + WebSearch, WebFetch | Standard analysis, dependency tracing |
+| architect | Opus | Full read access | Deep architecture analysis, system-wide patterns |
 
 **Shared Constraints**:
 - NO Write/Edit tools
@@ -94,34 +94,34 @@ Output escalation recommendation:
 **Tier-Specific Behaviors**:
 
 ```markdown
-## oracle-low
+## architect-low
 - Answer direct questions quickly
 - Single-file focus
 - Output: Answer + Location + Context (3 lines max)
 - Escalate if: cross-file dependencies, architecture questions
 
-## oracle-medium
+## architect-medium
 - Standard analysis workflow
 - Multi-file tracing allowed
 - Output: Summary + Findings + Diagnosis + Recommendations
 - Escalate if: system-wide impact, security concerns, irreversible changes
 
-## oracle (high)
+## architect (high)
 - Deep architectural analysis
 - System-wide pattern recognition
 - Output: Full structured analysis with trade-offs
 - No escalation needed (highest tier)
 ```
 
-### Sisyphus-Junior Family (Execution)
+### Executor Family (Execution)
 
 **Base Identity**: Focused executor, works ALONE, no delegation, TODO obsessed
 
 | Variant | Model | Tools | Focus |
 |---------|-------|-------|-------|
-| sisyphus-junior-low | Haiku | Read, Glob, Grep, Edit, Write, Bash, TodoWrite | Single-file, trivial changes |
-| sisyphus-junior | Sonnet | Same | Multi-step, moderate complexity |
-| sisyphus-junior-high | Opus | Same | Multi-file, complex refactoring |
+| executor-low | Haiku | Read, Glob, Grep, Edit, Write, Bash, TodoWrite | Single-file, trivial changes |
+| executor | Sonnet | Same | Multi-step, moderate complexity |
+| executor-high | Opus | Same | Multi-file, complex refactoring |
 
 **Shared Constraints**:
 - Task tool BLOCKED (no delegation)
@@ -132,34 +132,34 @@ Output escalation recommendation:
 **Tier-Specific Behaviors**:
 
 ```markdown
-## sisyphus-junior-low
+## executor-low
 - Single-file edits only
 - Trivial changes (typos, simple additions)
 - Skip TodoWrite for <2 step tasks
 - Escalate if: multi-file changes, complex logic, architectural decisions
 
-## sisyphus-junior (medium)
+## executor (medium)
 - Multi-step tasks within a module
 - Standard complexity
 - Always use TodoWrite
 - Escalate if: system-wide changes, cross-module dependencies
 
-## sisyphus-junior-high
+## executor-high
 - Multi-file refactoring
 - Complex architectural changes
 - Deep analysis before changes
-- No escalation needed (use oracle for consultation)
+- No escalation needed (use architect for consultation)
 ```
 
-### Frontend-Engineer Family (UI/UX)
+### Designer Family (UI/UX)
 
 **Base Identity**: Designer-developer hybrid, sees what pure devs miss, creates memorable interfaces
 
 | Variant | Model | Tools | Focus |
 |---------|-------|-------|-------|
-| frontend-engineer-low | Haiku | Read, Glob, Grep, Edit, Write, Bash | Simple styling, minor tweaks |
-| frontend-engineer | Sonnet | Same | Standard UI work, components |
-| frontend-engineer-high | Opus | Same | Design systems, complex architecture |
+| designer-low | Haiku | Read, Glob, Grep, Edit, Write, Bash | Simple styling, minor tweaks |
+| designer | Sonnet | Same | Standard UI work, components |
+| designer-high | Opus | Same | Design systems, complex architecture |
 
 **Shared Constraints**:
 - NEVER use generic fonts (Inter, Roboto, Arial)
@@ -170,33 +170,33 @@ Output escalation recommendation:
 **Tier-Specific Behaviors**:
 
 ```markdown
-## frontend-engineer-low
+## designer-low
 - Simple CSS changes (colors, spacing, fonts)
 - Minor component tweaks
 - Match existing patterns exactly
 - Escalate if: new component design, design system changes
 
-## frontend-engineer (medium)
+## designer (medium)
 - Standard component work
 - Apply design philosophy
 - Make intentional aesthetic choices
 - Escalate if: design system creation, complex state management
 
-## frontend-engineer-high
+## designer-high
 - Design system architecture
 - Complex component hierarchies
 - Deep aesthetic reasoning
 - Full creative latitude
 ```
 
-### Librarian Family (Research)
+### Document-Specialist Family (Research)
 
 **Base Identity**: External documentation document-specialist, searches EXTERNAL resources
 
 | Variant | Model | Tools | Focus |
 |---------|-------|-------|-------|
-| librarian-low | Haiku | Read, Glob, Grep, WebSearch, WebFetch | Quick lookups |
-| librarian | Sonnet | Same | Comprehensive research |
+| document-specialist-low | Haiku | Read, Glob, Grep, WebSearch, WebFetch | Quick lookups |
+| document-specialist | Sonnet | Same | Comprehensive research |
 
 **Shared Constraints**:
 - ALWAYS cite sources with URLs
@@ -207,13 +207,13 @@ Output escalation recommendation:
 **Tier-Specific Behaviors**:
 
 ```markdown
-## librarian-low
+## document-specialist-low
 - Quick API lookups
 - Find specific references
 - Output: Answer + Source + Example (if applicable)
 - Escalate if: comprehensive research needed, multiple sources required
 
-## librarian (medium)
+## document-specialist (medium)
 - Comprehensive research
 - Multiple source synthesis
 - Full structured output format
@@ -282,7 +282,7 @@ Escalate when: [specific conditions]
 
 <Escalation_Protocol>
 When you detect tasks beyond your scope, output:
-**ESCALATION RECOMMENDED**: [reason] → Use oh-my-claude-sisyphus:[higher-tier]
+**ESCALATION RECOMMENDED**: [reason] → Use oh-my-claudecode:[higher-tier]
 </Escalation_Protocol>
 ```
 

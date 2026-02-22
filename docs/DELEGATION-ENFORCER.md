@@ -74,7 +74,7 @@ Task(
 Enforces model parameter for a single agent delegation call.
 
 ```typescript
-import { enforceModel } from 'oh-my-claude-sisyphus';
+import { enforceModel } from 'oh-my-claudecode';
 
 const input = {
   description: 'Implement feature',
@@ -92,7 +92,7 @@ console.log(result.injected); // true
 Get the default model for an agent type.
 
 ```typescript
-import { getModelForAgent } from 'oh-my-claude-sisyphus';
+import { getModelForAgent } from 'oh-my-claudecode';
 
 getModelForAgent('executor'); // 'sonnet'
 getModelForAgent('executor-low'); // 'haiku'
@@ -104,7 +104,7 @@ getModelForAgent('executor-high'); // 'opus'
 Check if a tool invocation is an agent delegation call.
 
 ```typescript
-import { isAgentCall } from 'oh-my-claude-sisyphus';
+import { isAgentCall } from 'oh-my-claudecode';
 
 isAgentCall('Task', { subagent_type: 'executor', ... }); // true
 isAgentCall('Bash', { command: 'ls' }); // false
@@ -115,7 +115,7 @@ isAgentCall('Bash', { command: 'ls' }); // false
 The enforcer automatically integrates with the pre-tool-use hook:
 
 ```typescript
-import { processHook } from 'oh-my-claude-sisyphus';
+import { processHook } from 'oh-my-claudecode';
 
 const hookInput = {
   toolName: 'Task',

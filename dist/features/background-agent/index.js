@@ -1,7 +1,7 @@
 /**
  * Background Agent Feature
  *
- * Manages background tasks for the Sisyphus multi-agent system.
+ * Manages background tasks for the OMC multi-agent system.
  * Provides concurrency control and task state management.
  *
  * Adapted from oh-my-opencode's background-agent feature.

@@ -4,7 +4,7 @@
  * Ported from oh-my-opencode's boulder-state.
  */
 import { OmcPaths } from '../../lib/worktree-paths.js';
-/** Sisyphus state directory */
+/** OMC state directory */
 export const BOULDER_DIR = OmcPaths.ROOT;
 /** Boulder state file name */
 export const BOULDER_FILE = 'boulder.json';

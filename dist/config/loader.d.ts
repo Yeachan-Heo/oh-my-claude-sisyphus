@@ -2,8 +2,8 @@
  * Configuration Loader
  *
  * Handles loading and merging configuration from multiple sources:
- * - User config: ~/.config/claude-sisyphus/config.jsonc
- * - Project config: .claude/sisyphus.jsonc
+ * - User config: ~/.config/claude-omc/config.jsonc
+ * - Project config: .claude/omc.jsonc
  * - Environment variables
  */
 import type { PluginConfig } from '../shared/types.js';

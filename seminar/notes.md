@@ -614,7 +614,7 @@ Narrate:
 **Installation** (Slide 39)
 ```bash
 # Step 1: Install OMC
-npm install -g oh-my-claude-sisyphus
+npm install -g oh-my-claudecode
 
 # Step 2: Run setup wizard
 claude-code "/oh-my-claudecode:omc-setup"

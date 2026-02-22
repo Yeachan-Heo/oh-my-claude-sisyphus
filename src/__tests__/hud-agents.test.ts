@@ -1,5 +1,5 @@
 /**
- * Sisyphus HUD - Agents Element Tests
+ * OMC HUD - Agents Element Tests
  *
  * Tests for agent visualization with different formats.
  */

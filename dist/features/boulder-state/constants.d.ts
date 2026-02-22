@@ -3,7 +3,7 @@
  *
  * Ported from oh-my-opencode's boulder-state.
  */
-/** Sisyphus state directory */
+/** OMC state directory */
 export declare const BOULDER_DIR: ".omc";
 /** Boulder state file name */
 export declare const BOULDER_FILE = "boulder.json";

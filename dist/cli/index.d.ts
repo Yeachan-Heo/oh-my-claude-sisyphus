@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /**
- * Oh-My-Claude-Sisyphus CLI
+ * Oh-My-ClaudeCode CLI
  *
- * Command-line interface for the Sisyphus multi-agent system.
+ * Command-line interface for the OMC multi-agent system.
  *
  * Commands:
  * - run: Start an interactive session

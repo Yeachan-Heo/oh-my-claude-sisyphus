@@ -1,5 +1,5 @@
 /**
- * Agent Types for Oh-My-Claude-Sisyphus
+ * Agent Types for Oh-My-ClaudeCode
  *
  * Defines types for agent configuration and metadata used in dynamic prompt generation.
  * Ported from oh-my-opencode's agent type system.
@@ -26,7 +26,7 @@ export interface DelegationTrigger {
 }
 /**
  * Metadata about an agent for dynamic prompt generation
- * This enables Sisyphus to build delegation tables automatically
+ * This enables OMC to build delegation tables automatically
  */
 export interface AgentPromptMetadata {
     /** Agent category */
@@ -105,7 +105,7 @@ export type AgentOverrides = Partial<Record<string, AgentOverrideConfig>>;
  */
 export type AgentFactory = (model?: string) => AgentConfig;
 /**
- * Available agent descriptor for Sisyphus prompt building
+ * Available agent descriptor for OMC prompt building
  */
 export interface AvailableAgent {
     name: string;

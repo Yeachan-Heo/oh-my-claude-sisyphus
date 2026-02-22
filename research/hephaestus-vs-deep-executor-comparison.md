@@ -48,7 +48,7 @@ TOTAL                                            31           23       +8
 
 ### 2.1 Parallel Exploration (Gap: 3/3)
 
-**Hephaestus**: Fires 2-5 explore/librarian agents simultaneously as background tasks. Continues working while results stream in. Uses `background_output(task_id)` to collect.
+**Hephaestus**: Fires 2-5 explore/document-specialist agents simultaneously as background tasks. Continues working while results stream in. Uses `background_output(task_id)` to collect.
 
 **Deep-Executor**: Sequential exploration only. Must complete each Glob/Grep/Read call before starting the next.
 
@@ -58,8 +58,8 @@ TOTAL                                            31           23       +8
 
 **Hephaestus**: Three specialized agent types:
 - **Explore agents**: Parallel codebase search
-- **Librarian**: External docs, GitHub, OSS research
-- **Oracle**: High-IQ consulting for stuck situations
+- **Document-Specialist**: External docs, GitHub, OSS research
+- **Architect**: High-IQ consulting for stuck situations
 
 **Deep-Executor**: No delegation. All work is self-performed. This is a deliberate design choice ("You are the forge") but means no access to specialist capabilities.
 
@@ -67,7 +67,7 @@ TOTAL                                            31           23       +8
 
 ### 2.3 External Research Capability (Gap: 3/3)
 
-**Hephaestus**: Librarian agent fetches external documentation, GitHub repos, and OSS references. This provides real-time knowledge augmentation.
+**Hephaestus**: Document-Specialist agent fetches external documentation, GitHub repos, and OSS references. This provides real-time knowledge augmentation.
 
 **Deep-Executor**: No external research capability. Relies entirely on pre-loaded context and available tools.
 
@@ -75,7 +75,7 @@ TOTAL                                            31           23       +8
 
 ### 2.4 Failure Recovery / Escalation (Gap: 2/3)
 
-**Hephaestus**: Structured 3-failure protocol: STOP -> REVERT -> DOCUMENT -> CONSULT Oracle. Clear escalation path prevents infinite retry loops.
+**Hephaestus**: Structured 3-failure protocol: STOP -> REVERT -> DOCUMENT -> CONSULT Architect. Clear escalation path prevents infinite retry loops.
 
 **Deep-Executor**: No explicit failure threshold or escalation. Has verification loops but no "give up and escalate" mechanism.
 
@@ -147,8 +147,8 @@ TOTAL                                            31           23       +8
 |-----------|------------------------:|---------------------------:|------:|
 | System prompt per agent | ~3,000 | ~3,000 (once) | 1:1 |
 | 3 parallel explore agents | ~9,000 prompt + ~6,000 output | ~2,000 (sequential Grep/Glob) | 7.5:1 |
-| Librarian research call | ~4,000 prompt + ~2,000 output | N/A (not available) | - |
-| Oracle consultation | ~5,000 prompt + ~3,000 output | N/A (not available) | - |
+| Document-Specialist research call | ~4,000 prompt + ~2,000 output | N/A (not available) | - |
+| Architect consultation | ~5,000 prompt + ~3,000 output | N/A (not available) | - |
 | Coordination overhead | ~1,000 per delegation | 0 | - |
 | **Typical task total** | **~30,000-50,000** | **~10,000-20,000** | **~2.5:1** |
 

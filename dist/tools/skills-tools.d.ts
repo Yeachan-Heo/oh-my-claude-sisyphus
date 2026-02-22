@@ -4,12 +4,11 @@
  * MCP tools for loading and listing OMC learned skills
  * from local (.omc/skills/) and global (~/.omc/skills/) directories.
  */
-import { z } from 'zod';
 export declare const loadLocalTool: {
     name: string;
     description: string;
     schema: {
-        projectRoot: z.ZodOptional<z.ZodString>;
+        projectRoot: any;
     };
     handler: (args: {
         projectRoot?: string;
@@ -35,7 +34,7 @@ export declare const listSkillsTool: {
     name: string;
     description: string;
     schema: {
-        projectRoot: z.ZodOptional<z.ZodString>;
+        projectRoot: any;
     };
     handler: (args: {
         projectRoot?: string;
@@ -51,7 +50,7 @@ export declare const skillsTools: ({
     name: string;
     description: string;
     schema: {
-        projectRoot: z.ZodOptional<z.ZodString>;
+        projectRoot: any;
     };
     handler: (args: {
         projectRoot?: string;

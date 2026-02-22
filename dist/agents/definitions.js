@@ -1,5 +1,5 @@
 /**
- * Agent Definitions for Oh-My-Claude-Sisyphus
+ * Agent Definitions for Oh-My-ClaudeCode
  *
  * This module provides:
  * 1. Re-exports of base agents from individual files
