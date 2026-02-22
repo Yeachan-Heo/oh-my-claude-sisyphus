@@ -1,6 +1,10 @@
 // src/team/mcp-team-bridge.ts
 
 /**
+ * @deprecated The MCP x/g servers have been removed. This bridge now runs
+ * against tmux-based CLI workers (Codex CLI, Gemini CLI) directly.
+ * This file is retained for the tmux bridge daemon functionality.
+ *
  * MCP Team Bridge Daemon
  *
  * Core bridge process that runs in a tmux session alongside a Codex/Gemini CLI.

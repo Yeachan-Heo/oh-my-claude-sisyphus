@@ -33,29 +33,11 @@ export function resolveDelegation(options) {
  * Resolve when user explicitly specified a tool
  */
 function resolveExplicitTool(tool, model, agentRole) {
-    // Map tool to provider and model
-    let provider;
-    let agentOrModel;
-    switch (tool) {
-        case 'ask_codex':
-            provider = 'codex';
-            agentOrModel = model || 'gpt-5.3-codex';
-            break;
-        case 'ask_gemini':
-            provider = 'gemini';
-            // Keep default consistent with Gemini core + external-model policy
-            agentOrModel = model || 'gemini-3-pro-preview';
-            break;
-        case 'Task':
-        default:
-            provider = 'claude';
-            agentOrModel = agentRole;
-            break;
-    }
+    // Only 'Task' is supported - explicit tool invocation always uses Claude
     return {
-        provider,
-        tool,
-        agentOrModel,
+        provider: 'claude',
+        tool: 'Task',
+        agentOrModel: agentRole,
         reason: `Explicit tool invocation: ${tool}`,
     };
 }
@@ -65,15 +47,23 @@ function resolveExplicitTool(tool, model, agentRole) {
 function resolveFromConfig(agentRole, route) {
     const provider = route.provider;
     let tool = route.tool;
-    // Validate provider matches tool
-    const validCombinations = {
-        claude: 'Task',
-        codex: 'ask_codex',
-        gemini: 'ask_gemini',
-    };
-    if (validCombinations[provider] !== tool) {
-        console.warn(`[delegation-routing] Provider/tool mismatch: ${provider} with ${tool}. Correcting to ${validCombinations[provider]}.`);
-        tool = validCombinations[provider];
+    // Warn and fall back to claude for deprecated codex/gemini providers
+    if (provider === 'codex' || provider === 'gemini') {
+        console.warn('[OMC] Codex/Gemini MCP delegation is deprecated. Use /team to coordinate CLI workers instead.');
+        const agentOrModel = route.model || route.agentType || agentRole;
+        const fallbackChain = route.fallback;
+        return {
+            provider: 'claude',
+            tool: 'Task',
+            agentOrModel,
+            reason: `Configured routing for role "${agentRole}" (deprecated provider "${provider}", falling back to Claude Task)`,
+            fallbackChain,
+        };
+    }
+    // Only claude → Task is valid; correct any mismatch
+    if (tool !== 'Task') {
+        console.warn(`[delegation-routing] Provider/tool mismatch: ${provider} with ${tool}. Correcting to Task.`);
+        tool = 'Task';
     }
     const agentOrModel = route.model || route.agentType || agentRole;
     const fallbackChain = route.fallback;
@@ -101,23 +91,10 @@ function resolveDefault(agentRole, config) {
     }
     // Fall back to default provider or claude
     const defaultProvider = config?.defaultProvider || 'claude';
-    if (defaultProvider === 'codex') {
-        return {
-            provider: 'codex',
-            tool: 'ask_codex',
-            agentOrModel: 'gpt-5.3-codex',
-            reason: `Fallback to default provider: ${defaultProvider}`,
-        };
+    if (defaultProvider === 'codex' || defaultProvider === 'gemini') {
+        console.warn('[OMC] Codex/Gemini MCP delegation is deprecated. Use /team to coordinate CLI workers instead.');
     }
-    if (defaultProvider === 'gemini') {
-        return {
-            provider: 'gemini',
-            tool: 'ask_gemini',
-            agentOrModel: 'gemini-3-pro-preview',
-            reason: `Fallback to default provider: ${defaultProvider}`,
-        };
-    }
-    // Default to claude Task
+    // Default to claude Task (codex/gemini default providers fall back to claude)
     return {
         provider: 'claude',
         tool: 'Task',

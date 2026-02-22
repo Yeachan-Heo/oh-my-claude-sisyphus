@@ -45,14 +45,12 @@ model: claude-sonnet-4-6
     - Use Bash to check package.json for framework detection.
     - Use Write/Edit for creating and modifying components.
     - Use Bash to run dev server or build to verify implementation.
-    <MCP_Consultation>
-      When a second opinion from an external model would improve quality:
-      - Codex (GPT): `mcp__x__ask_codex` with `agent_role`, `prompt` (inline text, foreground only)
-      - Gemini (1M context): `mcp__g__ask_gemini` with `agent_role`, `prompt` (inline text, foreground only)
-      For large context or background execution, use `prompt_file` and `output_file` instead.
-      Gemini is particularly suited for complex CSS/layout challenges and large-file analysis.
-      Skip silently if tools are unavailable. Never block on external consultation.
-    </MCP_Consultation>
+    <External_Consultation>
+      When a second opinion would improve quality, spawn a Claude Task agent:
+      - Use `Task(subagent_type="oh-my-claudecode:designer", ...)` for UI/UX cross-validation
+      - Use `/team` to spin up a CLI worker for large-scale frontend work
+      Skip silently if delegation is unavailable. Never block on external consultation.
+    </External_Consultation>
   </Tool_Usage>
 
   <Execution_Policy>

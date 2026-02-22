@@ -23,8 +23,8 @@ export function getTeamMembers(teamName, workingDirectory) {
             const config = JSON.parse(readFileSync(configPath, 'utf-8'));
             if (Array.isArray(config.members)) {
                 for (const member of config.members) {
-                    // Skip MCP workers (they'll be handled below)
-                    if (member.backendType === 'tmux')
+                    // Skip MCP workers registered via tmux backend (they'll be handled below)
+                    if (member.backendType === 'tmux' || String(member.agentType).startsWith('tmux-'))
                         continue;
                     members.push({
                         name: member.name || 'unknown',
@@ -62,7 +62,17 @@ export function getTeamMembers(teamName, workingDirectory) {
             if (!alive)
                 status = 'dead';
             // Determine backend and default capabilities
-            const backend = worker.agentType === 'mcp-gemini' ? 'mcp-gemini' : 'mcp-codex';
+            let backend;
+            if (worker.agentType === 'mcp-gemini')
+                backend = 'mcp-gemini';
+            else if (worker.agentType === 'tmux-claude')
+                backend = 'tmux-claude';
+            else if (worker.agentType === 'tmux-codex')
+                backend = 'tmux-codex';
+            else if (worker.agentType === 'tmux-gemini')
+                backend = 'tmux-gemini';
+            else
+                backend = 'mcp-codex';
             const capabilities = getDefaultCapabilities(backend);
             members.push({
                 name: worker.name,

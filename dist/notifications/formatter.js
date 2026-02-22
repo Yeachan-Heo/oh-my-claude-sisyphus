@@ -130,16 +130,51 @@ export function formatSessionIdle(payload) {
     lines.push(buildFooter(payload, true));
     return lines.join("\n");
 }
+/** Matches ANSI escape sequences (CSI and two-character escapes). */
+const ANSI_ESCAPE_RE = /\x1b(?:[@-Z\\-_]|\[[0-9;]*[a-zA-Z])/g;
+/** Lines starting with these characters are OMC UI chrome, not output. */
+const UI_CHROME_RE = /^[●⎿✻·◼]/;
+/** Matches the "ctrl+o to expand" hint injected by OMC. */
+const CTRL_O_RE = /ctrl\+o to expand/i;
+/** Maximum number of meaningful lines to include in a notification. */
+const MAX_TAIL_LINES = 10;
+/**
+ * Parse raw tmux output into clean, human-readable lines.
+ * - Strips ANSI escape codes
+ * - Drops lines starting with OMC chrome characters (●, ⎿, ✻, ·, ◼)
+ * - Drops "ctrl+o to expand" hint lines
+ * - Returns at most 10 non-empty lines
+ */
+export function parseTmuxTail(raw) {
+    const meaningful = [];
+    for (const line of raw.split("\n")) {
+        const stripped = line.replace(ANSI_ESCAPE_RE, "");
+        const trimmed = stripped.trim();
+        if (!trimmed)
+            continue;
+        if (UI_CHROME_RE.test(trimmed))
+            continue;
+        if (CTRL_O_RE.test(trimmed))
+            continue;
+        meaningful.push(stripped.trimEnd());
+        if (meaningful.length >= MAX_TAIL_LINES)
+            break;
+    }
+    return meaningful.join("\n");
+}
 /**
  * Append tmux tail content to a message if present in the payload.
  */
 function appendTmuxTail(lines, payload) {
     if (payload.tmuxTail) {
-        lines.push("");
-        lines.push("**Recent output:**");
-        lines.push("```");
-        lines.push(payload.tmuxTail.trimEnd());
-        lines.push("```");
+        const parsed = parseTmuxTail(payload.tmuxTail);
+        if (parsed) {
+            lines.push("");
+            lines.push("**Recent output:**");
+            lines.push("```");
+            lines.push(parsed);
+            lines.push("```");
+        }
     }
 }
 /**

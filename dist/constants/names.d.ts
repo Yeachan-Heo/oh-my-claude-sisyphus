@@ -23,6 +23,7 @@ export declare const TOOL_CATEGORIES: {
     readonly MEMORY: "memory";
     readonly TRACE: "trace";
     readonly SKILLS: "skills";
+    readonly INTEROP: "interop";
     readonly CODEX: "codex";
     readonly GEMINI: "gemini";
 };

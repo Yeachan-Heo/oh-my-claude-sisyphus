@@ -35,22 +35,6 @@ vi.mock('fs', async () => {
   };
 });
 
-// Mock codex-core and gemini-core PID registries
-vi.mock('../mcp/codex-core.js', async () => {
-  const actual = await vi.importActual('../mcp/codex-core.js');
-  return {
-    ...actual,
-    isSpawnedPid: vi.fn(() => true),
-  };
-});
-
-vi.mock('../mcp/gemini-core.js', async () => {
-  const actual = await vi.importActual('../mcp/gemini-core.js');
-  return {
-    ...actual,
-    isSpawnedPid: vi.fn(() => true),
-  };
-});
 
 const TEST_DIR = join(process.cwd(), '.test-job-mgmt-sqlite-' + process.pid);
 

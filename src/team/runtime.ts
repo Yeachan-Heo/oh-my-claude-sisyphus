@@ -1,0 +1,471 @@
+import { mkdir, writeFile, readFile, rm } from 'fs/promises';
+import { join } from 'path';
+import { existsSync } from 'fs';
+import type { CliAgentType } from './model-contract.js';
+import { buildWorkerCommand, validateCliAvailable, getWorkerEnv as getModelWorkerEnv } from './model-contract.js';
+import {
+  createTeamSession, spawnWorkerInPane, sendToWorker,
+  waitForWorkerReady, isWorkerAlive, killTeamSession, injectToLeaderPane,
+  type TeamSession, type WorkerPaneConfig,
+} from './tmux-session.js';
+import {
+  generateWorkerOverlay, composeInitialInbox, ensureWorkerStateDir, writeWorkerOverlay,
+} from './worker-bootstrap.js';
+
+export interface TeamConfig {
+  teamName: string;
+  workerCount: number;
+  agentTypes: CliAgentType[];
+  tasks: Array<{ subject: string; description: string; }>;
+  cwd: string;
+}
+
+export interface TeamRuntime {
+  teamName: string;
+  sessionName: string;
+  leaderPaneId: string;
+  config: TeamConfig;
+  workerNames: string[];
+  workerPaneIds: string[];
+  cwd: string;
+  stopWatchdog?: () => void;
+}
+
+export interface WorkerStatus {
+  workerName: string;
+  alive: boolean;
+  paneId: string;
+  currentTaskId?: string;
+  lastHeartbeat?: string;
+  stalled: boolean;
+}
+
+export interface TeamSnapshot {
+  teamName: string;
+  phase: string;
+  workers: WorkerStatus[];
+  taskCounts: { pending: number; inProgress: number; completed: number; failed: number; };
+  deadWorkers: string[];
+}
+
+export interface WatchdogCompletionEvent {
+  workerName: string;
+  taskId: string;
+  status: 'completed' | 'failed';
+  summary: string;
+}
+
+interface DoneSignal {
+  taskId: string;
+  status: 'completed' | 'failed';
+  summary: string;
+  completedAt: string;
+}
+
+function workerName(index: number): string {
+  return `worker-${index + 1}`;
+}
+
+function stateRoot(cwd: string, teamName: string): string {
+  return join(cwd, `.omc/state/team/${teamName}`);
+}
+
+async function writeJson(filePath: string, data: unknown): Promise<void> {
+  await mkdir(join(filePath, '..'), { recursive: true });
+  await writeFile(filePath, JSON.stringify(data, null, 2), 'utf-8');
+}
+
+async function readJsonSafe<T>(filePath: string): Promise<T | null> {
+  try {
+    const content = await readFile(filePath, 'utf-8');
+    return JSON.parse(content) as T;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Start a new team: create tmux session, spawn workers, wait for ready.
+ */
+export async function startTeam(config: TeamConfig): Promise<TeamRuntime> {
+  const { teamName, workerCount, agentTypes, tasks, cwd } = config;
+
+  // Validate CLIs are available
+  for (const agentType of [...new Set(agentTypes)]) {
+    validateCliAvailable(agentType);
+  }
+
+  const root = stateRoot(cwd, teamName);
+  await mkdir(join(root, 'tasks'), { recursive: true });
+  await mkdir(join(root, 'mailbox'), { recursive: true });
+
+  // Write config
+  await writeJson(join(root, 'config.json'), config);
+
+  // Create task files
+  for (let i = 0; i < tasks.length; i++) {
+    const taskId = String(i + 1);
+    await writeJson(join(root, 'tasks', `${taskId}.json`), {
+      id: taskId,
+      subject: tasks[i].subject,
+      description: tasks[i].description,
+      status: 'pending',
+      owner: null,
+      result: null,
+      createdAt: new Date().toISOString(),
+    });
+  }
+
+  // Set up worker state dirs and overlays
+  const workerNames: string[] = [];
+  for (let i = 0; i < workerCount; i++) {
+    const wName = workerName(i);
+    workerNames.push(wName);
+    const agentType = agentTypes[i] ?? agentTypes[0] ?? 'claude';
+    await ensureWorkerStateDir(teamName, wName, cwd);
+    await writeWorkerOverlay({
+      teamName, workerName: wName, agentType,
+      tasks: tasks.map((t, idx) => ({ id: String(idx + 1), subject: t.subject, description: t.description })),
+      cwd,
+    });
+    await composeInitialInbox(teamName, wName,
+      `# Welcome, ${wName}\n\nRead your AGENTS.md overlay at .omc/state/team/${teamName}/workers/${wName}/AGENTS.md\n\nWrite your ready sentinel first, then claim tasks from .omc/state/team/${teamName}/tasks/`,
+      cwd,
+    );
+  }
+
+  // Create tmux session with split panes
+  const session: TeamSession = await createTeamSession(teamName, workerCount, cwd);
+
+  // Spawn CLI agents in each pane
+  for (let i = 0; i < workerCount; i++) {
+    const wName = workerNames[i];
+    const agentType = agentTypes[i] ?? agentTypes[0] ?? 'claude';
+    const paneId = session.workerPaneIds[i];
+    const envVars = getModelWorkerEnv(teamName, wName, agentType);
+    const launchCmd = buildWorkerCommand(agentType, { teamName, workerName: wName, cwd });
+    const paneConfig: WorkerPaneConfig = { teamName, workerName: wName, envVars, launchCmd, cwd };
+    await spawnWorkerInPane(session.sessionName, paneId, paneConfig);
+  }
+
+  // Wait for workers to be ready / seed them with initial tasks
+  await Promise.all(
+    workerNames.map(async (wName, i) => {
+      const agentType = agentTypes[i] ?? agentTypes[0] ?? 'claude';
+      const paneId = session.workerPaneIds[i];
+
+      if (agentType === 'claude') {
+        // Claude workers write .ready sentinel after reading their AGENTS.md overlay
+        const ready = await waitForWorkerReady(teamName, wName, cwd, 30_000);
+        if (!ready) console.warn(`[runtime] Claude worker ${wName} not ready within 30s`);
+        // Send the worker's assigned task as the initial prompt so it starts working
+        const taskDesc = tasks[i]?.description ?? tasks[0]?.description ?? '';
+        if (taskDesc) {
+          await sendToWorker(session.sessionName, paneId, taskDesc);
+        }
+      } else {
+        // Non-Claude workers (codex/gemini): wait for CLI startup, then send initial task via tmux
+        // These CLIs don't understand the sentinel protocol
+        await new Promise(r => setTimeout(r, 4000));
+
+        // Gemini shows a "Trust folder?" dialog before accepting input — send '1' to trust
+        if (agentType === 'gemini') {
+          await sendToWorker(session.sessionName, paneId, '1');
+          await new Promise(r => setTimeout(r, 800));
+        }
+
+        // Send the worker's assigned task as the initial prompt
+        const taskDesc = tasks[i]?.description ?? tasks[0]?.description ?? '';
+        if (taskDesc) {
+          await sendToWorker(session.sessionName, paneId, taskDesc);
+        }
+      }
+    })
+  );
+
+  // Start watchdog for non-Claude CLI workers
+  const hasCliWorkers = agentTypes.some(t => t !== 'claude');
+  let stopWatchdog: (() => void) | undefined;
+
+  if (hasCliWorkers) {
+    stopWatchdog = watchdogCliWorkers(
+      teamName,
+      workerNames,
+      agentTypes,
+      cwd,
+      3000,
+      async (event) => {
+        // Inject completion message into leader pane
+        const msg = `[${event.workerName} ${event.status}] ${event.summary}`;
+        const ok = await injectToLeaderPane(session.sessionName, session.leaderPaneId, msg);
+        if (!ok) {
+          console.warn(`[watchdog] Failed to inject completion message for ${event.workerName}`);
+        }
+
+        // Update task file status
+        const taskPath = join(root, 'tasks', `${event.taskId}.json`);
+        const task = await readJsonSafe<Record<string, unknown>>(taskPath);
+        if (task && task.status !== 'completed') {
+          task.status = event.status === 'completed' ? 'completed' : 'failed';
+          task.result = event.summary;
+          task.completedAt = new Date().toISOString();
+          await writeJson(taskPath, task);
+        }
+      }
+    );
+  }
+
+  return {
+    teamName,
+    sessionName: session.sessionName,
+    leaderPaneId: session.leaderPaneId,
+    config,
+    workerNames,
+    workerPaneIds: session.workerPaneIds,
+    cwd,
+    stopWatchdog,
+  };
+}
+
+/**
+ * Monitor team: poll worker health, detect stalls, return snapshot.
+ */
+export async function monitorTeam(teamName: string, cwd: string, workerPaneIds: string[]): Promise<TeamSnapshot> {
+  const root = stateRoot(cwd, teamName);
+
+  // Read task counts
+  const taskCounts = { pending: 0, inProgress: 0, completed: 0, failed: 0 };
+  try {
+    const { readdir } = await import('fs/promises');
+    const taskFiles = await readdir(join(root, 'tasks'));
+    for (const f of taskFiles.filter(f => f.endsWith('.json'))) {
+      const task = await readJsonSafe<{ status: string }>(join(root, 'tasks', f));
+      if (task?.status === 'pending') taskCounts.pending++;
+      else if (task?.status === 'in_progress') taskCounts.inProgress++;
+      else if (task?.status === 'completed') taskCounts.completed++;
+      else if (task?.status === 'failed') taskCounts.failed++;
+    }
+  } catch { /* tasks dir may not exist yet */ }
+
+  // Check worker health
+  const workers: WorkerStatus[] = [];
+  const deadWorkers: string[] = [];
+
+  for (let i = 0; i < workerPaneIds.length; i++) {
+    const wName = `worker-${i + 1}`;
+    const paneId = workerPaneIds[i];
+    const alive = await isWorkerAlive(paneId);
+    const heartbeatPath = join(root, 'workers', wName, 'heartbeat.json');
+    const heartbeat = await readJsonSafe<{ updatedAt: string; currentTaskId?: string }>(heartbeatPath);
+
+    // Detect stall: no heartbeat update in 60s
+    let stalled = false;
+    if (heartbeat?.updatedAt) {
+      const age = Date.now() - new Date(heartbeat.updatedAt).getTime();
+      stalled = age > 60_000;
+    }
+
+    const status: WorkerStatus = {
+      workerName: wName,
+      alive,
+      paneId,
+      currentTaskId: heartbeat?.currentTaskId,
+      lastHeartbeat: heartbeat?.updatedAt,
+      stalled,
+    };
+
+    workers.push(status);
+    if (!alive) deadWorkers.push(wName);
+    if (stalled) console.warn(`[runtime] Worker ${wName} appears stalled (no heartbeat for 60s)`);
+  }
+
+  // Infer phase from task counts
+  let phase = 'executing';
+  if (taskCounts.inProgress === 0 && taskCounts.pending > 0 && taskCounts.completed === 0) {
+    phase = 'planning';
+  } else if (taskCounts.failed > 0 && taskCounts.pending === 0 && taskCounts.inProgress === 0) {
+    phase = 'fixing';
+  } else if (taskCounts.completed > 0 && taskCounts.pending === 0 && taskCounts.inProgress === 0 && taskCounts.failed === 0) {
+    phase = 'completed';
+  }
+
+  return { teamName, phase, workers, taskCounts, deadWorkers };
+}
+
+/**
+ * Poll for CLI worker completion via done.json sentinel files.
+ * Skips Claude workers (they use the sentinel/.ready protocol).
+ * Returns a stop function that clears the interval.
+ */
+export function watchdogCliWorkers(
+  teamName: string,
+  workerNames: string[],
+  agentTypes: CliAgentType[],
+  cwd: string,
+  intervalMs: number,
+  onComplete: (event: WatchdogCompletionEvent) => Promise<void> | void
+): () => void {
+  const processed = new Set<string>();
+
+  const tick = async () => {
+    for (let i = 0; i < workerNames.length; i++) {
+      const wName = workerNames[i];
+      const agentType = agentTypes[i] ?? agentTypes[0];
+      if (agentType === 'claude') continue;
+      if (processed.has(wName)) continue;
+
+      const donePath = join(stateRoot(cwd, teamName), 'workers', wName, 'done.json');
+      const signal = await readJsonSafe<DoneSignal>(donePath);
+      if (!signal) continue;
+
+      // Add to processed FIRST to prevent re-processing
+      processed.add(wName);
+
+      // Delete done.json so it is not processed again
+      try {
+        const { unlink } = await import('fs/promises');
+        await unlink(donePath);
+      } catch {
+        // Already deleted or never existed — OK
+      }
+
+      // Call onComplete wrapped in try/catch to prevent watchdog crash
+      try {
+        await onComplete({
+          workerName: wName,
+          taskId: signal.taskId,
+          status: signal.status,
+          summary: signal.summary,
+        });
+      } catch (err) {
+        console.warn(`[watchdog] onComplete error for ${wName}:`, err);
+      }
+    }
+  };
+
+  const intervalId = setInterval(() => { tick().catch(err => console.warn('[watchdog] tick error:', err)); }, intervalMs);
+
+  return () => clearInterval(intervalId);
+}
+
+/**
+ * Assign a task to a specific worker via inbox + tmux trigger.
+ */
+export async function assignTask(
+  teamName: string,
+  taskId: string,
+  targetWorkerName: string,
+  paneId: string,
+  sessionName: string,
+  cwd: string
+): Promise<void> {
+  const root = stateRoot(cwd, teamName);
+  const taskPath = join(root, 'tasks', `${taskId}.json`);
+
+  // Update task ownership atomically (using file write — task-file-ops withTaskLock not directly applicable here)
+  const task = await readJsonSafe<Record<string, unknown>>(taskPath);
+  if (task) {
+    task.owner = targetWorkerName;
+    task.status = 'in_progress';
+    task.assignedAt = new Date().toISOString();
+    await writeJson(taskPath, task);
+  }
+
+  // Write to worker inbox
+  const inboxPath = join(root, 'workers', targetWorkerName, 'inbox.md');
+  await mkdir(join(inboxPath, '..'), { recursive: true });
+  const msg = `\n\n---\n## New Task Assignment\nTask ID: ${taskId}\nClaim and execute task from: .omc/state/team/${teamName}/tasks/${taskId}.json\n`;
+  const { appendFile } = await import('fs/promises');
+  await appendFile(inboxPath, msg, 'utf-8');
+
+  // Send tmux trigger
+  await sendToWorker(sessionName, paneId, `new-task:${taskId}`);
+}
+
+/**
+ * Gracefully shut down all workers and clean up.
+ */
+export async function shutdownTeam(
+  teamName: string,
+  sessionName: string,
+  cwd: string,
+  timeoutMs = 30_000,
+  workerPaneIds?: string[],
+  leaderPaneId?: string
+): Promise<void> {
+  const root = stateRoot(cwd, teamName);
+
+  // Write shutdown request
+  await writeJson(join(root, 'shutdown.json'), {
+    requestedAt: new Date().toISOString(),
+    teamName,
+  });
+
+  // Poll for ACK files (timeout 30s)
+  const deadline = Date.now() + timeoutMs;
+  const configData = await readJsonSafe<TeamConfig>(join(root, 'config.json'));
+  const workerCount = configData?.workerCount ?? 0;
+  const expectedAcks = Array.from({ length: workerCount }, (_, i) => `worker-${i + 1}`);
+
+  while (Date.now() < deadline && expectedAcks.length > 0) {
+    for (const wName of [...expectedAcks]) {
+      const ackPath = join(root, 'workers', wName, 'shutdown-ack.json');
+      if (existsSync(ackPath)) {
+        expectedAcks.splice(expectedAcks.indexOf(wName), 1);
+      }
+    }
+    if (expectedAcks.length > 0) {
+      await new Promise(r => setTimeout(r, 500));
+    }
+  }
+
+  // Kill tmux session (or just worker panes in split-pane mode)
+  await killTeamSession(sessionName, workerPaneIds, leaderPaneId);
+
+  // Clean up state
+  try {
+    await rm(root, { recursive: true, force: true });
+  } catch {
+    // Ignore cleanup errors
+  }
+}
+
+/**
+ * Resume an existing team from persisted state.
+ */
+export async function resumeTeam(teamName: string, cwd: string): Promise<TeamRuntime | null> {
+  const root = stateRoot(cwd, teamName);
+  const configData = await readJsonSafe<TeamConfig>(join(root, 'config.json'));
+  if (!configData) return null;
+
+  // Check if session is alive
+  const { execFile } = await import('child_process');
+  const { promisify } = await import('util');
+  const execFileAsync = promisify(execFile);
+  const sName = `omc-team-${teamName}`;
+
+  try {
+    await execFileAsync('tmux', ['has-session', '-t', sName]);
+  } catch {
+    return null; // Session not alive
+  }
+
+  // Read saved pane IDs (if we save them — for now derive from session)
+  const panesResult = await execFileAsync('tmux', [
+    'list-panes', '-t', sName, '-F', '#{pane_id}'
+  ]);
+  const allPanes = panesResult.stdout.trim().split('\n').filter(Boolean);
+  // First pane is leader, rest are workers
+  const workerPaneIds = allPanes.slice(1);
+  const workerNames = workerPaneIds.map((_, i) => `worker-${i + 1}`);
+
+  return {
+    teamName,
+    sessionName: sName,
+    leaderPaneId: allPanes[0] ?? '',
+    config: configData,
+    workerNames,
+    workerPaneIds,
+    cwd,
+  };
+}

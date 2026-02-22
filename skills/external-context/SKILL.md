@@ -1,17 +1,12 @@
 ---
 name: external-context
-description: Invoke Gemini MCP (preferred) or parallel document-specialist agents for external web searches and documentation lookup
+description: Invoke parallel document-specialist agents for external web searches and documentation lookup
 argument-hint: <search query or topic>
 ---
 
 # External Context Skill
 
-Fetch external documentation, references, and context for a query. Uses Gemini MCP as the preferred path (single call, 1M context window); falls back to parallel document-specialist Claude agents when MCP is unavailable.
-
-## Overview
-
-1. **Preferred: Gemini MCP** - Single `ask_gemini` call with `agent_role="document-specialist"` handles multi-facet synthesis in one shot
-2. **Fallback: Parallel agents** - Decompose into 2-5 facets, spawn parallel document-specialist Claude agents
+Fetch external documentation, references, and context for a query. Decomposes into 2-5 facets and spawns parallel document-specialist Claude agents.
 
 ## Usage
 
@@ -29,75 +24,7 @@ Fetch external documentation, references, and context for a query. Uses Gemini M
 
 ## Protocol
 
-### Step 0: Discover MCP Tools
-
-Before first MCP use, call `ToolSearch("mcp")` to discover deferred MCP tools. If results include `ask_gemini`, use the Preferred path. If no MCP tools are found, use the Fallback path.
-
----
-
-### Preferred Path: Gemini MCP
-
-**When:** `ToolSearch("mcp")` returns `ask_gemini`.
-
-1. Write the query to a prompt file:
-
-```
-.omc/prompts/ext-context-{timestamp}.md
-```
-
-Prompt file contents:
-
-```markdown
-Search the web for external documentation, examples, and references on the following query:
-
-**Query:** <original query>
-
-Cover all relevant facets (up to 5). For each facet:
-- Cite all sources with URLs
-- Summarize key findings
-- Note any version/date caveats
-
-Output format:
-## External Context: <query>
-
-### Key Findings
-1. **<finding>** - Source: [title](url)
-
-### Detailed Results
-
-#### Facet 1: <name>
-<aggregated findings with citations>
-
-### Sources
-- [Source 1](url)
-```
-
-2. Call `ask_gemini` with background execution:
-
-```python
-ask_gemini(
-    agent_role="document-specialist",
-    prompt_file=".omc/prompts/ext-context-{timestamp}.md",
-    output_file=".omc/prompts/ext-context-{timestamp}-output.md",
-    background=True
-)
-```
-
-3. Wait for completion:
-
-```python
-wait_for_job(job_id=<returned job id>)
-```
-
-4. Read the output file and present synthesized results to the user.
-
----
-
-### Fallback Path: Parallel Document-Specialist Agents
-
-**When:** `ToolSearch("mcp")` returns no MCP tools (Gemini unavailable).
-
-#### Facet Decomposition
+### Step 1: Facet Decomposition
 
 Given a query, decompose into 2-5 independent search facets:
 
@@ -114,7 +41,7 @@ Given a query, decompose into 2-5 independent search facets:
 ...
 ```
 
-#### Parallel Agent Invocation
+### Step 2: Parallel Agent Invocation
 
 Fire independent facets in parallel via Task tool:
 
@@ -126,11 +53,9 @@ Task(subagent_type="oh-my-claudecode:document-specialist", model="sonnet", promp
 
 Maximum 5 parallel document-specialist agents.
 
----
+### Step 3: Synthesis Output Format
 
-### Synthesis Output Format
-
-Regardless of path used, present results in this format:
+Present synthesized results in this format:
 
 ```markdown
 ## External Context: <query>
@@ -154,6 +79,5 @@ Regardless of path used, present results in this format:
 
 ## Configuration
 
-- Maximum 5 parallel document-specialist agents (fallback path)
-- Gemini handles multi-facet synthesis in one shot (preferred path)
+- Maximum 5 parallel document-specialist agents
 - No magic keyword trigger - explicit invocation only

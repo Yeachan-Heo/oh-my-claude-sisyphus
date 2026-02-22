@@ -52,13 +52,12 @@ model: claude-opus-4-6
     - Use lsp_diagnostics_directory for project-wide verification before completion.
     - Use Bash for running builds, tests, and grep for debug code cleanup.
     - Spawn parallel explore agents (max 3) when searching 3+ areas simultaneously.
-    <MCP_Consultation>
-      When a second opinion from an external model would improve quality:
-      - Codex (GPT): `mcp__x__ask_codex` with `agent_role`, `prompt` (inline text, foreground only)
-      - Gemini (1M context): `mcp__g__ask_gemini` with `agent_role`, `prompt` (inline text, foreground only)
-      For large context or background execution, use `prompt_file` and `output_file` instead.
-      Skip silently if tools are unavailable. Never block on external consultation.
-    </MCP_Consultation>
+    <External_Consultation>
+      When a second opinion would improve quality, spawn a Claude Task agent:
+      - Use `Task(subagent_type="oh-my-claudecode:architect", ...)` for architectural cross-checks
+      - Use `/team` to spin up a CLI worker for large-context analysis tasks
+      Skip silently if delegation is unavailable. Never block on external consultation.
+    </External_Consultation>
   </Tool_Usage>
 
   <Execution_Policy>

@@ -16,8 +16,6 @@ import { loadConfig, findContextFiles, loadContextFromFiles } from './config/loa
 import { getAgentDefinitions, omcSystemPrompt } from './agents/definitions.js';
 import { getDefaultMcpServers, toSdkMcpFormat } from './mcp/servers.js';
 import { omcToolsServer, getOmcToolNames } from './mcp/omc-tools-server.js';
-import { codexMcpServer } from './mcp/codex-server.js';
-import { geminiMcpServer } from './mcp/gemini-server.js';
 import { createMagicKeywordProcessor, detectMagicKeywords } from './features/magic-keywords.js';
 import { continuationSystemPromptAddition } from './features/continuation-enforcement.js';
 import { createBackgroundTaskManager, shouldRunInBackground as shouldRunInBackgroundFn } from './features/background-tasks.js';
@@ -134,9 +132,6 @@ export function createOmcSession(options) {
         includePython: true
     });
     allowedTools.push(...omcTools);
-    // Add Codex and Gemini MCP tool patterns
-    allowedTools.push('mcp__x__*');
-    allowedTools.push('mcp__g__*');
     // Create magic keyword processor
     const processPrompt = createMagicKeywordProcessor(config.magicKeywords);
     // Initialize session state
@@ -154,9 +149,7 @@ export function createOmcSession(options) {
                 agents,
                 mcpServers: {
                     ...toSdkMcpFormat(externalMcpServers),
-                    't': omcToolsServer,
-                    'x': codexMcpServer,
-                    'g': geminiMcpServer
+                    't': omcToolsServer
                 },
                 allowedTools,
                 permissionMode: 'acceptEdits'

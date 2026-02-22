@@ -17,7 +17,7 @@ export declare function getRegistrationStrategy(workingDirectory: string): 'conf
  *
  * Both paths use atomic write (temp + rename) to prevent corruption.
  */
-export declare function registerMcpWorker(teamName: string, workerName: string, provider: 'codex' | 'gemini', model: string, tmuxTarget: string, cwd: string, workingDirectory: string): void;
+export declare function registerMcpWorker(teamName: string, workerName: string, provider: 'codex' | 'gemini' | 'claude', model: string, tmuxTarget: string, cwd: string, workingDirectory: string): void;
 /**
  * Unregister an MCP worker from the team.
  * Removes from config.json and shadow registry.

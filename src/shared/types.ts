@@ -234,12 +234,15 @@ export interface ResolveOptions {
 /**
  * Provider type for delegation routing
  */
-export type DelegationProvider = 'claude' | 'codex' | 'gemini';
+export type DelegationProvider =
+  | 'claude'
+  /** Use /team to coordinate Codex CLI workers in tmux panes. */
+  | 'codex'
+  /** Use /team to coordinate Gemini CLI workers in tmux panes. */
+  | 'gemini';
 
-/**
- * Tool type for delegation routing
- */
-export type DelegationTool = 'Task' | 'ask_codex' | 'ask_gemini';
+/** Tool type for delegation routing — only Claude Task is supported. */
+export type DelegationTool = 'Task';
 
 /**
  * Individual route configuration for a role

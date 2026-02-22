@@ -1,15 +1,11 @@
-/**
- * CLI Detection Utility
- *
- * Detects whether Codex and Gemini CLIs are installed and available on the system PATH.
- * Results are cached per-session to avoid repeated filesystem checks.
- */
+// DEPRECATED: Use src/team/cli-detection.ts instead
+export * from '../team/cli-detection.js';
 import { execSync } from 'child_process';
 // Session-level cache for detection results
 let codexCache = null;
 let geminiCache = null;
 /**
- * Detect if Codex CLI is installed and available
+ * @deprecated Use isCliAvailable('codex') from src/team/cli-detection.ts instead
  */
 export function detectCodexCli(useCache = true) {
     if (useCache && codexCache)
@@ -40,7 +36,7 @@ export function detectCodexCli(useCache = true) {
     }
 }
 /**
- * Detect if Gemini CLI is installed and available
+ * @deprecated Use isCliAvailable('gemini') from src/team/cli-detection.ts instead
  */
 export function detectGeminiCli(useCache = true) {
     if (useCache && geminiCache)
@@ -72,6 +68,7 @@ export function detectGeminiCli(useCache = true) {
 }
 /**
  * Reset detection cache (useful for testing)
+ * @deprecated Use detectCli() from src/team/cli-detection.ts which has no cache
  */
 export function resetDetectionCache() {
     codexCache = null;
