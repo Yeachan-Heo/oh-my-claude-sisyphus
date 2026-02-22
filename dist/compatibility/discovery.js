@@ -101,7 +101,6 @@ const mcpServerConfigSchema = {
     additionalProperties: false,
 };
 // Compile schemas
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const AjvConstructor = Ajv.default ?? Ajv;
 const ajv = new AjvConstructor({ allErrors: true, strict: false });
 const validatePluginManifest = ajv.compile(pluginManifestSchema);
@@ -192,7 +191,7 @@ function parsePluginManifest(manifestPath) {
         }
         return parsed;
     }
-    catch (error) {
+    catch (_error) {
         return null;
     }
 }

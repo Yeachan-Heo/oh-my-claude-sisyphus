@@ -23,9 +23,9 @@ import { ensureBridge, killBridgeWithEscalation, spawnBridgeServer } from './bri
 const DEFAULT_EXECUTION_TIMEOUT_MS = 300000; // 5 minutes
 const DEFAULT_QUEUE_TIMEOUT_MS = 30000; // 30 seconds
 // JSON-RPC error codes
-const ERROR_INVALID_ACTION = -32600;
-const ERROR_QUEUE_TIMEOUT = -32004;
-const ERROR_BRIDGE_FAILED = -32005;
+const _ERROR_INVALID_ACTION = -32600;
+const _ERROR_QUEUE_TIMEOUT = -32004;
+const _ERROR_BRIDGE_FAILED = -32005;
 // =============================================================================
 // ZOD SCHEMA
 // =============================================================================
@@ -331,7 +331,7 @@ async function handleReset(sessionId, socketPath) {
         const result = await sendSocketRequest(socketPath, 'reset', {}, 10000);
         return formatResetResult(result, sessionId);
     }
-    catch (error) {
+    catch (_error) {
         // If reset fails, try to kill and restart the bridge
         await killBridgeWithEscalation(sessionId);
         return [

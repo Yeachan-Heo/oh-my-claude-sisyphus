@@ -14,7 +14,6 @@ import { getClaudeConfigDir } from '../../utils/paths.js';
 import { existsSync, readFileSync } from 'fs';
 import {
   HOOK_NAME,
-  ALLOWED_PATH_PREFIX,
   ALLOWED_PATH_PATTERNS,
   WARNED_EXTENSIONS,
   WRITE_EDIT_TOOLS,

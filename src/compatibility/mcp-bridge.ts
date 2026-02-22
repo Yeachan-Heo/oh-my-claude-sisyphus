@@ -13,7 +13,6 @@ import { spawn, type ChildProcess } from 'child_process';
 import { EventEmitter } from 'events';
 import { basename } from 'path';
 import type {
-  DiscoveredMcpServer,
   McpServerEntry,
   ExternalTool,
   McpToolResult,
@@ -633,7 +632,7 @@ export class McpBridge extends EventEmitter {
    */
   getConnectionStatus(): Map<string, boolean> {
     const status = new Map<string, boolean>();
-    for (const [name, config] of this.serverConfigs) {
+    for (const [name, _config] of this.serverConfigs) {
       status.set(name, this.connections.has(name));
     }
     return status;

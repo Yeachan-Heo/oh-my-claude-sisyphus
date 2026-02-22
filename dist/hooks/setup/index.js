@@ -38,7 +38,7 @@ export function ensureDirectoryStructure(directory) {
                 mkdirSync(fullPath, { recursive: true });
                 created.push(fullPath);
             }
-            catch (err) {
+            catch (_err) {
                 // Will be reported in errors
             }
         }

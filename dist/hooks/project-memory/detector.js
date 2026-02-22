@@ -142,7 +142,7 @@ async function detectBuildInfo(projectRoot) {
                 devCommand = `${pm} ${pm === 'npm' ? 'run ' : ''}${pkgScripts.dev ? 'dev' : 'start'}`;
             }
         }
-        catch (error) {
+        catch (_error) {
             // Invalid JSON, skip
         }
     }
@@ -201,7 +201,7 @@ async function detectConventions(projectRoot) {
                     }
                 }
             }
-            catch (error) {
+            catch (_error) {
                 // Skip unreadable directories
             }
         }
@@ -250,7 +250,7 @@ async function detectConventions(projectRoot) {
                     break;
                 }
             }
-            catch (error) {
+            catch (_error) {
                 // Skip
             }
         }
@@ -293,7 +293,7 @@ async function detectStructure(projectRoot) {
                     : packageJson.workspaces.packages || []));
             }
         }
-        catch (error) {
+        catch (_error) {
             // Invalid JSON
         }
     }
@@ -312,7 +312,7 @@ async function detectStructure(projectRoot) {
             }
         }
     }
-    catch (error) {
+    catch (_error) {
         // Skip
     }
     // Detect git branch
@@ -339,7 +339,7 @@ async function fileExists(filePath) {
 /**
  * Helper: Extract version from config file
  */
-async function extractVersion(filePath, language) {
+async function extractVersion(filePath, _language) {
     try {
         const content = await fs.readFile(filePath, 'utf-8');
         if (filePath.endsWith('package.json')) {
@@ -359,7 +359,7 @@ async function extractVersion(filePath, language) {
                 return match[1];
         }
     }
-    catch (error) {
+    catch (_error) {
         // Skip
     }
     return null;
@@ -383,7 +383,7 @@ async function detectFrameworksFromPackageJson(filePath) {
             }
         }
     }
-    catch (error) {
+    catch (_error) {
         // Skip
     }
     return frameworks;
@@ -407,7 +407,7 @@ async function detectFrameworksFromCargoToml(filePath) {
             }
         }
     }
-    catch (error) {
+    catch (_error) {
         // Skip
     }
     return frameworks;
@@ -431,7 +431,7 @@ async function detectFrameworksFromPyproject(filePath) {
             }
         }
     }
-    catch (error) {
+    catch (_error) {
         // Skip
     }
     return frameworks;
@@ -448,7 +448,7 @@ async function detectRuntime(filePath) {
             return `Node.js ${version}`;
         }
     }
-    catch (error) {
+    catch (_error) {
         // Skip
     }
     return null;
@@ -473,7 +473,7 @@ async function detectGitBranch(projectRoot) {
             };
         }
     }
-    catch (error) {
+    catch (_error) {
         // Not a git repo or no remote
     }
     return null;

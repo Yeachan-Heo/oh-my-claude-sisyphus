@@ -157,10 +157,8 @@ export function parseTmuxTail(raw) {
         if (CTRL_O_RE.test(trimmed))
             continue;
         meaningful.push(stripped.trimEnd());
-        if (meaningful.length >= MAX_TAIL_LINES)
-            break;
     }
-    return meaningful.join("\n");
+    return meaningful.slice(-MAX_TAIL_LINES).join("\n");
 }
 /**
  * Append tmux tail content to a message if present in the payload.

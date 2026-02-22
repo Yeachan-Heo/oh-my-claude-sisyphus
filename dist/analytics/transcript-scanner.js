@@ -12,7 +12,7 @@ function isWindowsEncodedPath(dirName) {
 /**
  * Normalize decoded path to use OS-native separators consistently
  */
-function normalizePathForOS(decodedPath) {
+function _normalizePathForOS(decodedPath) {
     // On Windows, convert forward slashes to backslashes for consistency
     // But existsSync works with both, so we normalize to forward slashes for cross-platform
     return decodedPath.replace(/\\/g, '/');

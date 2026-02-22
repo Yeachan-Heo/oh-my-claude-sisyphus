@@ -43,7 +43,7 @@ function validateProjectRoot(input: string): string {
 /**
  * Sanitize skill content to prevent prompt injection.
  */
-function sanitizeSkillContent(content: string): string {
+function _sanitizeSkillContent(content: string): string {
   // Truncate to max length
   const truncated = content.length > MAX_SKILL_CONTENT_LENGTH
     ? content.slice(0, MAX_SKILL_CONTENT_LENGTH) + '\n[truncated]'

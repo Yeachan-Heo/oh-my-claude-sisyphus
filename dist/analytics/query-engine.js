@@ -33,7 +33,7 @@ export class QueryEngine {
                 range
             };
         }
-        catch (error) {
+        catch (_error) {
             // If tokscale fails, fall back to legacy
             return this.getCostReportLegacy(period);
         }
@@ -105,7 +105,7 @@ export class QueryEngine {
                 range
             };
         }
-        catch (error) {
+        catch (_error) {
             // Return empty report if no data
             return {
                 totalCost: 0,
@@ -143,7 +143,7 @@ export class QueryEngine {
                 }
             }
         }
-        catch (error) {
+        catch (_error) {
             // Return empty if error
         }
         return byAgent;
@@ -194,7 +194,7 @@ export class QueryEngine {
                 totalSessions: history.totalSessions
             };
         }
-        catch (error) {
+        catch (_error) {
             return {
                 peakHours: [],
                 mostExpensiveOperations: [],

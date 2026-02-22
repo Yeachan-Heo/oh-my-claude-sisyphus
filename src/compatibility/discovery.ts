@@ -8,8 +8,8 @@
  * - Project-local .claude-plugin/ directories
  */
 
-import { existsSync, readdirSync, readFileSync, statSync, realpathSync } from 'fs';
-import { join, basename, dirname, resolve, normalize } from 'path';
+import { existsSync, readdirSync, readFileSync, realpathSync } from 'fs';
+import { join, basename, resolve, normalize } from 'path';
 import { getClaudeConfigDir } from '../utils/paths.js';
 import Ajv, { type ValidateFunction } from 'ajv';
 import type {
@@ -115,7 +115,6 @@ const mcpServerConfigSchema = {
 };
 
 // Compile schemas
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const AjvConstructor = (Ajv as any).default ?? Ajv;
 const ajv = new AjvConstructor({ allErrors: true, strict: false });
 const validatePluginManifest: ValidateFunction = ajv.compile(pluginManifestSchema);
@@ -217,7 +216,7 @@ function parsePluginManifest(manifestPath: string): PluginManifest | null {
     }
 
     return parsed as PluginManifest;
-  } catch (error) {
+  } catch (_error) {
     return null;
   }
 }

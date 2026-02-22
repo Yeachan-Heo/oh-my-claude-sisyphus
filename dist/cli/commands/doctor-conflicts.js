@@ -42,7 +42,7 @@ function collectHooksFromSettings(settingsPath) {
             }
         }
     }
-    catch (error) {
+    catch (_error) {
         // Ignore parse errors, will be reported separately
     }
     return conflicts;
@@ -103,7 +103,7 @@ export function checkClaudeMdStatus() {
             path: claudeMdPath
         };
     }
-    catch (error) {
+    catch (_error) {
         return null;
     }
 }
@@ -159,7 +159,7 @@ export function checkConfigIssues() {
             }
         }
     }
-    catch (error) {
+    catch (_error) {
         // Ignore parse errors
     }
     return { unknownFields };

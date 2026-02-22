@@ -325,7 +325,7 @@ async function processPersistentMode(input) {
     const sessionId = input.sessionId;
     const directory = resolveToWorktreeRoot(input.directory);
     // Lazy-load persistent-mode and todo-continuation modules
-    const { checkPersistentModes, createHookOutput } = await import("./persistent-mode/index.js");
+    const { checkPersistentModes, createHookOutput, shouldSendIdleNotification, recordIdleNotificationSent } = await import("./persistent-mode/index.js");
     // Extract stop context for abort detection (supports both camelCase and snake_case)
     const stopContext = {
         stop_reason: input.stop_reason,
@@ -343,11 +343,17 @@ async function processPersistentMode(input) {
             const isAbort = stopContext.user_requested === true || stopContext.userRequested === true;
             const isContextLimit = stopContext.stop_reason === "context_limit" || stopContext.stopReason === "context_limit";
             if (!isAbort && !isContextLimit) {
-                import("../notifications/index.js").then(({ notify }) => notify("session-idle", {
-                    sessionId,
-                    projectPath: directory,
-                    profileName: process.env.OMC_NOTIFY_PROFILE,
-                }).catch(() => { })).catch(() => { });
+                // Per-session cooldown: prevent notification spam when the session idles repeatedly.
+                // Mirrors the cooldown logic in scripts/persistent-mode.cjs (closes #842).
+                const stateDir = join(directory, ".omc", "state");
+                if (shouldSendIdleNotification(stateDir)) {
+                    recordIdleNotificationSent(stateDir);
+                    import("../notifications/index.js").then(({ notify }) => notify("session-idle", {
+                        sessionId,
+                        projectPath: directory,
+                        profileName: process.env.OMC_NOTIFY_PROFILE,
+                    }).catch(() => { })).catch(() => { });
+                }
             }
             // IMPORTANT: Do NOT clean up reply-listener/session-registry on Stop hooks.
             // Stop can fire for normal "idle" turns while the session is still active.

@@ -2,7 +2,7 @@ import { EventEmitter } from 'events';
 import * as path from 'path';
 import { scanTranscripts, TranscriptFile } from './transcript-scanner.js';
 import { parseTranscript } from './transcript-parser.js';
-import type { TranscriptEntry, TokenUsage } from './types.js';
+import type { TokenUsage } from './types.js';
 import { BackfillDedup } from './backfill-dedup.js';
 import { TokenTracker, getTokenTracker } from './token-tracker.js';
 import { calculateCost } from './cost-estimator.js';

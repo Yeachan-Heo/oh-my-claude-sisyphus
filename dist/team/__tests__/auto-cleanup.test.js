@@ -12,26 +12,39 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { mkdirSync, rmSync } from 'fs';
 import { join } from 'path';
-import { homedir, tmpdir } from 'os';
+import { tmpdir } from 'os';
 import { getTeamStatus } from '../team-status.js';
 import { atomicWriteJson } from '../fs-utils.js';
 // ============================================================
 // Test fixtures
 // ============================================================
 const TEST_TEAM = 'test-auto-cleanup';
-const TEAMS_DIR = join(homedir(), '.claude', 'teams', TEST_TEAM);
-const TASKS_DIR = join(homedir(), '.claude', 'tasks', TEST_TEAM);
+let TEAMS_DIR;
+let TASKS_DIR;
 let WORK_DIR;
+let tmpClaudeDir;
+let originalClaudeConfigDir;
 beforeEach(() => {
-    WORK_DIR = join(tmpdir(), `omc-auto-cleanup-test-${Date.now()}`);
+    const base = join(tmpdir(), `omc-auto-cleanup-${Date.now()}`);
+    tmpClaudeDir = join(base, 'claude');
+    TEAMS_DIR = join(tmpClaudeDir, 'teams', TEST_TEAM);
+    TASKS_DIR = join(tmpClaudeDir, 'tasks', TEST_TEAM);
+    WORK_DIR = join(base, 'work');
+    originalClaudeConfigDir = process.env.CLAUDE_CONFIG_DIR;
+    process.env.CLAUDE_CONFIG_DIR = tmpClaudeDir;
     mkdirSync(join(TEAMS_DIR, 'outbox'), { recursive: true });
     mkdirSync(TASKS_DIR, { recursive: true });
     mkdirSync(join(WORK_DIR, '.omc', 'state', 'team-bridge', TEST_TEAM), { recursive: true });
     mkdirSync(join(WORK_DIR, '.omc', 'state'), { recursive: true });
 });
 afterEach(() => {
-    rmSync(TEAMS_DIR, { recursive: true, force: true });
-    rmSync(TASKS_DIR, { recursive: true, force: true });
+    if (originalClaudeConfigDir === undefined) {
+        delete process.env.CLAUDE_CONFIG_DIR;
+    }
+    else {
+        process.env.CLAUDE_CONFIG_DIR = originalClaudeConfigDir;
+    }
+    rmSync(tmpClaudeDir, { recursive: true, force: true });
     rmSync(WORK_DIR, { recursive: true, force: true });
 });
 function writeWorkerRegistry(workers) {

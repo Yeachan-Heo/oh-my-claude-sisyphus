@@ -24,15 +24,13 @@ import type {
   TranscriptData,
   ActiveAgent,
   TodoItem,
-  SkillInvocation,
   PendingPermission,
-  ThinkingState,
 } from "./types.js";
 
 // Performance constants
 const MAX_TAIL_BYTES = 512 * 1024; // 500KB - enough for recent activity
 const MAX_AGENT_MAP_SIZE = 100; // Cap agent tracking
-const MIN_RUNNING_AGENTS_THRESHOLD = 10; // Early termination threshold
+const _MIN_RUNNING_AGENTS_THRESHOLD = 10; // Early termination threshold
 
 /**
  * Tools known to require permission approval in Claude Code.
@@ -103,7 +101,7 @@ export async function parseTranscript(
 
   const agentMap = new Map<string, ActiveAgent>();
   const backgroundAgentMap: BackgroundAgentMap = new Map();
-  let latestTodos: TodoItem[] = [];
+  const latestTodos: TodoItem[] = [];
 
   try {
     // Check file size to determine parsing strategy
@@ -178,7 +176,7 @@ export async function parseTranscript(
   }
 
   // Check for pending permissions within threshold
-  for (const [id, permission] of pendingPermissionMap) {
+  for (const [_id, permission] of pendingPermissionMap) {
     const age = now - permission.timestamp.getTime();
     if (age <= PERMISSION_THRESHOLD_MS) {
       result.pendingPermission = permission;

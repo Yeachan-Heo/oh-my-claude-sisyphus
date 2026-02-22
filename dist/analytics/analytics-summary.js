@@ -148,7 +148,7 @@ export async function loadAnalyticsFast(sessionId) {
         // Need to rebuild (incremental if summary exists)
         return await rebuildSummaryIncremental(sessionId, summaryPath, logPath);
     }
-    catch (error) {
+    catch (_error) {
         // No summary exists yet or error reading
         return null;
     }

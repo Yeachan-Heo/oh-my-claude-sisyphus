@@ -66,4 +66,20 @@ export declare const SUBAGENT_HEADER = "[SUBAGENT MODE] You are running as a sub
  * File context is wrapped with untrusted data warnings to mitigate prompt injection.
  */
 export declare function buildPromptWithSystemContext(userPrompt: string, fileContext: string | undefined, systemPrompt: string | undefined): string;
+/**
+ * Validate context file paths to prevent path traversal and prompt injection.
+ *
+ * Checks performed:
+ * - Control characters (newlines, carriage returns, null bytes) in the path string
+ *   would inject content into the prompt when paths are interpolated. Rejected as
+ *   E_CONTEXT_FILE_INJECTION.
+ * - Paths that resolve outside baseDir (e.g. '../../../etc/passwd') are rejected as
+ *   E_CONTEXT_FILE_TRAVERSAL, unless allowExternal is true (matches isExternalPromptAllowed()).
+ *
+ * Returns { validPaths, errors } so callers can log rejections and proceed with valid paths.
+ */
+export declare function validateContextFilePaths(filePaths: string[], baseDir: string, allowExternal?: boolean): {
+    validPaths: string[];
+    errors: string[];
+};
 //# sourceMappingURL=prompt-injection.d.ts.map

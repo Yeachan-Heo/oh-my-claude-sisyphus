@@ -3134,7 +3134,7 @@ var require_compile = __commonJS({
       const schOrFunc = root.refs[ref];
       if (schOrFunc)
         return schOrFunc;
-      let _sch = resolve7.call(this, root, ref);
+      let _sch = resolve8.call(this, root, ref);
       if (_sch === void 0) {
         const schema = (_a = root.localRefs) === null || _a === void 0 ? void 0 : _a[ref];
         const { schemaId } = this.opts;
@@ -3161,7 +3161,7 @@ var require_compile = __commonJS({
     function sameSchemaEnv(s1, s2) {
       return s1.schema === s2.schema && s1.root === s2.root && s1.baseId === s2.baseId;
     }
-    function resolve7(root, ref) {
+    function resolve8(root, ref) {
       let sch;
       while (typeof (sch = this.refs[ref]) == "string")
         ref = sch;
@@ -3742,55 +3742,55 @@ var require_fast_uri = __commonJS({
       }
       return uri;
     }
-    function resolve7(baseURI, relativeURI, options) {
+    function resolve8(baseURI, relativeURI, options) {
       const schemelessOptions = options ? Object.assign({ scheme: "null" }, options) : { scheme: "null" };
       const resolved = resolveComponent(parse5(baseURI, schemelessOptions), parse5(relativeURI, schemelessOptions), schemelessOptions, true);
       schemelessOptions.skipEscape = true;
       return serialize(resolved, schemelessOptions);
     }
-    function resolveComponent(base, relative6, options, skipNormalization) {
+    function resolveComponent(base, relative7, options, skipNormalization) {
       const target = {};
       if (!skipNormalization) {
         base = parse5(serialize(base, options), options);
-        relative6 = parse5(serialize(relative6, options), options);
+        relative7 = parse5(serialize(relative7, options), options);
       }
       options = options || {};
-      if (!options.tolerant && relative6.scheme) {
-        target.scheme = relative6.scheme;
-        target.userinfo = relative6.userinfo;
-        target.host = relative6.host;
-        target.port = relative6.port;
-        target.path = removeDotSegments(relative6.path || "");
-        target.query = relative6.query;
+      if (!options.tolerant && relative7.scheme) {
+        target.scheme = relative7.scheme;
+        target.userinfo = relative7.userinfo;
+        target.host = relative7.host;
+        target.port = relative7.port;
+        target.path = removeDotSegments(relative7.path || "");
+        target.query = relative7.query;
       } else {
-        if (relative6.userinfo !== void 0 || relative6.host !== void 0 || relative6.port !== void 0) {
-          target.userinfo = relative6.userinfo;
-          target.host = relative6.host;
-          target.port = relative6.port;
-          target.path = removeDotSegments(relative6.path || "");
-          target.query = relative6.query;
+        if (relative7.userinfo !== void 0 || relative7.host !== void 0 || relative7.port !== void 0) {
+          target.userinfo = relative7.userinfo;
+          target.host = relative7.host;
+          target.port = relative7.port;
+          target.path = removeDotSegments(relative7.path || "");
+          target.query = relative7.query;
         } else {
-          if (!relative6.path) {
+          if (!relative7.path) {
             target.path = base.path;
-            if (relative6.query !== void 0) {
-              target.query = relative6.query;
+            if (relative7.query !== void 0) {
+              target.query = relative7.query;
             } else {
               target.query = base.query;
             }
           } else {
-            if (relative6.path[0] === "/") {
-              target.path = removeDotSegments(relative6.path);
+            if (relative7.path[0] === "/") {
+              target.path = removeDotSegments(relative7.path);
             } else {
               if ((base.userinfo !== void 0 || base.host !== void 0 || base.port !== void 0) && !base.path) {
-                target.path = "/" + relative6.path;
+                target.path = "/" + relative7.path;
               } else if (!base.path) {
-                target.path = relative6.path;
+                target.path = relative7.path;
               } else {
-                target.path = base.path.slice(0, base.path.lastIndexOf("/") + 1) + relative6.path;
+                target.path = base.path.slice(0, base.path.lastIndexOf("/") + 1) + relative7.path;
               }
               target.path = removeDotSegments(target.path);
             }
-            target.query = relative6.query;
+            target.query = relative7.query;
           }
           target.userinfo = base.userinfo;
           target.host = base.host;
@@ -3798,7 +3798,7 @@ var require_fast_uri = __commonJS({
         }
         target.scheme = base.scheme;
       }
-      target.fragment = relative6.fragment;
+      target.fragment = relative7.fragment;
       return target;
     }
     function equal(uriA, uriB, options) {
@@ -3969,7 +3969,7 @@ var require_fast_uri = __commonJS({
     var fastUri = {
       SCHEMES,
       normalize: normalize2,
-      resolve: resolve7,
+      resolve: resolve8,
       resolveComponent,
       equal,
       serialize,
@@ -13100,7 +13100,7 @@ var Protocol = class {
           return;
         }
         const pollInterval = task2.pollInterval ?? this._options?.defaultTaskPollInterval ?? 1e3;
-        await new Promise((resolve7) => setTimeout(resolve7, pollInterval));
+        await new Promise((resolve8) => setTimeout(resolve8, pollInterval));
         options?.signal?.throwIfAborted();
       }
     } catch (error2) {
@@ -13117,7 +13117,7 @@ var Protocol = class {
    */
   request(request, resultSchema, options) {
     const { relatedRequestId, resumptionToken, onresumptiontoken, task, relatedTask } = options ?? {};
-    return new Promise((resolve7, reject) => {
+    return new Promise((resolve8, reject) => {
       const earlyReject = (error2) => {
         reject(error2);
       };
@@ -13195,7 +13195,7 @@ var Protocol = class {
           if (!parseResult.success) {
             reject(parseResult.error);
           } else {
-            resolve7(parseResult.data);
+            resolve8(parseResult.data);
           }
         } catch (error2) {
           reject(error2);
@@ -13456,12 +13456,12 @@ var Protocol = class {
       }
     } catch {
     }
-    return new Promise((resolve7, reject) => {
+    return new Promise((resolve8, reject) => {
       if (signal.aborted) {
         reject(new McpError(ErrorCode.InvalidRequest, "Request cancelled"));
         return;
       }
-      const timeoutId = setTimeout(resolve7, interval);
+      const timeoutId = setTimeout(resolve8, interval);
       signal.addEventListener("abort", () => {
         clearTimeout(timeoutId);
         reject(new McpError(ErrorCode.InvalidRequest, "Request cancelled"));
@@ -14200,12 +14200,12 @@ var StdioServerTransport = class {
     this.onclose?.();
   }
   send(message) {
-    return new Promise((resolve7) => {
+    return new Promise((resolve8) => {
       const json = serializeMessage(message);
       if (this._stdout.write(json)) {
-        resolve7();
+        resolve8();
       } else {
-        this._stdout.once("drain", resolve7);
+        this._stdout.once("drain", resolve8);
       }
     });
   }
@@ -14641,6 +14641,26 @@ ${systemPrompt}
   }
   parts.push(userPrompt);
   return parts.join("\n\n");
+}
+function validateContextFilePaths(filePaths, baseDir, allowExternal = false) {
+  const validPaths = [];
+  const errors = [];
+  for (const filePath of filePaths) {
+    if (/[\n\r\0]/.test(filePath)) {
+      errors.push(`E_CONTEXT_FILE_INJECTION: Rejected path with control characters: ${JSON.stringify(filePath)}`);
+      continue;
+    }
+    if (!allowExternal) {
+      const resolved = (0, import_path4.resolve)(baseDir, filePath);
+      const rel = (0, import_path4.relative)(baseDir, resolved);
+      if (rel === ".." || rel.startsWith(".." + import_path4.sep) || (0, import_path4.isAbsolute)(rel)) {
+        errors.push(`E_CONTEXT_FILE_TRAVERSAL: Rejected path outside working directory '${baseDir}': ${filePath}`);
+        continue;
+      }
+    }
+    validPaths.push(filePath);
+  }
+  return { validPaths, errors };
 }
 
 // src/mcp/prompt-persistence.ts
@@ -15258,7 +15278,7 @@ function getDefaultModelForProvider(provider, config2) {
   }
   return HARDCODED_DEFAULTS[provider];
 }
-function buildFallbackChain(provider, resolvedModel, config2) {
+function buildFallbackChain(provider, resolvedModel, _config) {
   const defaultChain = provider === "codex" ? CODEX_MODEL_FALLBACKS : GEMINI_MODEL_FALLBACKS;
   const chain = [resolvedModel, ...defaultChain];
   return [...new Set(chain)];
@@ -16470,7 +16490,7 @@ ${stderr}`;
   return { isError: false, message: "", type: "none" };
 }
 function executeGemini(prompt, model, cwd) {
-  return new Promise((resolve7, reject) => {
+  return new Promise((resolve8, reject) => {
     if (model) validateModelName(model);
     let settled = false;
     const args = ["-p=.", "--yolo"];
@@ -16509,7 +16529,7 @@ function executeGemini(prompt, model, cwd) {
           if (retryable.isError) {
             reject(new Error(`Gemini ${retryable.type === "rate_limit" ? "rate limit" : "model"} error: ${retryable.message}`));
           } else {
-            resolve7(stdout.trim());
+            resolve8(stdout.trim());
           }
         } else {
           const retryableExit = isGeminiRetryableError(stderr, stdout);
@@ -16864,8 +16884,14 @@ ${detection.installHint}`);
   const resolvedSystemPrompt = resolveSystemPrompt(void 0, agent_role, "gemini");
   let fileContext;
   if (files && files.length > 0) {
-    fileContext = `The following files are available for reference. Use your file tools to read them as needed:
-${files.map((f) => `- ${f}`).join("\n")}`;
+    const { validPaths, errors: errors2 } = validateContextFilePaths(files, baseDirReal, isExternalPromptAllowed());
+    if (errors2.length > 0) {
+      console.warn("[gemini-core] files validation rejected paths:", errors2.join("; "));
+    }
+    if (validPaths.length > 0) {
+      fileContext = `The following files are available for reference. Use your file tools to read them as needed:
+${validPaths.map((f) => `- ${f}`).join("\n")}`;
+    }
   }
   const fullPrompt = buildPromptWithSystemContext(userPrompt, fileContext, resolvedSystemPrompt);
   const promptResult = persistPrompt({
@@ -17114,7 +17140,7 @@ async function handleWaitForJob(provider, jobId, timeoutMs = 36e5) {
             status2.error ? `**Error:** ${status2.error}` : null
           ].filter(Boolean).join("\n"), true);
         }
-        await new Promise((resolve7) => setTimeout(resolve7, pollDelay));
+        await new Promise((resolve8) => setTimeout(resolve8, pollDelay));
         pollDelay = Math.min(pollDelay * 1.5, 2e3);
         continue;
       }
@@ -17126,7 +17152,7 @@ async function handleWaitForJob(provider, jobId, timeoutMs = 36e5) {
       if (notFoundCount >= 10) {
         return textResult(`No job found with ID: ${jobId}`, true);
       }
-      await new Promise((resolve7) => setTimeout(resolve7, pollDelay));
+      await new Promise((resolve8) => setTimeout(resolve8, pollDelay));
       pollDelay = Math.min(pollDelay * 1.5, 2e3);
       continue;
     }
@@ -17158,7 +17184,7 @@ async function handleWaitForJob(provider, jobId, timeoutMs = 36e5) {
         status.error ? `**Error:** ${status.error}` : null
       ].filter(Boolean).join("\n"), true);
     }
-    await new Promise((resolve7) => setTimeout(resolve7, pollDelay));
+    await new Promise((resolve8) => setTimeout(resolve8, pollDelay));
     pollDelay = Math.min(pollDelay * 1.5, 2e3);
   }
   return textResult(
@@ -17317,7 +17343,7 @@ async function handleKillJob(provider, jobId, signal = "SIGTERM") {
       error: `Killed by user (signal: ${signal})`
     });
     for (let attempt = 0; attempt < 3; attempt++) {
-      await new Promise((resolve7) => setTimeout(resolve7, 50));
+      await new Promise((resolve8) => setTimeout(resolve8, 50));
       const recheckStatus = readJobStatus(provider, found.slug, jobId);
       if (!recheckStatus || recheckStatus.status === "failed") {
         break;

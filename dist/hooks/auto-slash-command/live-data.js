@@ -170,6 +170,10 @@ function getCodeBlockRanges(lines) {
             }
         }
     }
+    // Unclosed fence: treat every line after the opening fence as inside a code block
+    if (openIndex !== null) {
+        ranges.push([openIndex, lines.length]);
+    }
     return ranges;
 }
 function isInsideCodeBlock(lineIndex, ranges) {
@@ -280,17 +284,29 @@ function executeCommand(command) {
         return { stdout: String(message), error: true };
     }
 }
+// ─── HTML Escaping ───────────────────────────────────────────────────────────
+/** Escape characters that are special in XML/HTML attributes and content. */
+function escapeHtml(s) {
+    return s
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+}
 // ─── Output Formatting ──────────────────────────────────────────────────────
 function formatOutput(command, output, error, format) {
+    const escapedCommand = escapeHtml(command);
+    const escapedOutput = escapeHtml(output);
     const formatAttr = format ? ` format="${format}"` : "";
     const errorAttr = error ? ' error="true"' : "";
     if (format === "diff" && !error) {
         const addLines = (output.match(DIFF_ADDED_LINES_PATTERN) || []).length;
         const delLines = (output.match(DIFF_DELETED_LINES_PATTERN) || []).length;
         const files = new Set((output.match(DIFF_FILE_HEADER_PATTERN) || []).map((l) => l.replace(DIFF_HEADER_PREFIX_PATTERN, ""))).size;
-        return `<live-data command="${command}"${formatAttr} files="${files}" +="${addLines}" -="${delLines}"${errorAttr}>${output}</live-data>`;
+        return `<live-data command="${escapedCommand}"${formatAttr} files="${files}" +="${addLines}" -="${delLines}"${errorAttr}>${escapedOutput}</live-data>`;
     }
-    return `<live-data command="${command}"${formatAttr}${errorAttr}>${output}</live-data>`;
+    return `<live-data command="${escapedCommand}"${formatAttr}${errorAttr}>${escapedOutput}</live-data>`;
 }
 function extractScriptBlocks(lines, codeBlockRanges) {
     const blocks = [];
@@ -337,7 +353,7 @@ export function resolveLiveData(content) {
         }
         const security = checkSecurity(block.shell);
         if (!security.allowed) {
-            scriptReplacements.set(block.startLine, `<live-data command="script:${block.shell}" error="true">blocked: ${security.reason}</live-data>`);
+            scriptReplacements.set(block.startLine, `<live-data command="script:${escapeHtml(block.shell)}" error="true">blocked: ${escapeHtml(security.reason ?? "")}</live-data>`);
             continue;
         }
         // Write script to stdin of shell
@@ -349,13 +365,13 @@ export function resolveLiveData(content) {
                 encoding: "utf-8",
                 stdio: ["pipe", "pipe", "pipe"],
             });
-            scriptReplacements.set(block.startLine, `<live-data command="script:${block.shell}">${result ?? ""}</live-data>`);
+            scriptReplacements.set(block.startLine, `<live-data command="script:${escapeHtml(block.shell)}">${escapeHtml(result ?? "")}</live-data>`);
         }
         catch (err) {
             const message = err instanceof Error
                 ? err.stderr || err.message
                 : String(err);
-            scriptReplacements.set(block.startLine, `<live-data command="script:${block.shell}" error="true">${message}</live-data>`);
+            scriptReplacements.set(block.startLine, `<live-data command="script:${escapeHtml(block.shell)}" error="true">${escapeHtml(message)}</live-data>`);
         }
     }
     // Second pass: process line by line
@@ -377,13 +393,13 @@ export function resolveLiveData(content) {
         // Security check
         const security = checkSecurity(directive.command);
         if (!security.allowed) {
-            result.push(`<live-data command="${directive.command}" error="true">blocked: ${security.reason}</live-data>`);
+            result.push(`<live-data command="${escapeHtml(directive.command)}" error="true">blocked: ${escapeHtml(security.reason ?? "")}</live-data>`);
             continue;
         }
         switch (directive.type) {
             case "if-modified": {
                 if (!checkIfModified(directive.pattern)) {
-                    result.push(`<live-data command="${directive.command}" skipped="true">condition not met: no files matching '${directive.pattern}' modified</live-data>`);
+                    result.push(`<live-data command="${escapeHtml(directive.command)}" skipped="true">condition not met: no files matching '${escapeHtml(directive.pattern)}' modified</live-data>`);
                 }
                 else {
                     const { stdout, error } = executeCommand(directive.command);
@@ -393,7 +409,7 @@ export function resolveLiveData(content) {
             }
             case "if-branch": {
                 if (!checkIfBranch(directive.pattern)) {
-                    result.push(`<live-data command="${directive.command}" skipped="true">condition not met: branch does not match '${directive.pattern}'</live-data>`);
+                    result.push(`<live-data command="${escapeHtml(directive.command)}" skipped="true">condition not met: branch does not match '${escapeHtml(directive.pattern)}'</live-data>`);
                 }
                 else {
                     const { stdout, error } = executeCommand(directive.command);
@@ -403,7 +419,7 @@ export function resolveLiveData(content) {
             }
             case "only-once": {
                 if (onceCommands.has(directive.command)) {
-                    result.push(`<live-data command="${directive.command}" skipped="true">already executed this session</live-data>`);
+                    result.push(`<live-data command="${escapeHtml(directive.command)}" skipped="true">already executed this session</live-data>`);
                 }
                 else {
                     onceCommands.add(directive.command);

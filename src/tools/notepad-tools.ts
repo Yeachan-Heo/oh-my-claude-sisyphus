@@ -7,14 +7,11 @@
 
 import { z } from 'zod';
 import {
-  getWorktreeRoot,
   getWorktreeNotepadPath,
   ensureOmcDir,
   validateWorkingDirectory,
 } from '../lib/worktree-paths.js';
 import {
-  initNotepad,
-  readNotepad,
   getPriorityContext,
   getWorkingMemory,
   getManualSection,
@@ -29,7 +26,6 @@ import {
 import { ToolDefinition } from './types.js';
 
 const SECTION_NAMES: [string, ...string[]] = ['all', 'priority', 'working', 'manual'];
-type SectionName = typeof SECTION_NAMES[number];
 
 // ============================================================================
 // notepad_read - Read notepad content

@@ -34,13 +34,13 @@ function findFiles(directory, extensions, ignoreDirs = []) {
                         }
                     }
                 }
-                catch (error) {
+                catch (_error) {
                     // Skip files/dirs we can't access
                     continue;
                 }
             }
         }
-        catch (error) {
+        catch (_error) {
             // Skip directories we can't read
             return;
         }
@@ -78,7 +78,7 @@ export async function runLspAggregatedDiagnostics(directory, extensions = ['.ts'
                 filesChecked++;
             });
         }
-        catch (error) {
+        catch (_error) {
             // Skip files that fail (including "no server available")
             continue;
         }

@@ -17,7 +17,7 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { homedir } from 'os';
 import { spawn } from 'child_process';
-import { checkRateLimitStatus, formatRateLimitStatus, formatTimeUntilReset } from './rate-limit-monitor.js';
+import { checkRateLimitStatus, formatRateLimitStatus } from './rate-limit-monitor.js';
 import {
   isTmuxAvailable,
   scanForBlockedPanes,
@@ -27,7 +27,6 @@ import {
 import type {
   DaemonState,
   DaemonConfig,
-  BlockedPane,
   DaemonResponse,
 } from './types.js';
 

@@ -4,7 +4,7 @@
  * Handles cleanup of stale and orphaned background tasks on HUD startup.
  */
 
-import type { OmcHudState, BackgroundTask } from './types.js';
+import type { BackgroundTask } from './types.js';
 import { readHudState, writeHudState } from './state.js';
 
 const STALE_TASK_THRESHOLD_MS = 30 * 60 * 1000; // 30 minutes default

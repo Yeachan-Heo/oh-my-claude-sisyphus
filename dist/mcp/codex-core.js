@@ -14,7 +14,7 @@ import { createStdoutCollector, safeWriteOutputFile } from './shared-exec.js';
 import { detectCodexCli } from './cli-detection.js';
 import { getWorktreeRoot } from '../lib/worktree-paths.js';
 import { isExternalPromptAllowed } from './mcp-config.js';
-import { resolveSystemPrompt, buildPromptWithSystemContext, wrapUntrustedCliResponse, isValidAgentRoleName, VALID_AGENT_ROLES, singleErrorBlock, inlineSuccessBlocks } from './prompt-injection.js';
+import { resolveSystemPrompt, buildPromptWithSystemContext, wrapUntrustedCliResponse, isValidAgentRoleName, VALID_AGENT_ROLES, singleErrorBlock, inlineSuccessBlocks, validateContextFilePaths } from './prompt-injection.js';
 import { persistPrompt, persistResponse, getExpectedResponsePath, getPromptsDir, slugify, generatePromptId } from './prompt-persistence.js';
 import { writeJobStatus, getStatusFilePath, readJobStatus } from './prompt-persistence.js';
 import { resolveExternalModel, buildFallbackChain, CODEX_MODEL_FALLBACKS, } from '../features/model-routing/external-model-policy.js';
@@ -798,10 +798,16 @@ ${resolvedPrompt}`;
     }
     // Resolve system prompt from agent role
     const resolvedSystemPrompt = resolveSystemPrompt(undefined, agent_role, 'codex');
-    // Build file context
+    // Build file context — validate paths first to prevent path traversal and prompt injection
     let fileContext;
     if (context_files && context_files.length > 0) {
-        fileContext = `The following files are available for reference. Use your file tools to read them as needed:\n${context_files.map(f => `- ${f}`).join('\n')}`;
+        const { validPaths, errors } = validateContextFilePaths(context_files, baseDirReal, isExternalPromptAllowed());
+        if (errors.length > 0) {
+            console.warn('[codex-core] context_files validation rejected paths:', errors.join('; '));
+        }
+        if (validPaths.length > 0) {
+            fileContext = `The following files are available for reference. Use your file tools to read them as needed:\n${validPaths.map(f => `- ${f}`).join('\n')}`;
+        }
     }
     // Combine: system prompt > file context > user prompt
     const fullPrompt = buildPromptWithSystemContext(userPrompt, fileContext, resolvedSystemPrompt);

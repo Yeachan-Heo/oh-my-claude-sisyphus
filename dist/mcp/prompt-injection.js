@@ -5,7 +5,7 @@
  * Enables agents to pass their personality/guidelines when consulting external models.
  */
 import { readdirSync } from 'fs';
-import { join, dirname, basename } from 'path';
+import { join, dirname, basename, resolve, relative, isAbsolute, sep } from 'path';
 import { fileURLToPath } from 'url';
 import { loadAgentPrompt } from '../agents/utils.js';
 /**
@@ -29,7 +29,6 @@ function getPackageDir() {
     }
     // CJS bundle path: __dirname is available natively in CJS.
     // From bridge/ go up 1 level to package root.
-    // eslint-disable-next-line no-undef
     if (typeof __dirname !== 'undefined') {
         return join(__dirname, '..');
     }
@@ -158,5 +157,40 @@ export function buildPromptWithSystemContext(userPrompt, fileContext, systemProm
     }
     parts.push(userPrompt);
     return parts.join('\n\n');
+}
+/**
+ * Validate context file paths to prevent path traversal and prompt injection.
+ *
+ * Checks performed:
+ * - Control characters (newlines, carriage returns, null bytes) in the path string
+ *   would inject content into the prompt when paths are interpolated. Rejected as
+ *   E_CONTEXT_FILE_INJECTION.
+ * - Paths that resolve outside baseDir (e.g. '../../../etc/passwd') are rejected as
+ *   E_CONTEXT_FILE_TRAVERSAL, unless allowExternal is true (matches isExternalPromptAllowed()).
+ *
+ * Returns { validPaths, errors } so callers can log rejections and proceed with valid paths.
+ */
+export function validateContextFilePaths(filePaths, baseDir, allowExternal = false) {
+    const validPaths = [];
+    const errors = [];
+    for (const filePath of filePaths) {
+        // Reject paths containing control characters — these would be injected verbatim
+        // into the prompt string when paths are interpolated, bypassing trust boundaries.
+        if (/[\n\r\0]/.test(filePath)) {
+            errors.push(`E_CONTEXT_FILE_INJECTION: Rejected path with control characters: ${JSON.stringify(filePath)}`);
+            continue;
+        }
+        if (!allowExternal) {
+            // Resolve against baseDir and check the result stays within it.
+            const resolved = resolve(baseDir, filePath);
+            const rel = relative(baseDir, resolved);
+            if (rel === '..' || rel.startsWith('..' + sep) || isAbsolute(rel)) {
+                errors.push(`E_CONTEXT_FILE_TRAVERSAL: Rejected path outside working directory '${baseDir}': ${filePath}`);
+                continue;
+            }
+        }
+        validPaths.push(filePath);
+    }
+    return { validPaths, errors };
 }
 //# sourceMappingURL=prompt-injection.js.map

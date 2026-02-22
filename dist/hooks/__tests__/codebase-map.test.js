@@ -266,5 +266,16 @@ describe('buildAgentsOverlay', () => {
         expect(result.hasCodebaseMap).toBe(false);
         expect(result.message).toBe('');
     });
+    it('includes truncation note exactly once when map is truncated (closes #844)', () => {
+        // Create 201 files to exceed the default maxFiles limit of 200
+        for (let i = 0; i < 201; i++) {
+            writeFile(tempDir, `file${i}.ts`, '');
+        }
+        const result = buildAgentsOverlay(tempDir);
+        expect(result.hasCodebaseMap).toBe(true);
+        const matches = result.message.match(/\[Map truncated/g);
+        expect(matches).not.toBeNull();
+        expect(matches.length).toBe(1);
+    });
 });
 //# sourceMappingURL=codebase-map.test.js.map

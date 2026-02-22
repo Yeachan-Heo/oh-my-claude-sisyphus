@@ -38,7 +38,7 @@ export function extractWisdomFromCompletion(response: string): ExtractedWisdom[]
   }
 
   // Pattern 2: <learning>, <decision>, <issue>, <problem> tags
-  const categories: WisdomCategory[] = ['learnings', 'decisions', 'issues', 'problems'];
+  const _categories: WisdomCategory[] = ['learnings', 'decisions', 'issues', 'problems'];
   const singularMap: Record<string, WisdomCategory> = {
     learning: 'learnings',
     decision: 'decisions',

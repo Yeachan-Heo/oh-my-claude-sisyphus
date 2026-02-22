@@ -76,7 +76,7 @@ export function mergeWorkerBranch(workerBranch, baseBranch, repoRoot) {
             mergeCommit,
         };
     }
-    catch (err) {
+    catch (_err) {
         // Abort the failed merge
         try {
             execFileSync('git', ['merge', '--abort'], { cwd: repoRoot, stdio: 'pipe' });

@@ -215,7 +215,7 @@ export function calculateConfidence(matches, total, matchType) {
     if (total === 0)
         return 0;
     const matchRatio = matches / total;
-    let baseScore = matchRatio * 100;
+    const baseScore = matchRatio * 100;
     // Apply multiplier based on match type
     const multipliers = {
         exact: 1.0,

@@ -20,14 +20,12 @@ import chalk from 'chalk';
 import {
   checkRateLimitStatus,
   formatRateLimitStatus,
-  formatTimeUntilReset,
   isTmuxAvailable,
   isInsideTmux,
   getDaemonStatus,
   startDaemon,
   stopDaemon,
   detectBlockedPanes,
-  formatDaemonState,
   runDaemonForeground,
   isDaemonRunning,
 } from '../../features/rate-limit-wait/index.js';

@@ -9,8 +9,8 @@
  */
 
 import { spawn } from 'child_process';
-import { existsSync, mkdirSync, readFileSync, realpathSync, statSync, writeFileSync } from 'fs';
-import { dirname, resolve, relative, sep, isAbsolute, basename, join } from 'path';
+import { mkdirSync, readFileSync, realpathSync, writeFileSync } from 'fs';
+import { resolve, relative, sep, isAbsolute, join } from 'path';
 import { createStdoutCollector, safeWriteOutputFile } from './shared-exec.js';
 import { detectCodexCli } from './cli-detection.js';
 import { getWorktreeRoot } from '../lib/worktree-paths.js';

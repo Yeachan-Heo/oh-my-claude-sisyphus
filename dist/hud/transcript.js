@@ -15,7 +15,7 @@ import { basename } from "path";
 // Performance constants
 const MAX_TAIL_BYTES = 512 * 1024; // 500KB - enough for recent activity
 const MAX_AGENT_MAP_SIZE = 100; // Cap agent tracking
-const MIN_RUNNING_AGENTS_THRESHOLD = 10; // Early termination threshold
+const _MIN_RUNNING_AGENTS_THRESHOLD = 10; // Early termination threshold
 /**
  * Tools known to require permission approval in Claude Code.
  * Only these tools will trigger the "APPROVE?" indicator.
@@ -64,7 +64,7 @@ export async function parseTranscript(transcriptPath, options) {
     }
     const agentMap = new Map();
     const backgroundAgentMap = new Map();
-    let latestTodos = [];
+    const latestTodos = [];
     try {
         // Check file size to determine parsing strategy
         const stat = statSync(transcriptPath);
@@ -122,7 +122,7 @@ export async function parseTranscript(transcriptPath, options) {
         }
     }
     // Check for pending permissions within threshold
-    for (const [id, permission] of pendingPermissionMap) {
+    for (const [_id, permission] of pendingPermissionMap) {
         const age = now - permission.timestamp.getTime();
         if (age <= PERMISSION_THRESHOLD_MS) {
             result.pendingPermission = permission;

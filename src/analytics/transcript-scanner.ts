@@ -1,6 +1,6 @@
 import { readdir, stat } from 'fs/promises';
 import { existsSync } from 'fs';
-import { join, sep } from 'path';
+import { join } from 'path';
 import { getClaudeConfigDir } from '../utils/paths.js';
 
 /**
@@ -14,7 +14,7 @@ function isWindowsEncodedPath(dirName: string): boolean {
 /**
  * Normalize decoded path to use OS-native separators consistently
  */
-function normalizePathForOS(decodedPath: string): string {
+function _normalizePathForOS(decodedPath: string): string {
   // On Windows, convert forward slashes to backslashes for consistency
   // But existsSync works with both, so we normalize to forward slashes for cross-platform
   return decodedPath.replace(/\\/g, '/');

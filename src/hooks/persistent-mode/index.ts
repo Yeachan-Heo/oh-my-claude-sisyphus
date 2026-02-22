@@ -475,7 +475,7 @@ async function checkRalphLoop(
     ? `2. Check prd.json - are ALL stories marked passes: true?`
     : `2. Check your todo list - are ALL items marked complete?`;
 
-  let continuationPrompt = `<ralph-continuation>
+  const continuationPrompt = `<ralph-continuation>
 ${errorGuidance ? errorGuidance + '\n' : ''}
 [RALPH - ITERATION ${newState.iteration}/${newState.max_iterations}]
 
@@ -514,7 +514,7 @@ ${newState.prompt ? `Original task: ${newState.prompt}` : ''}
 async function checkUltrawork(
   sessionId?: string,
   directory?: string,
-  hasIncompleteTodos?: boolean
+  _hasIncompleteTodos?: boolean
 ): Promise<PersistentModeResult | null> {
   const state = readUltraworkState(directory, sessionId);
 
@@ -550,7 +550,7 @@ async function checkUltrawork(
  * Check for incomplete todos (baseline enforcement)
  * Includes max-attempts counter to prevent infinite loops when agent is stuck
  */
-async function checkTodoContinuation(
+async function _checkTodoContinuation(
   sessionId?: string,
   directory?: string
 ): Promise<PersistentModeResult | null> {
@@ -568,7 +568,7 @@ async function checkTodoContinuation(
   const attemptCount = sessionId ? trackTodoContinuationAttempt(sessionId) : 1;
 
   // Use dynamic label based on source (Tasks vs todos)
-  const sourceLabel = result.source === 'task' ? 'Tasks' : 'todos';
+  const _sourceLabel = result.source === 'task' ? 'Tasks' : 'todos';
   const sourceLabelLower = result.source === 'task' ? 'tasks' : 'todos';
 
   if (attemptCount > MAX_TODO_CONTINUATION_ATTEMPTS) {

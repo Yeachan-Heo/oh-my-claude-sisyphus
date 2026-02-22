@@ -497,7 +497,7 @@ export class McpBridge extends EventEmitter {
      */
     getConnectionStatus() {
         const status = new Map();
-        for (const [name, config] of this.serverConfigs) {
+        for (const [name, _config] of this.serverConfigs) {
             status.set(name, this.connections.has(name));
         }
         return status;

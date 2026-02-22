@@ -59,6 +59,22 @@ describe('resolveLiveData - basic', () => {
         expect(result).toContain('<live-data command="echo run-me">ran\n</live-data>');
         expect(mockedExecSync).toHaveBeenCalledTimes(1);
     });
+    it('skips !lines inside an unclosed/unterminated fenced code block', () => {
+        mockedExecSync.mockReturnValue('ran\n');
+        // Opening fence is never closed — directive must not execute
+        const input = '```\n!echo skip-me';
+        const result = resolveLiveData(input);
+        expect(result).toContain('!echo skip-me');
+        expect(mockedExecSync).not.toHaveBeenCalled();
+    });
+    it('skips multiple !lines after an unclosed fence', () => {
+        mockedExecSync.mockReturnValue('ran\n');
+        const input = 'before\n```bash\n!echo one\n!echo two';
+        const result = resolveLiveData(input);
+        expect(result).toContain('!echo one');
+        expect(result).toContain('!echo two');
+        expect(mockedExecSync).not.toHaveBeenCalled();
+    });
     it('handles failed commands with error attribute', () => {
         const error = new Error('command failed');
         error.stderr = 'permission denied\n';
@@ -200,7 +216,8 @@ describe('resolveLiveData - security', () => {
         setupPolicy({ denied_commands: ['rm', 'dd'] });
         const result = resolveLiveData('!rm -rf /tmp/test');
         expect(result).toContain('error="true"');
-        expect(result).toContain("command 'rm' is denied");
+        // Single quotes in the reason are HTML-escaped in the output
+        expect(result).toContain("command &#39;rm&#39; is denied");
         expect(mockedExecSync).not.toHaveBeenCalled();
     });
     it('blocks denied patterns', () => {
@@ -269,6 +286,39 @@ describe('resolveLiveData - output formats', () => {
         expect(result).toMatch(/files="\d+"/);
         expect(result).toMatch(/\+="\d+"/);
         expect(result).toMatch(/-="\d+"/);
+    });
+});
+// ─── Tag Injection Prevention ────────────────────────────────────────────────
+describe('resolveLiveData - tag injection prevention', () => {
+    it('escapes < > & " \' in command attribute', () => {
+        mockedExecSync.mockReturnValue('ok\n');
+        // Command contains characters that could break XML attribute parsing
+        const result = resolveLiveData('!echo "foo" <bar> &amp; it\'s');
+        expect(result).not.toContain('"foo"');
+        expect(result).not.toContain('<bar>');
+        expect(result).toContain('&quot;foo&quot;');
+        expect(result).toContain('&lt;bar&gt;');
+        expect(result).toContain('&amp;amp;');
+        expect(result).toContain('&#39;s');
+    });
+    it('escapes </live-data> in command output to prevent tag injection', () => {
+        mockedExecSync.mockReturnValue('</live-data><injected attr="x">pwned</live-data>');
+        const result = resolveLiveData('!cat file');
+        // The closing tag in output must be escaped, not treated as real markup
+        expect(result).not.toMatch(/<\/live-data>.*<injected/s);
+        expect(result).toContain('&lt;/live-data&gt;');
+        expect(result).toContain('&lt;injected');
+    });
+    it('escapes < > & in stdout when command fails', () => {
+        const error = new Error('cmd failed');
+        error.stderr = '<error>something & "bad"</error>';
+        mockedExecSync.mockImplementation(() => { throw error; });
+        const result = resolveLiveData('!bad-cmd');
+        expect(result).toContain('error="true"');
+        expect(result).toContain('&lt;error&gt;');
+        expect(result).toContain('&amp;');
+        expect(result).toContain('&quot;bad&quot;');
+        expect(result).not.toContain('<error>');
     });
 });
 // ─── Multi-line Scripts ──────────────────────────────────────────────────────
