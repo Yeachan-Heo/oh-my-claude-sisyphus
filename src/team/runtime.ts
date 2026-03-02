@@ -613,6 +613,22 @@ export async function spawnWorkerForTask(
     cwd: runtime.cwd,
   };
 
+  // Auto-write done.json when a prompt-mode agent process exits.
+  // The shell wrapper runs the agent, waits for it to finish, then writes done.json.
+  // Uses exit code to distinguish success vs crash.
+  if (usePromptMode) {
+    const absDonePath = join(runtime.cwd, `.omc/state/team/${runtime.teamName}/workers/${workerNameValue}/done.json`);
+    const escapedDonePath = absDonePath.replace(/'/g, `'\\''`);
+    paneConfig.postExitCmd = [
+      `_omc_rc=$?; _omc_ts=$(date -u +%Y-%m-%dT%H:%M:%SZ);`,
+      `if [ "$_omc_rc" -eq 0 ]; then`,
+      `  printf '{"taskId":"${taskId}","status":"completed","summary":"prompt-mode auto-completion","completedAt":"%s"}' "$_omc_ts" > '${escapedDonePath}';`,
+      `else`,
+      `  printf '{"taskId":"${taskId}","status":"failed","summary":"agent exited with code %s","completedAt":"%s"}' "$_omc_rc" "$_omc_ts" > '${escapedDonePath}';`,
+      `fi`,
+    ].join(' ');
+  }
+
   await spawnWorkerInPane(runtime.sessionName, paneId, paneConfig);
 
   runtime.workerPaneIds.push(paneId);

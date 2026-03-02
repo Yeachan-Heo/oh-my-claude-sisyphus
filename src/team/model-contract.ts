@@ -28,8 +28,11 @@ const CONTRACTS: Record<CliAgentType, CliAgentContract> = {
     agentType: 'claude',
     binary: 'claude',
     installInstructions: 'Install Claude CLI: https://claude.ai/download',
+    supportsPromptMode: true,
+    // -p in buildLaunchArgs activates print mode (a mode switch, not a prompt flag).
+    // The instruction itself is passed as a trailing positional argument via getPromptModeArgs.
     buildLaunchArgs(model?: string, extraFlags: string[] = []): string[] {
-      const args = ['--dangerously-skip-permissions'];
+      const args = ['--dangerously-skip-permissions', '-p'];
       if (model) args.push('--model', model);
       return [...args, ...extraFlags];
     },

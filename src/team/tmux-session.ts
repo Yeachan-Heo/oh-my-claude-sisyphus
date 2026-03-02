@@ -57,6 +57,8 @@ export interface WorkerPaneConfig {
   /** @deprecated Prefer launchBinary + launchArgs for safe argv handling */
   launchCmd?: string;
   cwd: string;
+  /** Shell command to run after the main process exits (prompt-mode done.json write) */
+  postExitCmd?: string;
 }
 
 export function getDefaultShell(): string {
@@ -120,9 +122,10 @@ export function buildWorkerStartCommand(config: WorkerPaneConfig): string {
 
     const shellName = shellNameFromPath(shell) || 'bash';
     const rcFile = process.env.HOME ? `${process.env.HOME}/.${shellName}rc` : '';
+    const runCmd = config.postExitCmd ? `"$@"; ${config.postExitCmd}` : 'exec "$@"';
     const script = rcFile
-      ? `[ -f ${shellEscape(rcFile)} ] && . ${shellEscape(rcFile)}; exec "$@"`
-      : 'exec "$@"';
+      ? `[ -f ${shellEscape(rcFile)} ] && . ${shellEscape(rcFile)}; ${runCmd}`
+      : runCmd;
 
     return [
       'env',

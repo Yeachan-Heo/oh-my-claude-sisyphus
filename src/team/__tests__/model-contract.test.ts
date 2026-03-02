@@ -33,9 +33,10 @@ describe('model-contract', () => {
   });
 
   describe('buildLaunchArgs', () => {
-    it('claude includes --dangerously-skip-permissions', () => {
+    it('claude includes --dangerously-skip-permissions and -p', () => {
       const args = buildLaunchArgs('claude', { teamName: 't', workerName: 'w', cwd: '/tmp' });
       expect(args).toContain('--dangerously-skip-permissions');
+      expect(args).toContain('-p');
     });
     it('codex includes --dangerously-bypass-approvals-and-sandbox', () => {
       const args = buildLaunchArgs('codex', { teamName: 't', workerName: 'w', cwd: '/tmp' });
@@ -108,8 +109,11 @@ describe('model-contract', () => {
       expect(c.promptModeFlag).toBe('-p');
     });
 
-    it('claude does not support prompt mode', () => {
-      expect(isPromptModeAgent('claude')).toBe(false);
+    it('claude supports prompt mode (positional argument, no flag)', () => {
+      expect(isPromptModeAgent('claude')).toBe(true);
+      const c = getContract('claude');
+      expect(c.supportsPromptMode).toBe(true);
+      expect(c.promptModeFlag).toBeUndefined();
     });
 
     it('codex supports prompt mode (positional argument, no flag)', () => {
@@ -129,8 +133,8 @@ describe('model-contract', () => {
       expect(args).toEqual(['Read inbox']);
     });
 
-    it('getPromptModeArgs returns empty array for non-prompt-mode agents', () => {
-      expect(getPromptModeArgs('claude', 'Read inbox')).toEqual([]);
+    it('getPromptModeArgs returns instruction only (positional) for claude', () => {
+      expect(getPromptModeArgs('claude', 'Read inbox')).toEqual(['Read inbox']);
     });
   });
 });

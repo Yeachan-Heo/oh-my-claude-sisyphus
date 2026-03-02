@@ -99,7 +99,7 @@ function setupTaskDir(cwd: string): void {
   mkdirSync(workerDir, { recursive: true });
 }
 
-describe('spawnWorkerForTask – prompt mode (Gemini & Codex)', () => {
+describe('spawnWorkerForTask – prompt mode (Gemini, Codex & Claude)', () => {
   let cwd: string;
 
   beforeEach(() => {
@@ -192,6 +192,68 @@ describe('spawnWorkerForTask – prompt mode (Gemini & Codex)', () => {
     );
     // Only one send-keys call: the launch command itself
     expect(sendKeysCalls.length).toBe(1);
+
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('claude worker launch args include -p flag and positional prompt', async () => {
+    const runtime = makeRuntime(cwd, 'claude');
+
+    await spawnWorkerForTask(runtime, 'worker-1', 0);
+
+    // Find the send-keys call that launches the worker (contains -l flag)
+    const launchCall = tmuxCalls.args.find(
+      args => args[0] === 'send-keys' && args.includes('-l')
+    );
+    expect(launchCall).toBeDefined();
+    const launchCmd = launchCall![launchCall!.length - 1];
+
+    // Should contain -p flag in buildLaunchArgs (not via promptModeFlag)
+    expect(launchCmd).toContain("'-p'");
+    // Should contain the inbox path as a positional argument
+    expect(launchCmd).toContain('.omc/state/team/test-team/workers/worker-1/inbox.md');
+
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('claude worker skips interactive send-keys notification (uses prompt mode)', async () => {
+    const runtime = makeRuntime(cwd, 'claude');
+
+    await spawnWorkerForTask(runtime, 'worker-1', 0);
+
+    // After the initial launch send-keys, there should be NO follow-up
+    // send-keys with "Read and execute" text (prompt-mode agents skip the
+    // interactive notification path).
+    const sendKeysCalls = tmuxCalls.args.filter(
+      args => args[0] === 'send-keys' && args.includes('-l')
+    );
+    // Only one send-keys call: the launch command itself
+    expect(sendKeysCalls.length).toBe(1);
+
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('prompt-mode agents get postExitCmd in launch command (done.json auto-write)', async () => {
+    const runtime = makeRuntime(cwd, 'gemini');
+
+    await spawnWorkerForTask(runtime, 'worker-1', 0);
+
+    // Find the send-keys call that launches the worker (contains -l flag)
+    const launchCall = tmuxCalls.args.find(
+      args => args[0] === 'send-keys' && args.includes('-l')
+    );
+    expect(launchCall).toBeDefined();
+    const launchCmd = launchCall![launchCall!.length - 1];
+
+    // Should contain done.json write (postExitCmd) — no 'exec "$@"' since
+    // postExitCmd needs the shell to survive the agent process exit.
+    expect(launchCmd).toContain('done.json');
+    expect(launchCmd).toContain('prompt-mode auto-completion');
+    // Should check exit code to distinguish success vs crash
+    expect(launchCmd).toContain('_omc_rc=$?');
+    expect(launchCmd).toContain('status":"failed"');
+    // Should NOT contain 'exec "$@"' (replaced with "$@"; postExitCmd)
+    expect(launchCmd).not.toContain('exec "$@"');
 
     rmSync(cwd, { recursive: true, force: true });
   });

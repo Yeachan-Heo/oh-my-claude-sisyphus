@@ -52,8 +52,11 @@ var CONTRACTS = {
     agentType: "claude",
     binary: "claude",
     installInstructions: "Install Claude CLI: https://claude.ai/download",
+    supportsPromptMode: true,
+    // -p in buildLaunchArgs activates print mode (a mode switch, not a prompt flag).
+    // The instruction itself is passed as a trailing positional argument via getPromptModeArgs.
     buildLaunchArgs(model, extraFlags = []) {
-      const args = ["--dangerously-skip-permissions"];
+      const args = ["--dangerously-skip-permissions", "-p"];
       if (model) args.push("--model", model);
       return [...args, ...extraFlags];
     },
@@ -228,7 +231,8 @@ function buildWorkerStartCommand(config) {
     });
     const shellName2 = shellNameFromPath(shell) || "bash";
     const rcFile2 = process.env.HOME ? `${process.env.HOME}/.${shellName2}rc` : "";
-    const script = rcFile2 ? `[ -f ${shellEscape(rcFile2)} ] && . ${shellEscape(rcFile2)}; exec "$@"` : 'exec "$@"';
+    const runCmd = config.postExitCmd ? `"$@"; ${config.postExitCmd}` : 'exec "$@"';
+    const script = rcFile2 ? `[ -f ${shellEscape(rcFile2)} ] && . ${shellEscape(rcFile2)}; ${runCmd}` : runCmd;
     return [
       "env",
       ...envAssignments,
@@ -1281,6 +1285,18 @@ async function spawnWorkerForTask(runtime, workerNameValue, taskIndex) {
     launchArgs,
     cwd: runtime.cwd
   };
+  if (usePromptMode) {
+    const absDonePath = (0, import_path9.join)(runtime.cwd, `.omc/state/team/${runtime.teamName}/workers/${workerNameValue}/done.json`);
+    const escapedDonePath = absDonePath.replace(/'/g, `'\\''`);
+    paneConfig.postExitCmd = [
+      `_omc_rc=$?; _omc_ts=$(date -u +%Y-%m-%dT%H:%M:%SZ);`,
+      `if [ "$_omc_rc" -eq 0 ]; then`,
+      `  printf '{"taskId":"${taskId}","status":"completed","summary":"prompt-mode auto-completion","completedAt":"%s"}' "$_omc_ts" > '${escapedDonePath}';`,
+      `else`,
+      `  printf '{"taskId":"${taskId}","status":"failed","summary":"agent exited with code %s","completedAt":"%s"}' "$_omc_rc" "$_omc_ts" > '${escapedDonePath}';`,
+      `fi`
+    ].join(" ");
+  }
   await spawnWorkerInPane(runtime.sessionName, paneId, paneConfig);
   runtime.workerPaneIds.push(paneId);
   runtime.activeWorkers.set(workerNameValue, { paneId, taskId, spawnedAt: Date.now() });
