@@ -287,14 +287,25 @@ export async function render(context: HudRenderContext, config: HudConfig): Prom
   // Compose output
   const outputLines: string[] = [];
 
-  // Git info line (separate line above HUD header)
-  if (gitElements.length > 0) {
-    outputLines.push(gitElements.join(dim(' | ')));
-  }
-
-  // HUD header line
+  const gitInfoLine = gitElements.length > 0 ? gitElements.join(dim(' | ')) : null;
   const headerLine = elements.join(dim(' | '));
-  outputLines.push(headerLine);
+
+  // Position git info based on config (default: above for backward compatibility)
+  const gitPosition = config.elements.gitInfoPosition ?? 'above';
+
+  if (gitPosition === 'above') {
+    // Git info line above HUD header (traditional layout)
+    if (gitInfoLine) {
+      outputLines.push(gitInfoLine);
+    }
+    outputLines.push(headerLine);
+  } else {
+    // Git info line below HUD header
+    outputLines.push(headerLine);
+    if (gitInfoLine) {
+      outputLines.push(gitInfoLine);
+    }
+  }
 
   // Todos on next line (if available)
   if (enabledElements.todos) {

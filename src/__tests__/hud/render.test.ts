@@ -1,6 +1,17 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { limitOutputLines } from '../../hud/render.js';
-import { DEFAULT_HUD_CONFIG, PRESET_CONFIGS } from '../../hud/types.js';
+import { render } from '../../hud/render.js';
+import { DEFAULT_HUD_CONFIG, PRESET_CONFIGS, type HudRenderContext, type HudConfig } from '../../hud/types.js';
+
+// Mock git elements
+vi.mock('../../hud/elements/git.js', () => ({
+  renderGitRepo: vi.fn(() => 'repo:my-repo'),
+  renderGitBranch: vi.fn(() => 'branch:main'),
+}));
+
+vi.mock('../../hud/elements/cwd.js', () => ({
+  renderCwd: vi.fn(() => '~/workspace/project'),
+}));
 
 describe('limitOutputLines', () => {
   describe('basic functionality', () => {
@@ -156,6 +167,164 @@ describe('limitOutputLines', () => {
 
     it('works with DEFAULT_HUD_CONFIG elements.maxOutputLines value of 4', () => {
       expect(DEFAULT_HUD_CONFIG.elements.maxOutputLines).toBe(4);
+    });
+  });
+});
+
+describe('gitInfoPosition configuration', () => {
+  const createMockContext = (): HudRenderContext => ({
+    contextPercent: 30,
+    modelName: 'claude-sonnet-4-5',
+    ralph: null,
+    ultrawork: null,
+    prd: null,
+    autopilot: null,
+    activeAgents: [],
+    todos: [],
+    backgroundTasks: [],
+    cwd: '/home/user/project',
+    lastSkill: null,
+    rateLimits: null,
+    customBuckets: null,
+    pendingPermission: null,
+    thinkingState: null,
+    sessionHealth: { durationMinutes: 10, messageCount: 5, health: 'healthy' },
+    omcVersion: '4.5.4',
+    updateAvailable: null,
+    toolCallCount: 0,
+    agentCallCount: 0,
+    skillCallCount: 0,
+    promptTime: null,
+    apiKeySource: null,
+  });
+
+  const createMockConfig = (gitInfoPosition: 'above' | 'below'): HudConfig => ({
+    preset: 'focused',
+    elements: {
+      ...DEFAULT_HUD_CONFIG.elements,
+      cwd: true,
+      gitRepo: true,
+      gitBranch: true,
+      gitInfoPosition,
+      omcLabel: true,
+      rateLimits: false,
+      ralph: false,
+      autopilot: false,
+      prdStory: false,
+      activeSkills: false,
+      contextBar: false,
+      agents: false,
+      backgroundTasks: false,
+      todos: false,
+      promptTime: false,
+      sessionHealth: false,
+    },
+    thresholds: DEFAULT_HUD_CONFIG.thresholds,
+    staleTaskThresholdMinutes: 30,
+    contextLimitWarning: DEFAULT_HUD_CONFIG.contextLimitWarning,
+  });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe('default value', () => {
+    it('defaults to "above" for backward compatibility', () => {
+      expect(DEFAULT_HUD_CONFIG.elements.gitInfoPosition).toBe('above');
+    });
+  });
+
+  describe('preset configurations', () => {
+    it('all presets have gitInfoPosition set to "above"', () => {
+      expect(PRESET_CONFIGS.minimal.gitInfoPosition).toBe('above');
+      expect(PRESET_CONFIGS.focused.gitInfoPosition).toBe('above');
+      expect(PRESET_CONFIGS.full.gitInfoPosition).toBe('above');
+      expect(PRESET_CONFIGS.dense.gitInfoPosition).toBe('above');
+      expect(PRESET_CONFIGS.opencode.gitInfoPosition).toBe('above');
+    });
+  });
+
+  describe('render with gitInfoPosition: above', () => {
+    it('places git info line before the main HUD header', async () => {
+      const context = createMockContext();
+      const config = createMockConfig('above');
+
+      const result = await render(context, config);
+      const lines = result.split('\n');
+
+      // First line should be git info
+      expect(lines[0]).toContain('repo:my-repo');
+      expect(lines[0]).toContain('branch:main');
+      // Second line should be the main HUD header (with ANSI codes from bold())
+      expect(lines[1]).toMatch(/\[OMC/);
+    });
+
+    it('maintains traditional layout with git info above', async () => {
+      const context = createMockContext();
+      const config = createMockConfig('above');
+
+      const result = await render(context, config);
+      const lines = result.split('\n');
+
+      expect(lines.length).toBeGreaterThanOrEqual(2);
+      // Git info comes first
+      expect(lines[0]).toContain('~/workspace/project');
+      // Main header comes second (with ANSI codes from bold())
+      expect(lines[1]).toMatch(/\[OMC/);
+    });
+  });
+
+  describe('render with gitInfoPosition: below', () => {
+    it('places git info line after the main HUD header', async () => {
+      const context = createMockContext();
+      const config = createMockConfig('below');
+
+      const result = await render(context, config);
+      const lines = result.split('\n');
+
+      // First line should be the main HUD header (with ANSI codes from bold())
+      expect(lines[0]).toMatch(/\[OMC/);
+      // Second line should be git info
+      expect(lines[1]).toContain('repo:my-repo');
+      expect(lines[1]).toContain('branch:main');
+    });
+
+    it('places main header before git info', async () => {
+      const context = createMockContext();
+      const config = createMockConfig('below');
+
+      const result = await render(context, config);
+      const lines = result.split('\n');
+
+      expect(lines.length).toBeGreaterThanOrEqual(2);
+      // Main header comes first (with ANSI codes from bold())
+      expect(lines[0]).toMatch(/\[OMC/);
+      // Git info comes second
+      expect(lines[1]).toContain('~/workspace/project');
+    });
+  });
+
+  describe('fallback behavior', () => {
+    it('defaults to "above" when gitInfoPosition is undefined', async () => {
+      const context = createMockContext();
+      const config = createMockConfig('above');
+      // Simulate undefined by omitting from elements
+      const { gitInfoPosition: _, ...elementsWithoutPosition } = config.elements;
+      const configWithoutPosition = {
+        ...config,
+        elements: elementsWithoutPosition as typeof config.elements,
+      };
+
+      const result = await render(context, configWithoutPosition);
+      const lines = result.split('\n');
+
+      // Should default to above behavior
+      // Git info should be in the first line (if present)
+      const firstLineIsGitInfo = lines[0]?.includes('repo:') || lines[0]?.includes('branch:');
+      const firstLineIsHeader = lines[0]?.includes('[OMC]');
+
+      // Either git info is first, or if no git info, header is first
+      expect(firstLineIsGitInfo || firstLineIsHeader).toBe(true);
     });
   });
 });

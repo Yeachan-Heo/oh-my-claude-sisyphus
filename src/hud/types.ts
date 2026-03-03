@@ -362,6 +362,7 @@ export interface HudElementConfig {
   cwdFormat: CwdFormat;      // Path display format
   gitRepo: boolean;          // Show git repository name
   gitBranch: boolean;        // Show git branch
+  gitInfoPosition: 'above' | 'below';  // Position of git info relative to main HUD line
   model: boolean;            // Show current model name
   modelFormat: ModelFormat;   // Model name verbosity level
   omcLabel: boolean;
@@ -430,6 +431,7 @@ export const DEFAULT_HUD_CONFIG: HudConfig = {
     cwdFormat: 'relative',
     gitRepo: false,           // Disabled by default for backward compatibility
     gitBranch: false,         // Disabled by default for backward compatibility
+    gitInfoPosition: 'above',  // Git info above main HUD line (backward compatible)
     model: false,             // Disabled by default for backward compatibility
     modelFormat: 'short',     // Short names by default for backward compatibility
     omcLabel: true,
@@ -475,6 +477,7 @@ export const PRESET_CONFIGS: Record<HudPreset, Partial<HudElementConfig>> = {
     cwdFormat: 'folder',
     gitRepo: false,
     gitBranch: false,
+    gitInfoPosition: 'above',
     model: false,
     modelFormat: 'short',
     omcLabel: true,
@@ -506,6 +509,7 @@ export const PRESET_CONFIGS: Record<HudPreset, Partial<HudElementConfig>> = {
     cwdFormat: 'relative',
     gitRepo: false,
     gitBranch: true,
+    gitInfoPosition: 'above',
     model: false,
     modelFormat: 'short',
     omcLabel: true,
@@ -537,6 +541,7 @@ export const PRESET_CONFIGS: Record<HudPreset, Partial<HudElementConfig>> = {
     cwdFormat: 'relative',
     gitRepo: true,
     gitBranch: true,
+    gitInfoPosition: 'above',
     model: false,
     modelFormat: 'short',
     omcLabel: true,
@@ -568,6 +573,7 @@ export const PRESET_CONFIGS: Record<HudPreset, Partial<HudElementConfig>> = {
     cwdFormat: 'relative',
     gitRepo: false,
     gitBranch: true,
+    gitInfoPosition: 'above',
     model: false,
     modelFormat: 'short',
     omcLabel: true,
@@ -599,6 +605,7 @@ export const PRESET_CONFIGS: Record<HudPreset, Partial<HudElementConfig>> = {
     cwdFormat: 'relative',
     gitRepo: true,
     gitBranch: true,
+    gitInfoPosition: 'above',
     model: false,
     modelFormat: 'short',
     omcLabel: true,
