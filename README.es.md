@@ -8,11 +8,13 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 [![Sponsor](https://img.shields.io/badge/Sponsor-❤️-red?style=flat&logo=github)](https://github.com/sponsors/Yeachan-Heo)
 
+> **Para usuarios de Codex:** Consulta [oh-my-codex](https://github.com/Yeachan-Heo/oh-my-codex) — la misma experiencia de orquestación para OpenAI Codex CLI.
+
 **Orquestación multi-agente para Claude Code. Curva de aprendizaje cero.**
 
 *No aprendas Claude Code. Solo usa OMC.*
 
-[Comenzar](#inicio-rápido) • [Documentación](https://yeachan-heo.github.io/oh-my-claudecode-website) • [Guía de Migración](docs/MIGRATION.md)
+[Comenzar](#inicio-rápido) • [Documentación](https://yeachan-heo.github.io/oh-my-claudecode-website) • [Referencia CLI](https://yeachan-heo.github.io/oh-my-claudecode-website/docs.html#cli-reference) • [Flujos de Trabajo](https://yeachan-heo.github.io/oh-my-claudecode-website/docs.html#workflows) • [Guía de Migración](docs/MIGRATION.md)
 
 ---
 
@@ -35,6 +37,16 @@ autopilot: build a REST API for managing tasks
 ```
 
 Eso es todo. Todo lo demás es automático.
+
+### ¿No sabes por dónde empezar?
+
+Si no tienes claros los requisitos, tienes una idea vaga, o quieres microgestionar el diseño:
+
+```
+/deep-interview "I want to build a task management app"
+```
+
+La entrevista profunda usa preguntas socráticas para clarificar tu pensamiento antes de escribir cualquier código. Expone suposiciones ocultas y mide la claridad a través de dimensiones ponderadas, asegurando que sepas exactamente qué construir antes de que comience la ejecución.
 
 ## Modo Team (Recomendado)
 
@@ -116,6 +128,7 @@ Si experimentas problemas despues de actualizar, limpia la cache antigua del plu
 ## ¿Por qué oh-my-claudecode?
 
 - **Cero configuración requerida** - Funciona inmediatamente con valores predeterminados inteligentes
+- **Orquestación Team-first** - Team es la superficie canónica multiagente (swarm/ultrapilot son fachadas de compatibilidad)
 - **Interfaz de lenguaje natural** - Sin comandos que memorizar, solo describe lo que quieres
 - **Paralelización automática** - Tareas complejas distribuidas entre agentes especializados
 - **Ejecución persistente** - No se rendirá hasta que el trabajo esté verificado y completo
@@ -172,10 +185,13 @@ Atajos opcionales para usuarios avanzados. El lenguaje natural funciona bien sin
 | `ulw` | Máximo paralelismo | `ulw fix all errors` |
 | `plan` | Entrevista de planificación | `plan the API` |
 | `ralplan` | Consenso de planificación iterativa | `ralplan this feature` |
-| `swarm` | Palabra clave legada (enruta a Team) | `swarm 5 agents: fix lint errors` |
-| `ultrapilot` | Palabra clave legada (enruta a Team) | `ultrapilot: build a fullstack app` |
+| `deep-interview` | Clarificación socrática de requisitos | `deep-interview "vague idea"` |
+| `swarm` | **Obsoleto** — usa `team` en su lugar | `swarm 5 agents: fix lint errors` |
+| `ultrapilot` | **Obsoleto** — usa `team` en su lugar | `ultrapilot: build a fullstack app` |
 
-**ralph incluye ultrawork:** Cuando activas el modo ralph, automáticamente incluye la ejecución paralela de ultrawork. No es necesario combinar palabras clave.
+**Notas:**
+- **ralph incluye ultrawork:** Cuando activas el modo ralph, automáticamente incluye la ejecución paralela de ultrawork. No es necesario combinar palabras clave.
+- La sintaxis `swarm N agents` aún se reconoce para extraer el recuento de agentes, pero el runtime está respaldado por Team en v4.1.7+.
 
 ---
 
@@ -217,47 +233,17 @@ Comportamiento de etiquetas:
 
 ---
 
-## Notificaciones
-
-Puedes recibir notificaciones en tiempo real para eventos del ciclo de vida de la sesión.
-
-Eventos compatibles:
-- `session-start`
-- `session-stop` (cuando un modo persistent entra en estado de espera/bloqueo)
-- `session-end`
-- `ask-user-question`
-
-### Configuración
-Agrega estas variables de entorno en tu perfil de shell (por ejemplo `~/.zshrc`, `~/.bashrc`):
-
-```bash
-# Discord Bot
-export OMC_DISCORD_NOTIFIER_BOT_TOKEN="your_bot_token"
-export OMC_DISCORD_NOTIFIER_CHANNEL="your_channel_id"
-
-# Telegram
-export OMC_TELEGRAM_BOT_TOKEN="your_bot_token"
-export OMC_TELEGRAM_CHAT_ID="your_chat_id"
-
-# Slack
-export OMC_SLACK_WEBHOOK_URL="your_webhook_url"
-export OMC_SLACK_MENTION="<@U1234567890>"  # optional
-
-# Webhooks opcionales
-export OMC_DISCORD_WEBHOOK_URL="your_webhook_url"
-```
-
-> Nota: las variables deben estar cargadas en el mismo shell donde ejecutas `claude`.
-
----
-
 ## Documentación
 
 - **[Referencia Completa](docs/REFERENCE.md)** - Documentación completa de características
-- **[Monitoreo de Rendimiento](docs/PERFORMANCE-MONITORING.md)** - Seguimiento de agentes, depuración y optimización
+- **[Referencia CLI](https://yeachan-heo.github.io/oh-my-claudecode-website/docs.html#cli-reference)** - Todos los comandos, flags y herramientas de `omc`
+- **[Guía de Notificaciones](https://yeachan-heo.github.io/oh-my-claudecode-website/docs.html#notifications)** - Configuración de Discord, Telegram, Slack y webhooks
+- **[Flujos de Trabajo Recomendados](https://yeachan-heo.github.io/oh-my-claudecode-website/docs.html#workflows)** - Cadenas de habilidades probadas para tareas comunes
+- **[Notas de Versión](https://yeachan-heo.github.io/oh-my-claudecode-website/docs.html#release-notes)** - Novedades en cada versión
 - **[Sitio Web](https://yeachan-heo.github.io/oh-my-claudecode-website)** - Guías interactivas y ejemplos
 - **[Guía de Migración](docs/MIGRATION.md)** - Actualización desde v2.x
 - **[Arquitectura](docs/ARCHITECTURE.md)** - Cómo funciona internamente
+- **[Monitoreo de Rendimiento](docs/PERFORMANCE-MONITORING.md)** - Seguimiento de agentes, depuración y optimización
 
 ---
 
@@ -287,7 +273,7 @@ MIT
 
 <div align="center">
 
-**Inspirado por:** [oh-my-opencode](https://github.com/code-yeongyu/oh-my-opencode) • [claude-hud](https://github.com/ryanjoachim/claude-hud) • [Superpowers](https://github.com/NexTechFusion/Superpowers) • [everything-claude-code](https://github.com/affaan-m/everything-claude-code)
+**Inspirado por:** [oh-my-opencode](https://github.com/code-yeongyu/oh-my-opencode) • [claude-hud](https://github.com/ryanjoachim/claude-hud) • [Superpowers](https://github.com/obra/superpowers) • [everything-claude-code](https://github.com/affaan-m/everything-claude-code) • [Ouroboros](https://github.com/Q00/ouroboros)
 
 **Curva de aprendizaje cero. Poder máximo.**
 

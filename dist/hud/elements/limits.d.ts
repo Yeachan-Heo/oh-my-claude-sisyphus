@@ -4,7 +4,7 @@
  * Renders 5-hour and weekly rate limit usage display (built-in providers),
  * and custom rate limit buckets from the rateLimitsProvider command.
  */
-import type { RateLimits, CustomProviderResult } from '../types.js';
+import type { RateLimits, CustomProviderResult, UsageResult } from '../types.js';
 /**
  * Render rate limits display.
  *
@@ -23,6 +23,14 @@ export declare function renderRateLimitsCompact(limits: RateLimits | null): stri
  * Format: 5h:[████░░░░░░]45%(3h42m) wk:[█░░░░░░░░░]12%(2d5h) mo:[░░░░░░░░░░]8%(15d3h)
  */
 export declare function renderRateLimitsWithBar(limits: RateLimits | null, barWidth?: number): string | null;
+/**
+ * Render an error indicator when the built-in rate limit API call fails.
+ *
+ * - 'network': API timeout, HTTP error, or parse failure → [API err]
+ * - 'auth': credentials expired, refresh failed → [API auth]
+ * - 'no_credentials': no OAuth credentials (expected for API key users) → null (no display)
+ */
+export declare function renderRateLimitsError(result: UsageResult | null): string | null;
 /**
  * Render custom rate limit buckets from the rateLimitsProvider command.
  *

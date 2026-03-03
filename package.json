@@ -72,6 +72,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@anthropic-ai/sdk": "^0.78.0",
     "@eslint/js": "^9.39.2",
     "@types/node": "^22.19.7",
     "@typescript-eslint/eslint-plugin": "^8.18.2",

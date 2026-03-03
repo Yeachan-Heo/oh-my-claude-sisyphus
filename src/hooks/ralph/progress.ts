@@ -184,11 +184,11 @@ export function parseProgress(content: string): ProgressLog {
       if (trimmed.startsWith('-') || trimmed.startsWith('*')) {
         const item = trimmed.slice(1).trim();
         if (currentSection === 'learnings') {
-          currentEntry.learnings!.push(item);
+          (currentEntry.learnings ??= []).push(item);
         } else if (currentSection === 'files') {
-          currentEntry.filesChanged!.push(item);
+          (currentEntry.filesChanged ??= []).push(item);
         } else {
-          currentEntry.implementation!.push(item);
+          (currentEntry.implementation ??= []).push(item);
         }
       }
     }

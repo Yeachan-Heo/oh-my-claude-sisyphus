@@ -392,7 +392,8 @@ export function validateFileOwnership(subtasks: DecomposedTask[]): {
       if (!fileToOwners.has(file)) {
         fileToOwners.set(file, []);
       }
-      fileToOwners.get(file)!.push(subtask.id);
+      const owners = fileToOwners.get(file);
+      if (owners) owners.push(subtask.id);
     }
   }
 

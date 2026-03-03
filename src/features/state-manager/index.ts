@@ -16,7 +16,11 @@ import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
 import { atomicWriteJsonSync } from "../../lib/atomic-write.js";
-import { OmcPaths, getWorktreeRoot, validateWorkingDirectory } from "../../lib/worktree-paths.js";
+import {
+  OmcPaths,
+  getWorktreeRoot,
+  validateWorkingDirectory,
+} from "../../lib/worktree-paths.js";
 import {
   StateLocation,
   StateConfig,
@@ -48,6 +52,7 @@ const MAX_STATE_AGE_MS = 4 * 60 * 60 * 1000;
 
 // Read cache: avoids re-reading unchanged state files within TTL
 const STATE_CACHE_TTL_MS = 5_000; // 5 seconds
+const MAX_CACHE_SIZE = 200;
 interface CacheEntry {
   data: unknown;
   mtime: number;
@@ -132,7 +137,11 @@ export function readState<T = StateData>(
 
       // Check cache: entry exists, mtime matches, TTL not expired
       const cached = stateCache.get(standardPath);
-      if (cached && cached.mtime === mtimeBefore && (Date.now() - cached.cachedAt) < STATE_CACHE_TTL_MS) {
+      if (
+        cached &&
+        cached.mtime === mtimeBefore &&
+        Date.now() - cached.cachedAt < STATE_CACHE_TTL_MS
+      ) {
         return {
           exists: true,
           data: structuredClone(cached.data) as T,
@@ -151,7 +160,15 @@ export function readState<T = StateData>(
       try {
         const statAfter = fs.statSync(standardPath);
         if (statAfter.mtimeMs === mtimeBefore) {
-          stateCache.set(standardPath, { data: structuredClone(data), mtime: mtimeBefore, cachedAt: Date.now() });
+          if (stateCache.size >= MAX_CACHE_SIZE) {
+            const firstKey = stateCache.keys().next().value;
+            if (firstKey !== undefined) stateCache.delete(firstKey);
+          }
+          stateCache.set(standardPath, {
+            data: structuredClone(data),
+            mtime: mtimeBefore,
+            cachedAt: Date.now(),
+          });
         }
       } catch {
         // statSync failed — skip caching, data is still returned
@@ -583,9 +600,16 @@ export function cleanupStaleStates(
 
           if (data.active !== true) continue;
 
-          const meta = (data._meta as Record<string, unknown> | undefined) ?? {};
+          const meta =
+            (data._meta as Record<string, unknown> | undefined) ?? {};
 
-          if (isStateStale(meta as { updatedAt?: string; heartbeatAt?: string }, now, maxAgeMs)) {
+          if (
+            isStateStale(
+              meta as { updatedAt?: string; heartbeatAt?: string },
+              now,
+              maxAgeMs,
+            )
+          ) {
             console.warn(
               `[state-manager] cleanupStaleStates: marking "${file}" inactive (last updated ${meta.updatedAt ?? "unknown"})`,
             );
@@ -595,7 +619,9 @@ export function cleanupStaleStates(
             try {
               atomicWriteJsonSync(filePath, data);
               cleaned++;
-            } catch { /* best-effort */ }
+            } catch {
+              /* best-effort */
+            }
           }
         } catch {
           // Skip files that can't be read/parsed
@@ -613,7 +639,9 @@ export function cleanupStaleStates(
   const sessionsDir = path.join(stateDir, "sessions");
   if (fs.existsSync(sessionsDir)) {
     try {
-      const sessionEntries = fs.readdirSync(sessionsDir, { withFileTypes: true });
+      const sessionEntries = fs.readdirSync(sessionsDir, {
+        withFileTypes: true,
+      });
       for (const entry of sessionEntries) {
         if (entry.isDirectory()) {
           scanDir(path.join(sessionsDir, entry.name));
@@ -663,7 +691,11 @@ function withFileLock<R>(filePath: string, fn: () => R): R {
       try {
         const lockStat = fs.statSync(lockPath);
         if (Date.now() - lockStat.mtimeMs > LOCK_STALE_MS) {
-          try { fs.unlinkSync(lockPath); } catch { /* race OK */ }
+          try {
+            fs.unlinkSync(lockPath);
+          } catch {
+            /* race OK */
+          }
           continue;
         }
       } catch {
@@ -677,14 +709,20 @@ function withFileLock<R>(filePath: string, fn: () => R): R {
 
       // Brief busy-wait before retry
       const waitEnd = Date.now() + LOCK_POLL_MS;
-      while (Date.now() < waitEnd) { /* spin */ }
+      while (Date.now() < waitEnd) {
+        /* spin */
+      }
     }
   }
 
   try {
     return fn();
   } finally {
-    try { fs.unlinkSync(lockPath); } catch { /* best-effort */ }
+    try {
+      fs.unlinkSync(lockPath);
+    } catch {
+      /* best-effort */
+    }
   }
 }
 

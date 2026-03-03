@@ -493,10 +493,12 @@ export function parseZaiResponse(response) {
 /**
  * Get usage data (with caching)
  *
- * Returns null if:
- * - No OAuth credentials available (API users)
- * - Credentials expired
- * - API call failed
+ * Returns a UsageResult with:
+ * - rateLimits: RateLimits on success, null on failure/no credentials
+ * - error: categorized reason when API call fails (undefined on success or no credentials)
+ *   - 'network': API call failed (timeout, HTTP error, parse error)
+ *   - 'auth': credentials expired and refresh failed
+ *   - 'no_credentials': no OAuth credentials available (expected for API key users)
  */
 export async function getUsage() {
     const baseUrl = process.env.ANTHROPIC_BASE_URL;
@@ -506,18 +508,18 @@ export async function getUsage() {
     // Check cache first (source must match to avoid cross-provider stale data)
     const cache = readCache();
     if (cache && isCacheValid(cache) && cache.source === currentSource) {
-        return cache.data;
+        return { rateLimits: cache.data, error: cache.error && !cache.data ? 'network' : undefined };
     }
     // z.ai path (must precede OAuth check to avoid stale Anthropic credentials)
     if (isZai && authToken) {
         const response = await fetchUsageFromZai();
         if (!response) {
             writeCache(null, true, 'zai');
-            return null;
+            return { rateLimits: null, error: 'network' };
         }
         const usage = parseZaiResponse(response);
         writeCache(usage, !usage, 'zai');
-        return usage;
+        return { rateLimits: usage };
     }
     // Anthropic OAuth path (official Claude Code support)
     let creds = getCredentials();
@@ -533,13 +535,15 @@ export async function getUsage() {
                     writeBackCredentials(creds);
                 }
                 else {
-                    // Refresh failed - no credentials available
-                    creds = null;
+                    // Refresh failed - auth error
+                    writeCache(null, true, 'anthropic');
+                    return { rateLimits: null, error: 'auth' };
                 }
             }
             else {
-                // No refresh token available
-                creds = null;
+                // No refresh token available - auth error
+                writeCache(null, true, 'anthropic');
+                return { rateLimits: null, error: 'auth' };
             }
         }
         // If we still have valid credentials, use Anthropic OAuth flow
@@ -547,15 +551,15 @@ export async function getUsage() {
             const response = await fetchUsageFromApi(creds.accessToken);
             if (!response) {
                 writeCache(null, true, 'anthropic');
-                return null;
+                return { rateLimits: null, error: 'network' };
             }
             const usage = parseUsageResponse(response);
             writeCache(usage, !usage, 'anthropic');
-            return usage;
+            return { rateLimits: usage };
         }
     }
-    // No credentials available
+    // No credentials available (expected for API key users)
     writeCache(null, true, 'anthropic');
-    return null;
+    return { rateLimits: null, error: 'no_credentials' };
 }
 //# sourceMappingURL=usage-api.js.map

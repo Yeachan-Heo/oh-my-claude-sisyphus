@@ -13,20 +13,22 @@ describe('rate-limit-monitor', () => {
         vi.clearAllMocks();
     });
     describe('checkRateLimitStatus', () => {
-        it('should return null when getUsage returns null', async () => {
-            vi.mocked(getUsage).mockResolvedValue(null);
+        it('should return null when getUsage returns null rateLimits', async () => {
+            vi.mocked(getUsage).mockResolvedValue({ rateLimits: null, error: 'no_credentials' });
             const result = await checkRateLimitStatus();
             expect(result).toBeNull();
         });
         it('should detect 5-hour rate limit', async () => {
             const resetTime = new Date(Date.now() + 3600000); // 1 hour from now
             vi.mocked(getUsage).mockResolvedValue({
-                fiveHourPercent: 100,
-                weeklyPercent: 50,
-                fiveHourResetsAt: resetTime,
-                weeklyResetsAt: null,
-                monthlyPercent: 0,
-                monthlyResetsAt: null,
+                rateLimits: {
+                    fiveHourPercent: 100,
+                    weeklyPercent: 50,
+                    fiveHourResetsAt: resetTime,
+                    weeklyResetsAt: null,
+                    monthlyPercent: 0,
+                    monthlyResetsAt: null,
+                },
             });
             const result = await checkRateLimitStatus();
             expect(result).not.toBeNull();
@@ -38,12 +40,14 @@ describe('rate-limit-monitor', () => {
         it('should detect weekly rate limit', async () => {
             const resetTime = new Date(Date.now() + 86400000); // 1 day from now
             vi.mocked(getUsage).mockResolvedValue({
-                fiveHourPercent: 50,
-                weeklyPercent: 100,
-                fiveHourResetsAt: null,
-                weeklyResetsAt: resetTime,
-                monthlyPercent: 0,
-                monthlyResetsAt: null,
+                rateLimits: {
+                    fiveHourPercent: 50,
+                    weeklyPercent: 100,
+                    fiveHourResetsAt: null,
+                    weeklyResetsAt: resetTime,
+                    monthlyPercent: 0,
+                    monthlyResetsAt: null,
+                },
             });
             const result = await checkRateLimitStatus();
             expect(result).not.toBeNull();
@@ -56,12 +60,14 @@ describe('rate-limit-monitor', () => {
             const fiveHourReset = new Date(Date.now() + 3600000); // 1 hour
             const weeklyReset = new Date(Date.now() + 86400000); // 1 day
             vi.mocked(getUsage).mockResolvedValue({
-                fiveHourPercent: 100,
-                weeklyPercent: 100,
-                fiveHourResetsAt: fiveHourReset,
-                weeklyResetsAt: weeklyReset,
-                monthlyPercent: 0,
-                monthlyResetsAt: null,
+                rateLimits: {
+                    fiveHourPercent: 100,
+                    weeklyPercent: 100,
+                    fiveHourResetsAt: fiveHourReset,
+                    weeklyResetsAt: weeklyReset,
+                    monthlyPercent: 0,
+                    monthlyResetsAt: null,
+                },
             });
             const result = await checkRateLimitStatus();
             expect(result).not.toBeNull();
@@ -72,12 +78,14 @@ describe('rate-limit-monitor', () => {
         });
         it('should return not limited when under thresholds', async () => {
             vi.mocked(getUsage).mockResolvedValue({
-                fiveHourPercent: 50,
-                weeklyPercent: 75,
-                fiveHourResetsAt: null,
-                weeklyResetsAt: null,
-                monthlyPercent: 0,
-                monthlyResetsAt: null,
+                rateLimits: {
+                    fiveHourPercent: 50,
+                    weeklyPercent: 75,
+                    fiveHourResetsAt: null,
+                    weeklyResetsAt: null,
+                    monthlyPercent: 0,
+                    monthlyResetsAt: null,
+                },
             });
             const result = await checkRateLimitStatus();
             expect(result).not.toBeNull();

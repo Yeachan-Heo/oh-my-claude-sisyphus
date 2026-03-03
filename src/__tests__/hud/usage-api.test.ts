@@ -21,6 +21,10 @@ vi.mock('fs', async (importOriginal) => {
   };
 });
 
+vi.mock('child_process', () => ({
+  execSync: vi.fn().mockImplementation(() => { throw new Error('mock: no keychain'); }),
+}));
+
 vi.mock('https', () => ({
   default: {
     request: vi.fn(),
@@ -194,9 +198,10 @@ describe('getUsage routing', () => {
     process.env = { ...originalEnv };
   });
 
-  it('returns null when no credentials and no z.ai env', async () => {
+  it('returns no_credentials error when no credentials and no z.ai env', async () => {
     const result = await getUsage();
-    expect(result).toBeNull();
+    expect(result.rateLimits).toBeNull();
+    expect(result.error).toBe('no_credentials');
     // No network call should be made without credentials
     expect(httpsModule.default.request).not.toHaveBeenCalled();
   });
@@ -205,9 +210,10 @@ describe('getUsage routing', () => {
     process.env.ANTHROPIC_BASE_URL = 'https://api.z.ai/v1';
     process.env.ANTHROPIC_AUTH_TOKEN = 'test-token';
 
-    // https.request mock not wired, so fetchUsageFromZai resolves to null
+    // https.request mock not wired, so fetchUsageFromZai resolves to null (network error)
     const result = await getUsage();
-    expect(result).toBeNull();
+    expect(result.rateLimits).toBeNull();
+    expect(result.error).toBe('network');
 
     // Verify z.ai quota endpoint was called
     expect(httpsModule.default.request).toHaveBeenCalledTimes(1);
@@ -221,11 +227,22 @@ describe('getUsage routing', () => {
     process.env.ANTHROPIC_AUTH_TOKEN = 'test-token';
 
     const result = await getUsage();
-    expect(result).toBeNull();
+    expect(result.rateLimits).toBeNull();
+    expect(result.error).toBe('no_credentials');
 
     // Should NOT call https.request with z.ai endpoint.
     // Falls through to OAuth path which has no credentials (mocked),
     // so no network call should be made at all.
     expect(httpsModule.default.request).not.toHaveBeenCalled();
+  });
+
+  it('returns error when API call fails', async () => {
+    process.env.ANTHROPIC_BASE_URL = 'https://api.z.ai/v1';
+    process.env.ANTHROPIC_AUTH_TOKEN = 'test-token';
+
+    // Mock failed API response (network error)
+    const result = await getUsage();
+    expect(result.rateLimits).toBeNull();
+    expect(result.error).toBe('network');
   });
 });

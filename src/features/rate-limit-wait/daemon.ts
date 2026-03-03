@@ -461,21 +461,34 @@ export function startDaemon(config?: DaemonConfig): DaemonResponse {
   // Fork a new process for the daemon using dynamic import() for ESM compatibility.
   // The project uses "type": "module", so require() would fail with ERR_REQUIRE_ESM.
   const modulePath = __filename.replace(/\.ts$/, '.js');
+  // Write config to a temp file to avoid config injection via template string.
+  // This prevents malicious config values from being interpreted as code.
+  const configId = Date.now().toString(36) + Math.random().toString(36).slice(2);
+  const configPath = join(dirname(cfg.stateFilePath), `.daemon-config-${configId}.json`);
+  try {
+    writeSecureFile(configPath, JSON.stringify(cfg));
+  } catch {
+    return { success: false, message: 'Failed to write daemon config file' };
+  }
+
   const daemonScript = `
-    import('${modulePath}').then(({ pollLoop }) => {
-      const config = ${JSON.stringify(cfg)};
-      return pollLoop(config);
+    import('${modulePath}').then(async ({ pollLoopWithConfigFile }) => {
+      await pollLoopWithConfigFile(process.env.OMC_DAEMON_CONFIG_FILE);
     }).catch((err) => { console.error(err); process.exit(1); });
   `;
 
   try {
     // Use node to run the daemon in background
     // Note: Using minimal env to prevent leaking sensitive credentials
+    const daemonEnv = {
+      ...createMinimalDaemonEnv(),
+      OMC_DAEMON_CONFIG_FILE: configPath,
+    };
     const child = spawn('node', ['-e', daemonScript], {
       detached: true,
       stdio: 'ignore',
       cwd: process.cwd(),
-      env: createMinimalDaemonEnv(),
+      env: daemonEnv,
     });
 
     child.unref();
@@ -495,11 +508,10 @@ export function startDaemon(config?: DaemonConfig): DaemonResponse {
       };
     }
 
-    return {
-      success: false,
-      message: 'Failed to start daemon process',
-    };
+    return { success: false, message: 'Failed to start daemon process' };
   } catch (error) {
+    // Clean up config file on failure
+    try { unlinkSync(configPath); } catch {}
     return {
       success: false,
       message: 'Failed to start daemon',
@@ -712,3 +724,19 @@ export function formatDaemonState(state: DaemonState): string {
 
 // Export pollLoop for use by the daemon subprocess
 export { pollLoop };
+
+/**
+ * Poll loop entry point for daemon subprocess.
+ * Reads config from file to avoid config injection via command line.
+ */
+export async function pollLoopWithConfigFile(configPath: string): Promise<void> {
+  const configContent = readFileSync(configPath, 'utf-8');
+  const config = JSON.parse(configContent) as Required<DaemonConfig>;
+
+  // Restore Date objects from JSON
+  if (config.stateFilePath) {
+    // Config is valid, proceed with poll loop
+  }
+
+  await pollLoop(config);
+}

@@ -77,7 +77,7 @@ export function buildTriggerTable(agents: AgentConfig[]): string {
   lines.push('|-------|--------|------------------|');
 
   for (const agent of agentsWithTriggers) {
-    const triggers = agent.metadata!.triggers;
+    const triggers = agent.metadata?.triggers ?? [];
     for (let i = 0; i < triggers.length; i++) {
       const trigger = triggers[i];
       const agentName = i === 0 ? `**${agent.name}**` : '';
@@ -102,7 +102,8 @@ export function buildToolSelectionSection(agents: AgentConfig[]): string {
     if (!categorizedAgents.has(category)) {
       categorizedAgents.set(category, []);
     }
-    categorizedAgents.get(category)!.push(agent);
+    const arr = categorizedAgents.get(category);
+    if (arr) arr.push(agent);
   }
 
   for (const [category, categoryAgents] of categorizedAgents) {
@@ -141,7 +142,8 @@ export function buildDelegationMatrix(agents: AgentConfig[]): string {
     if (!categorizedAgents.has(category)) {
       categorizedAgents.set(category, []);
     }
-    categorizedAgents.get(category)!.push(agent);
+    const arr = categorizedAgents.get(category);
+    if (arr) arr.push(agent);
   }
 
   lines.push('| Category | Agent | Model | Use Case |');

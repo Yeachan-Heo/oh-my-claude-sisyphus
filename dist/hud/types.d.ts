@@ -130,6 +130,23 @@ export interface RateLimits {
     monthlyResetsAt?: Date | null;
 }
 /**
+ * Categorized error reasons for API usage fetch failures.
+ * - 'network': Network error or timeout
+ * - 'auth': Authentication failure (token expired, refresh failed)
+ * - 'no_credentials': No OAuth credentials available (expected for API key users)
+ */
+export type UsageErrorReason = 'network' | 'timeout' | 'http' | 'auth' | 'no_credentials';
+/**
+ * Result of fetching usage data from the API.
+ * - rateLimits: The rate limit data (null if no data available)
+ * - error: Set when the API call fails (undefined on success or no credentials)
+ */
+export interface UsageResult {
+    rateLimits: RateLimits | null;
+    /** Error reason when API call fails (undefined on success or no credentials) */
+    error?: UsageErrorReason;
+}
+/**
  * Custom rate limit provider configuration.
  * Set omcHud.rateLimitsProvider.type = 'custom' to enable.
  */
@@ -209,8 +226,10 @@ export interface HudRenderContext {
     cwd: string;
     /** Last activated skill from transcript */
     lastSkill: SkillInvocation | null;
-    /** Rate limits (5h and weekly) from built-in Anthropic/z.ai providers */
-    rateLimits: RateLimits | null;
+    /** Rate limits result from built-in Anthropic/z.ai providers (includes error state) */
+    rateLimitsResult: UsageResult | null;
+    /** Error reason when built-in rate limit API call fails (undefined on success or no credentials) */
+    rateLimitsError?: UsageErrorReason;
     /** Custom rate limit buckets from rateLimitsProvider command (null when not configured) */
     customBuckets: CustomProviderResult | null;
     /** Pending permission state (heuristic-based) */
@@ -233,6 +252,8 @@ export interface HudRenderContext {
     promptTime: Date | null;
     /** API key source: 'project', 'global', or 'env' */
     apiKeySource: ApiKeySource | null;
+    /** Active profile name (derived from CLAUDE_CONFIG_DIR), null if default */
+    profileName: string | null;
 }
 export type HudPreset = 'minimal' | 'focused' | 'full' | 'opencode' | 'dense';
 /**
@@ -292,6 +313,7 @@ export interface HudElementConfig {
     thinking: boolean;
     thinkingFormat: ThinkingFormat;
     apiKeySource: boolean;
+    profile: boolean;
     promptTime: boolean;
     sessionHealth: boolean;
     showSessionDuration?: boolean;

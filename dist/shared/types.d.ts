@@ -88,6 +88,7 @@ export interface PluginConfig {
         astTools?: boolean;
         continuationEnforcement?: boolean;
         autoContextInjection?: boolean;
+        harshCritic?: boolean;
     };
     mcpServers?: {
         exa?: {

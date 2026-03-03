@@ -34,7 +34,7 @@ import { getRuntimePackageVersion } from "../lib/version.js";
 import { compareVersions } from "../features/auto-update.js";
 import { resolveToWorktreeRoot, resolveTranscriptPath } from "../lib/worktree-paths.js";
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "fs";
-import { join } from "path";
+import { join, basename } from "path";
 import { homedir } from "os";
 import { getOmcRoot } from "../lib/worktree-paths.js";
 
@@ -140,7 +140,7 @@ async function main(watchMode = false): Promise<void> {
     }
 
     // Fetch rate limits from OAuth API (if available)
-    const rateLimits =
+    const rateLimitsResult =
       config.elements.rateLimits !== false ? await getUsage() : null;
 
     // Fetch custom rate limit buckets (if configured)
@@ -183,7 +183,7 @@ async function main(watchMode = false): Promise<void> {
       backgroundTasks: getRunningTasks(hudState),
       cwd,
       lastSkill: transcriptData.lastActivatedSkill || null,
-      rateLimitsResult: rateLimits ? { rateLimits } : null,
+      rateLimitsResult,
       customBuckets,
       pendingPermission: transcriptData.pendingPermission || null,
       thinkingState: transcriptData.thinkingState || null,
@@ -201,6 +201,9 @@ async function main(watchMode = false): Promise<void> {
         : null,
       apiKeySource: config.elements.apiKeySource
         ? detectApiKeySource(cwd)
+        : null,
+      profileName: process.env.CLAUDE_CONFIG_DIR
+        ? basename(process.env.CLAUDE_CONFIG_DIR).replace(/^\./, '')
         : null,
     };
 

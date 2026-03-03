@@ -29,6 +29,7 @@ export const DEFAULT_HUD_CONFIG = {
         thinking: true,
         thinkingFormat: 'text', // Text format for backward compatibility
         apiKeySource: false, // Disabled by default
+        profile: true, // Show profile name when CLAUDE_CONFIG_DIR is set
         promptTime: true, // Show last prompt time by default
         sessionHealth: true,
         useBars: false, // Disabled by default for backwards compatibility
@@ -73,6 +74,7 @@ export const PRESET_CONFIGS = {
         thinking: false,
         thinkingFormat: 'text',
         apiKeySource: false,
+        profile: true,
         promptTime: false,
         sessionHealth: false,
         useBars: false,
@@ -104,6 +106,7 @@ export const PRESET_CONFIGS = {
         thinking: true,
         thinkingFormat: 'text',
         apiKeySource: false,
+        profile: true,
         promptTime: true,
         sessionHealth: true,
         useBars: true,
@@ -135,6 +138,7 @@ export const PRESET_CONFIGS = {
         thinking: true,
         thinkingFormat: 'text',
         apiKeySource: true,
+        profile: true,
         promptTime: true,
         sessionHealth: true,
         useBars: true,
@@ -166,6 +170,7 @@ export const PRESET_CONFIGS = {
         thinking: true,
         thinkingFormat: 'text',
         apiKeySource: false,
+        profile: true,
         promptTime: true,
         sessionHealth: true,
         useBars: false,
@@ -197,6 +202,7 @@ export const PRESET_CONFIGS = {
         thinking: true,
         thinkingFormat: 'text',
         apiKeySource: true,
+        profile: true,
         promptTime: true,
         sessionHealth: true,
         useBars: true,

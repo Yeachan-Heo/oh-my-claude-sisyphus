@@ -617,8 +617,10 @@ export async function teleportRemoveCommand(
     const mainRepo = mainRepoMatch ? mainRepoMatch[1] : null;
 
     if (mainRepo) {
-      const forceFlag = options.force ? '--force' : '';
-      execSync(`git worktree remove "${worktreePath}" ${forceFlag}`, {
+      const args = options.force
+        ? ['worktree', 'remove', '--force', worktreePath]
+        : ['worktree', 'remove', worktreePath];
+      execFileSync('git', args, {
         cwd: mainRepo,
         stdio: 'pipe',
       });

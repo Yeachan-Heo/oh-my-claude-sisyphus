@@ -8,11 +8,13 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 [![Sponsor](https://img.shields.io/badge/Sponsor-❤️-red?style=flat&logo=github)](https://github.com/sponsors/Yeachan-Heo)
 
+> **Codex 用户：** 查看 [oh-my-codex](https://github.com/Yeachan-Heo/oh-my-codex) — 为 OpenAI Codex CLI 提供同样的编排体验。
+
 **Claude Code 的多智能体编排系统。零学习曲线。**
 
 *无需学习 Claude Code，直接使用 OMC。*
 
-[快速开始](#快速开始) • [文档](https://yeachan-heo.github.io/oh-my-claudecode-website) • [迁移指南](docs/MIGRATION.md)
+[快速开始](#快速开始) • [文档](https://yeachan-heo.github.io/oh-my-claudecode-website) • [CLI 参考](https://yeachan-heo.github.io/oh-my-claudecode-website/docs.html#cli-reference) • [工作流](https://yeachan-heo.github.io/oh-my-claudecode-website/docs.html#workflows) • [迁移指南](docs/MIGRATION.md)
 
 ---
 
@@ -35,6 +37,16 @@ autopilot: build a REST API for managing tasks
 ```
 
 就这么简单。其余都是自动的。
+
+### 不确定从哪里开始？
+
+如果你对需求不明确、有模糊的想法，或者想要精细控制设计：
+
+```
+/deep-interview "I want to build a task management app"
+```
+
+深度访谈使用苏格拉底式提问在编写任何代码之前帮你理清思路。它揭示隐藏假设并通过加权维度衡量清晰度，确保你在执行前明确知道要构建什么。
 
 ## Team 模式（推荐）
 
@@ -116,6 +128,7 @@ Team 按阶段化流水线运行：
 ## 为什么选择 oh-my-claudecode？
 
 - **无需配置** - 开箱即用，智能默认设置
+- **Team 优先编排** - Team 是标准的多智能体界面（swarm/ultrapilot 是兼容性外观）
 - **自然语言交互** - 无需记忆命令，只需描述你的需求
 - **自动并行化** - 复杂任务自动分配给专业智能体
 - **持久执行** - 不会半途而废，直到任务验证完成
@@ -172,10 +185,13 @@ Team 按阶段化流水线运行：
 | `ulw` | 最大并行化 | `ulw fix all errors` |
 | `plan` | 规划访谈 | `plan the API` |
 | `ralplan` | 迭代规划共识 | `ralplan this feature` |
-| `swarm` | 旧版关键词（路由到 Team） | `swarm 5 agents: fix lint errors` |
-| `ultrapilot` | 旧版关键词（路由到 Team） | `ultrapilot: build a fullstack app` |
+| `deep-interview` | 苏格拉底式需求澄清 | `deep-interview "vague idea"` |
+| `swarm` | **已弃用** — 请使用 `team` | `swarm 5 agents: fix lint errors` |
+| `ultrapilot` | **已弃用** — 请使用 `team` | `ultrapilot: build a fullstack app` |
 
-**ralph 包含 ultrawork：** 激活 ralph 模式时，会自动包含 ultrawork 的并行执行。无需组合关键词。
+**注意：**
+- **ralph 包含 ultrawork：** 激活 ralph 模式时，会自动包含 ultrawork 的并行执行。无需组合关键词。
+- `swarm N agents` 语法仍可被识别用于提取智能体数量，但运行时在 v4.1.7+ 中由 Team 支持。
 
 ---
 
@@ -217,47 +233,17 @@ omc config-stop-callback discord --clear-tags
 
 ---
 
-## 通知 (Notifications)
-
-你可以为会话生命周期事件接收实时通知。
-
-支持的事件：
-- `session-start`
-- `session-stop`（当 persistent 模式进入等待/阻塞状态时）
-- `session-end`
-- `ask-user-question`
-
-### 配置
-在 Shell 配置文件（例如 `~/.zshrc`, `~/.bashrc`）中添加以下环境变量：
-
-```bash
-# Discord Bot
-export OMC_DISCORD_NOTIFIER_BOT_TOKEN="your_bot_token"
-export OMC_DISCORD_NOTIFIER_CHANNEL="your_channel_id"
-
-# Telegram
-export OMC_TELEGRAM_BOT_TOKEN="your_bot_token"
-export OMC_TELEGRAM_CHAT_ID="your_chat_id"
-
-# Slack
-export OMC_SLACK_WEBHOOK_URL="your_webhook_url"
-export OMC_SLACK_MENTION="<@U1234567890>"  # optional
-
-# 可选 webhook
-export OMC_DISCORD_WEBHOOK_URL="your_webhook_url"
-```
-
-> 注意：请确保在运行 `claude` 的同一个 Shell 中已加载这些环境变量。
-
----
-
 ## 文档
 
 - **[完整参考](docs/REFERENCE.md)** - 完整功能文档
-- **[性能监控](docs/PERFORMANCE-MONITORING.md)** - 智能体追踪、调试和优化
+- **[CLI 参考](https://yeachan-heo.github.io/oh-my-claudecode-website/docs.html#cli-reference)** - 所有 `omc` 命令、标志和工具
+- **[通知指南](https://yeachan-heo.github.io/oh-my-claudecode-website/docs.html#notifications)** - Discord、Telegram、Slack 和 webhook 设置
+- **[推荐工作流](https://yeachan-heo.github.io/oh-my-claudecode-website/docs.html#workflows)** - 常见任务的经过实战检验的技能链
+- **[发布说明](https://yeachan-heo.github.io/oh-my-claudecode-website/docs.html#release-notes)** - 每个版本的新内容
 - **[网站](https://yeachan-heo.github.io/oh-my-claudecode-website)** - 交互式指南和示例
 - **[迁移指南](docs/MIGRATION.md)** - 从 v2.x 升级
 - **[架构](docs/ARCHITECTURE.md)** - 底层工作原理
+- **[性能监控](docs/PERFORMANCE-MONITORING.md)** - 智能体追踪、调试和优化
 
 ---
 
@@ -287,7 +273,7 @@ MIT
 
 <div align="center">
 
-**灵感来源：** [oh-my-opencode](https://github.com/code-yeongyu/oh-my-opencode) • [claude-hud](https://github.com/ryanjoachim/claude-hud) • [Superpowers](https://github.com/NexTechFusion/Superpowers) • [everything-claude-code](https://github.com/affaan-m/everything-claude-code)
+**灵感来源：** [oh-my-opencode](https://github.com/code-yeongyu/oh-my-opencode) • [claude-hud](https://github.com/ryanjoachim/claude-hud) • [Superpowers](https://github.com/obra/superpowers) • [everything-claude-code](https://github.com/affaan-m/everything-claude-code) • [Ouroboros](https://github.com/Q00/ouroboros)
 
 **零学习曲线。最强大能。**
 

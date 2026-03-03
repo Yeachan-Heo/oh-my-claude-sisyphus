@@ -149,6 +149,22 @@ export function renderRateLimitsWithBar(limits, barWidth = 8) {
     }
     return parts.join(' ');
 }
+/**
+ * Render an error indicator when the built-in rate limit API call fails.
+ *
+ * - 'network': API timeout, HTTP error, or parse failure → [API err]
+ * - 'auth': credentials expired, refresh failed → [API auth]
+ * - 'no_credentials': no OAuth credentials (expected for API key users) → null (no display)
+ */
+export function renderRateLimitsError(result) {
+    if (!result?.error)
+        return null;
+    if (result.error === 'no_credentials')
+        return null;
+    if (result.error === 'auth')
+        return `${YELLOW}[API auth]${RESET}`;
+    return `${YELLOW}[API err]${RESET}`;
+}
 // ============================================================================
 // Custom provider bucket rendering
 // ============================================================================

@@ -68,7 +68,8 @@ describe('createTeamSession context resolution', () => {
         vi.restoreAllMocks();
     });
     it('creates a detached session when running outside tmux', async () => {
-        vi.unstubAllEnvs();
+        vi.stubEnv('TMUX', '');
+        vi.stubEnv('TMUX_PANE', '');
         const session = await createTeamSession('race-team', 0, '/tmp');
         const detachedCreateCall = mockedCalls.execFileArgs.find(args => args[0] === 'new-session' && args.includes('-d') && args.includes('-P'));
         expect(detachedCreateCall).toBeDefined();

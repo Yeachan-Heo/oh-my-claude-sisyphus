@@ -1,0 +1,66 @@
+/**
+ * Tests for rate limits error indicator (Issue #1253)
+ */
+import { describe, it, expect } from 'vitest';
+import { renderRateLimitsError } from '../../hud/elements/limits.js';
+describe('renderRateLimitsError', () => {
+    it('returns null when result is null', () => {
+        const result = renderRateLimitsError(null);
+        expect(result).toBeNull();
+    });
+    it('returns null when result has no error', () => {
+        const usageResult = {
+            rateLimits: {
+                fiveHourPercent: 50,
+                weeklyPercent: 30,
+                fiveHourResetsAt: null,
+                weeklyResetsAt: null,
+            },
+        };
+        const result = renderRateLimitsError(usageResult);
+        expect(result).toBeNull();
+    });
+    it('returns null when rateLimits is null but no error', () => {
+        const usageResult = {
+            rateLimits: null,
+        };
+        const result = renderRateLimitsError(usageResult);
+        expect(result).toBeNull();
+    });
+    it('returns [API err] in yellow when network error', () => {
+        const usageResult = {
+            rateLimits: null,
+            error: 'network',
+        };
+        const result = renderRateLimitsError(usageResult);
+        expect(result).toContain('[API err]');
+        expect(result).toContain('\x1b[33m'); // Yellow ANSI code
+    });
+    it('returns [API err] in yellow when timeout error', () => {
+        const usageResult = {
+            rateLimits: null,
+            error: 'timeout',
+        };
+        const result = renderRateLimitsError(usageResult);
+        expect(result).toContain('[API err]');
+        expect(result).toContain('\x1b[33m'); // Yellow ANSI code
+    });
+    it('returns [API err] in yellow when http error', () => {
+        const usageResult = {
+            rateLimits: null,
+            error: 'http',
+        };
+        const result = renderRateLimitsError(usageResult);
+        expect(result).toContain('[API err]');
+        expect(result).toContain('\x1b[33m'); // Yellow ANSI code
+    });
+    it('includes reset code in output', () => {
+        const usageResult = {
+            rateLimits: null,
+            error: 'network',
+        };
+        const result = renderRateLimitsError(usageResult);
+        expect(result).toContain('\x1b[0m'); // Reset ANSI code
+    });
+});
+//# sourceMappingURL=rate-limits-error.test.js.map

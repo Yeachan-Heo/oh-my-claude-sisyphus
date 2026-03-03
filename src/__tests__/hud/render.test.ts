@@ -196,6 +196,7 @@ describe('gitInfoPosition configuration', () => {
     skillCallCount: 0,
     promptTime: null,
     apiKeySource: null,
+    profileName: null,
   });
 
   const createMockConfig = (gitInfoPosition: 'above' | 'below'): HudConfig => ({

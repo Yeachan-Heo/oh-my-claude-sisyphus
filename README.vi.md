@@ -8,11 +8,13 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 [![Sponsor](https://img.shields.io/badge/Sponsor-❤️-red?style=flat&logo=github)](https://github.com/sponsors/Yeachan-Heo)
 
+> **Dành cho người dùng Codex:** Hãy xem [oh-my-codex](https://github.com/Yeachan-Heo/oh-my-codex) — cùng trải nghiệm điều phối cho OpenAI Codex CLI.
+
 **Điều phối đa tác tử cho Claude Code. Không cần thời gian làm quen.**
 
 *Đừng học Claude Code. Cứ dùng OMC.*
 
-[Bắt đầu nhanh](#bắt-đầu-nhanh) • [Tài liệu](https://yeachan-heo.github.io/oh-my-claudecode-website) • [Hướng dẫn di chuyển](docs/MIGRATION.md)
+[Bắt đầu nhanh](#bắt-đầu-nhanh) • [Tài liệu](https://yeachan-heo.github.io/oh-my-claudecode-website) • [Tham chiếu CLI](https://yeachan-heo.github.io/oh-my-claudecode-website/docs.html#cli-reference) • [Quy trình](https://yeachan-heo.github.io/oh-my-claudecode-website/docs.html#workflows) • [Hướng dẫn di chuyển](docs/MIGRATION.md)
 
 ---
 
@@ -35,6 +37,16 @@ autopilot: build a REST API for managing tasks
 ```
 
 Vậy là xong. Mọi thứ còn lại đều tự động.
+
+### Chưa biết bắt đầu từ đâu?
+
+Nếu bạn chưa chắc chắn về yêu cầu, có ý tưởng mơ hồ, hoặc muốn kiểm soát chi tiết thiết kế:
+
+```
+/deep-interview "I want to build a task management app"
+```
+
+Deep interview sử dụng phương pháp hỏi Socratic để làm rõ suy nghĩ của bạn trước khi viết bất kỳ dòng code nào. Nó phát hiện các giả định ẩn và đo lường mức độ rõ ràng theo các chiều có trọng số, đảm bảo bạn biết chính xác cần xây dựng gì trước khi bắt đầu thực thi.
 
 ## Team Mode (Khuyến nghị)
 
@@ -173,8 +185,9 @@ Các phím tắt tùy chọn cho người dùng nâng cao. Không dùng chúng t
 | `ulw` | Song song tối đa | `ulw fix all errors` |
 | `plan` | Phỏng vấn lập kế hoạch | `plan the API` |
 | `ralplan` | Đồng thuận lập kế hoạch lặp | `ralplan this feature` |
-| `swarm` | Từ khóa cũ (chuyển sang Team) | `swarm 5 agents: fix lint errors` |
-| `ultrapilot` | Từ khóa cũ (chuyển sang Team) | `ultrapilot: build a fullstack app` |
+| `deep-interview` | Làm rõ yêu cầu theo phương pháp Socratic | `deep-interview "vague idea"` |
+| `swarm` | **Không còn khuyến nghị** — dùng `team` thay thế | `swarm 5 agents: fix lint errors` |
+| `ultrapilot` | **Không còn khuyến nghị** — dùng `team` thay thế | `ultrapilot: build a fullstack app` |
 
 **Ghi chú:**
 - **ralph bao gồm ultrawork**: khi bạn kích hoạt chế độ ralph, nó tự động bao gồm thực thi song song của ultrawork.
@@ -221,10 +234,14 @@ Hành vi tag:
 ## Tài liệu
 
 - **[Tham chiếu đầy đủ](docs/REFERENCE.md)** - Tài liệu đầy đủ về tính năng
-- **[Theo dõi hiệu năng](docs/PERFORMANCE-MONITORING.md)** - Theo dõi tác tử, gỡ lỗi và tối ưu
+- **[Tham chiếu CLI](https://yeachan-heo.github.io/oh-my-claudecode-website/docs.html#cli-reference)** - Tất cả lệnh, cờ và công cụ `omc`
+- **[Hướng dẫn thông báo](https://yeachan-heo.github.io/oh-my-claudecode-website/docs.html#notifications)** - Thiết lập Discord, Telegram, Slack và webhook
+- **[Quy trình khuyến nghị](https://yeachan-heo.github.io/oh-my-claudecode-website/docs.html#workflows)** - Chuỗi skill đã qua thực chiến cho các tác vụ phổ biến
+- **[Ghi chú phát hành](https://yeachan-heo.github.io/oh-my-claudecode-website/docs.html#release-notes)** - Có gì mới trong mỗi phiên bản
 - **[Website](https://yeachan-heo.github.io/oh-my-claudecode-website)** - Hướng dẫn tương tác và ví dụ
 - **[Hướng dẫn di chuyển](docs/MIGRATION.md)** - Nâng cấp từ v2.x
 - **[Kiến trúc](docs/ARCHITECTURE.md)** - Cách nó hoạt động phía sau
+- **[Theo dõi hiệu năng](docs/PERFORMANCE-MONITORING.md)** - Theo dõi tác tử, gỡ lỗi và tối ưu
 
 ---
 
@@ -254,7 +271,7 @@ MIT
 
 <div align="center">
 
-**Lấy cảm hứng từ:** [oh-my-opencode](https://github.com/code-yeongyu/oh-my-opencode) • [claude-hud](https://github.com/ryanjoachim/claude-hud) • [Superpowers](https://github.com/NexTechFusion/Superpowers) • [everything-claude-code](https://github.com/affaan-m/everything-claude-code)
+**Lấy cảm hứng từ:** [oh-my-opencode](https://github.com/code-yeongyu/oh-my-opencode) • [claude-hud](https://github.com/ryanjoachim/claude-hud) • [Superpowers](https://github.com/obra/superpowers) • [everything-claude-code](https://github.com/affaan-m/everything-claude-code) • [Ouroboros](https://github.com/Q00/ouroboros)
 
 **Không cần thời gian làm quen. Sức mạnh tối đa.**
 

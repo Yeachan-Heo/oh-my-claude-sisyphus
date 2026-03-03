@@ -11,7 +11,7 @@
  * API: api.anthropic.com/api/oauth/usage
  * Response: { five_hour: { utilization }, seven_day: { utilization } }
  */
-import type { RateLimits } from './types.js';
+import type { RateLimits, UsageResult } from './types.js';
 interface ZaiQuotaResponse {
     data?: {
         limits?: Array<{
@@ -36,11 +36,13 @@ export declare function parseZaiResponse(response: ZaiQuotaResponse): RateLimits
 /**
  * Get usage data (with caching)
  *
- * Returns null if:
- * - No OAuth credentials available (API users)
- * - Credentials expired
- * - API call failed
+ * Returns a UsageResult with:
+ * - rateLimits: RateLimits on success, null on failure/no credentials
+ * - error: categorized reason when API call fails (undefined on success or no credentials)
+ *   - 'network': API call failed (timeout, HTTP error, parse error)
+ *   - 'auth': credentials expired and refresh failed
+ *   - 'no_credentials': no OAuth credentials available (expected for API key users)
  */
-export declare function getUsage(): Promise<RateLimits | null>;
+export declare function getUsage(): Promise<UsageResult>;
 export {};
 //# sourceMappingURL=usage-api.d.ts.map

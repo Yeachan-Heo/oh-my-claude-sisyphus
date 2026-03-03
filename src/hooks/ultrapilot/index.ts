@@ -302,7 +302,8 @@ function detectFileConflicts(state: UltrapilotState): string[] {
       if (!fileToWorkers.has(file)) {
         fileToWorkers.set(file, []);
       }
-      fileToWorkers.get(file)!.push(worker.id);
+      const workers = fileToWorkers.get(file);
+      if (workers) workers.push(worker.id);
     }
   }
 

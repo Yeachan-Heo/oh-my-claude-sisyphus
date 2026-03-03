@@ -8,11 +8,13 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 [![Sponsor](https://img.shields.io/badge/Sponsor-❤️-red?style=flat&logo=github)](https://github.com/sponsors/Yeachan-Heo)
 
+> **Para usuários do Codex:** Confira [oh-my-codex](https://github.com/Yeachan-Heo/oh-my-codex) — a mesma experiência de orquestração para o OpenAI Codex CLI.
+
 **Orquestração multiagente para Claude Code. Curva de aprendizado zero.**
 
 *Não aprenda Claude Code. Só use OMC.*
 
-[Começar Rápido](#início-rápido) • [Documentação](https://yeachan-heo.github.io/oh-my-claudecode-website) • [Guia de Migração](docs/MIGRATION.md)
+[Começar Rápido](#início-rápido) • [Documentação](https://yeachan-heo.github.io/oh-my-claudecode-website) • [Referência CLI](https://yeachan-heo.github.io/oh-my-claudecode-website/docs.html#cli-reference) • [Workflows](https://yeachan-heo.github.io/oh-my-claudecode-website/docs.html#workflows) • [Guia de Migração](docs/MIGRATION.md)
 
 ---
 
@@ -35,6 +37,16 @@ autopilot: build a REST API for managing tasks
 ```
 
 É isso. Todo o resto é automático.
+
+### Não sabe por onde começar?
+
+Se você não tem certeza sobre os requisitos, tem uma ideia vaga, ou quer microgerenciar o design:
+
+```
+/deep-interview "I want to build a task management app"
+```
+
+A entrevista profunda usa questionamento socrático para esclarecer seu pensamento antes de escrever qualquer código. Ela expõe suposições ocultas e mede a clareza por dimensões ponderadas, garantindo que você saiba exatamente o que construir antes da execução começar.
 
 ## Modo Team (Recomendado)
 
@@ -173,8 +185,9 @@ Atalhos opcionais para usuários avançados. Linguagem natural funciona bem sem 
 | `ulw` | Paralelismo máximo | `ulw fix all errors` |
 | `plan` | Entrevista de planejamento | `plan the API` |
 | `ralplan` | Consenso de planejamento iterativo | `ralplan this feature` |
-| `swarm` | Palavra-chave legada (roteia para Team) | `swarm 5 agents: fix lint errors` |
-| `ultrapilot` | Palavra-chave legada (roteia para Team) | `ultrapilot: build a fullstack app` |
+| `deep-interview` | Esclarecimento socrático de requisitos | `deep-interview "vague idea"` |
+| `swarm` | **Descontinuado** — use `team` em vez disso | `swarm 5 agents: fix lint errors` |
+| `ultrapilot` | **Descontinuado** — use `team` em vez disso | `ultrapilot: build a fullstack app` |
 
 **Notas:**
 - **ralph inclui ultrawork**: quando você ativa o modo ralph, ele inclui automaticamente a execução paralela do ultrawork.
@@ -221,10 +234,14 @@ Comportamento das tags:
 ## Documentação
 
 - **[Referência Completa](docs/REFERENCE.md)** - Documentação completa de recursos
-- **[Monitoramento de Performance](docs/PERFORMANCE-MONITORING.md)** - Rastreamento de agentes, debugging e otimização
+- **[Referência CLI](https://yeachan-heo.github.io/oh-my-claudecode-website/docs.html#cli-reference)** - Todos os comandos, flags e ferramentas do `omc`
+- **[Guia de Notificações](https://yeachan-heo.github.io/oh-my-claudecode-website/docs.html#notifications)** - Configuração de Discord, Telegram, Slack e webhooks
+- **[Workflows Recomendados](https://yeachan-heo.github.io/oh-my-claudecode-website/docs.html#workflows)** - Cadeias de skills testadas em batalha para tarefas comuns
+- **[Notas de Lançamento](https://yeachan-heo.github.io/oh-my-claudecode-website/docs.html#release-notes)** - Novidades em cada versão
 - **[Website](https://yeachan-heo.github.io/oh-my-claudecode-website)** - Guias interativos e exemplos
 - **[Guia de Migração](docs/MIGRATION.md)** - Upgrade a partir da v2.x
 - **[Arquitetura](docs/ARCHITECTURE.md)** - Como funciona por baixo dos panos
+- **[Monitoramento de Performance](docs/PERFORMANCE-MONITORING.md)** - Rastreamento de agentes, debugging e otimização
 
 ---
 
@@ -254,7 +271,7 @@ MIT
 
 <div align="center">
 
-**Inspirado por:** [oh-my-opencode](https://github.com/code-yeongyu/oh-my-opencode) • [claude-hud](https://github.com/ryanjoachim/claude-hud) • [Superpowers](https://github.com/NexTechFusion/Superpowers) • [everything-claude-code](https://github.com/affaan-m/everything-claude-code)
+**Inspirado por:** [oh-my-opencode](https://github.com/code-yeongyu/oh-my-opencode) • [claude-hud](https://github.com/ryanjoachim/claude-hud) • [Superpowers](https://github.com/obra/superpowers) • [everything-claude-code](https://github.com/affaan-m/everything-claude-code) • [Ouroboros](https://github.com/Q00/ouroboros)
 
 **Curva de aprendizado zero. Poder máximo.**
 

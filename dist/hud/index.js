@@ -18,7 +18,7 @@ import { getRuntimePackageVersion } from "../lib/version.js";
 import { compareVersions } from "../features/auto-update.js";
 import { resolveToWorktreeRoot, resolveTranscriptPath } from "../lib/worktree-paths.js";
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "fs";
-import { join } from "path";
+import { join, basename } from "path";
 import { homedir } from "os";
 import { getOmcRoot } from "../lib/worktree-paths.js";
 /**
@@ -113,7 +113,7 @@ async function main(watchMode = false) {
             writeHudState(stateToWrite, cwd);
         }
         // Fetch rate limits from OAuth API (if available)
-        const rateLimits = config.elements.rateLimits !== false ? await getUsage() : null;
+        const rateLimitsResult = config.elements.rateLimits !== false ? await getUsage() : null;
         // Fetch custom rate limit buckets (if configured)
         const customBuckets = config.rateLimitsProvider?.type === 'custom'
             ? await executeCustomProvider(config.rateLimitsProvider)
@@ -154,7 +154,7 @@ async function main(watchMode = false) {
             backgroundTasks: getRunningTasks(hudState),
             cwd,
             lastSkill: transcriptData.lastActivatedSkill || null,
-            rateLimits,
+            rateLimitsResult,
             customBuckets,
             pendingPermission: transcriptData.pendingPermission || null,
             thinkingState: transcriptData.thinkingState || null,
@@ -169,6 +169,9 @@ async function main(watchMode = false) {
                 : null,
             apiKeySource: config.elements.apiKeySource
                 ? detectApiKeySource(cwd)
+                : null,
+            profileName: process.env.CLAUDE_CONFIG_DIR
+                ? basename(process.env.CLAUDE_CONFIG_DIR).replace(/^\./, '')
                 : null,
         };
         // Debug: log data if OMC_DEBUG is set

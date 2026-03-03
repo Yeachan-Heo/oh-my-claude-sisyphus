@@ -11,11 +11,23 @@ describe('Agent Registry Validation', () => {
   test('agent count matches documentation', () => {
     const agentsDir = path.join(__dirname, '../../agents');
     const promptFiles = fs.readdirSync(agentsDir).filter((file) => file.endsWith('.md') && file !== 'AGENTS.md');
-    expect(promptFiles.length).toBe(21);
+    expect(promptFiles.length).toBe(22);
+  });
+
+  test('default agent count is 21 (harsh-critic is opt-in)', () => {
+    const agents = getAgentDefinitions();
+    expect(Object.keys(agents).length).toBe(21);
+    expect(Object.keys(agents)).not.toContain('harsh-critic');
+  });
+
+  test('includes harsh-critic when enableHarshCritic is true', () => {
+    const agents = getAgentDefinitions({ enableHarshCritic: true });
+    expect(Object.keys(agents)).toContain('harsh-critic');
+    expect(Object.keys(agents).length).toBe(22);
   });
 
   test('all agents have .md prompt files', () => {
-    const agents = Object.keys(getAgentDefinitions());
+    const agents = Object.keys(getAgentDefinitions({ enableHarshCritic: true }));
     const agentsDir = path.join(__dirname, '../../agents');
     const promptFiles = fs.readdirSync(agentsDir).filter((file) => file.endsWith('.md') && file !== 'AGENTS.md');
     for (const file of promptFiles) {
@@ -25,7 +37,7 @@ describe('Agent Registry Validation', () => {
   });
 
   test('all registry agents are exported from index.ts', async () => {
-    const registryAgents = Object.keys(getAgentDefinitions());
+    const registryAgents = Object.keys(getAgentDefinitions({ enableHarshCritic: true }));
     const exports = await import('../agents/index.js') as Record<string, unknown>;
     const deprecatedAliases = ['researcher', 'tdd-guide'];
     for (const name of registryAgents) {
