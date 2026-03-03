@@ -16,7 +16,11 @@ import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
 import { atomicWriteJsonSync } from "../../lib/atomic-write.js";
-import { OmcPaths, getWorktreeRoot, validateWorkingDirectory } from "../../lib/worktree-paths.js";
+import {
+  OmcPaths,
+  getWorktreeRoot,
+  validateWorkingDirectory,
+} from "../../lib/worktree-paths.js";
 import {
   StateLocation,
   StateConfig,
@@ -101,9 +105,7 @@ export function getLegacyPaths(name: string): string[] {
 export function ensureStateDir(location: StateLocation): void {
   const dir =
     location === StateLocation.LOCAL ? getLocalStateDir() : GLOBAL_STATE_DIR;
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
+  fs.mkdirSync(dir, { recursive: true });
 }
 
 /**
@@ -122,48 +124,56 @@ export function readState<T = StateData>(
   const legacyPaths = checkLegacy ? getLegacyPaths(name) : [];
 
   // Try standard location first
-  if (fs.existsSync(standardPath)) {
-    try {
-      // Get mtime BEFORE reading to prevent TOCTOU cache poisoning.
-      // Previously mtime was read AFTER readFileSync, so a concurrent write
-      // between the two could cache stale data under the new mtime.
-      const statBefore = fs.statSync(standardPath);
-      const mtimeBefore = statBefore.mtimeMs;
+  try {
+    // Get mtime BEFORE reading to prevent TOCTOU cache poisoning.
+    // Previously mtime was read AFTER readFileSync, so a concurrent write
+    // between the two could cache stale data under the new mtime.
+    const statBefore = fs.statSync(standardPath);
+    const mtimeBefore = statBefore.mtimeMs;
 
-      // Check cache: entry exists, mtime matches, TTL not expired
-      const cached = stateCache.get(standardPath);
-      if (cached && cached.mtime === mtimeBefore && (Date.now() - cached.cachedAt) < STATE_CACHE_TTL_MS) {
-        return {
-          exists: true,
-          data: structuredClone(cached.data) as T,
-          foundAt: standardPath,
-          legacyLocations: [],
-        };
-      }
-
-      // Cache miss or stale — read from disk
-      const content = fs.readFileSync(standardPath, "utf-8");
-      const data = JSON.parse(content) as T;
-
-      // Verify mtime unchanged during read to prevent caching inconsistent data.
-      // If the file was modified between our statBefore and readFileSync, we still
-      // return the data but do NOT cache it — the next read will re-read from disk.
-      try {
-        const statAfter = fs.statSync(standardPath);
-        if (statAfter.mtimeMs === mtimeBefore) {
-          stateCache.set(standardPath, { data: structuredClone(data), mtime: mtimeBefore, cachedAt: Date.now() });
-        }
-      } catch {
-        // statSync failed — skip caching, data is still returned
-      }
-
+    // Check cache: entry exists, mtime matches, TTL not expired
+    const cached = stateCache.get(standardPath);
+    if (
+      cached &&
+      cached.mtime === mtimeBefore &&
+      Date.now() - cached.cachedAt < STATE_CACHE_TTL_MS
+    ) {
       return {
         exists: true,
-        data: structuredClone(data) as T,
+        data: structuredClone(cached.data) as T,
         foundAt: standardPath,
         legacyLocations: [],
       };
-    } catch (error) {
+    }
+
+    // Cache miss or stale — read from disk
+    const content = fs.readFileSync(standardPath, "utf-8");
+    const data = JSON.parse(content) as T;
+
+    // Verify mtime unchanged during read to prevent caching inconsistent data.
+    // If the file was modified between our statBefore and readFileSync, we still
+    // return the data but do NOT cache it — the next read will re-read from disk.
+    try {
+      const statAfter = fs.statSync(standardPath);
+      if (statAfter.mtimeMs === mtimeBefore) {
+        stateCache.set(standardPath, {
+          data: structuredClone(data),
+          mtime: mtimeBefore,
+          cachedAt: Date.now(),
+        });
+      }
+    } catch {
+      // statSync failed — skip caching, data is still returned
+    }
+
+    return {
+      exists: true,
+      data: structuredClone(data) as T,
+      foundAt: standardPath,
+      legacyLocations: [],
+    };
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
       // Invalid JSON or read error - treat as not found
       console.warn(`Failed to read state from ${standardPath}:`, error);
     }
@@ -177,17 +187,17 @@ export function readState<T = StateData>(
         ? legacyPath
         : path.join(getWorktreeRoot() || process.cwd(), legacyPath);
 
-      if (fs.existsSync(resolvedPath)) {
-        try {
-          const content = fs.readFileSync(resolvedPath, "utf-8");
-          const data = JSON.parse(content) as T;
-          return {
-            exists: true,
-            data: structuredClone(data) as T,
-            foundAt: resolvedPath,
-            legacyLocations: legacyPaths,
-          };
-        } catch (error) {
+      try {
+        const content = fs.readFileSync(resolvedPath, "utf-8");
+        const data = JSON.parse(content) as T;
+        return {
+          exists: true,
+          data: structuredClone(data) as T,
+          foundAt: resolvedPath,
+          legacyLocations: legacyPaths,
+        };
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
           console.warn(
             `Failed to read legacy state from ${resolvedPath}:`,
             error,
@@ -275,17 +285,17 @@ export function clearState(
   for (const loc of locationsToCheck) {
     const standardPath = getStatePath(name, loc);
     try {
-      if (fs.existsSync(standardPath)) {
-        fs.unlinkSync(standardPath);
-        result.removed.push(standardPath);
-      } else {
-        result.notFound.push(standardPath);
-      }
+      fs.unlinkSync(standardPath);
+      result.removed.push(standardPath);
     } catch (error) {
-      result.errors.push({
-        path: standardPath,
-        error: error instanceof Error ? error.message : String(error),
-      });
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+        result.notFound.push(standardPath);
+      } else {
+        result.errors.push({
+          path: standardPath,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
     }
   }
 
@@ -297,17 +307,17 @@ export function clearState(
       : path.join(getWorktreeRoot() || process.cwd(), legacyPath);
 
     try {
-      if (fs.existsSync(resolvedPath)) {
-        fs.unlinkSync(resolvedPath);
-        result.removed.push(resolvedPath);
-      } else {
-        result.notFound.push(resolvedPath);
-      }
+      fs.unlinkSync(resolvedPath);
+      result.removed.push(resolvedPath);
     } catch (error) {
-      result.errors.push({
-        path: resolvedPath,
-        error: error instanceof Error ? error.message : String(error),
-      });
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+        result.notFound.push(resolvedPath);
+      } else {
+        result.errors.push({
+          path: resolvedPath,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
     }
   }
 
@@ -583,9 +593,16 @@ export function cleanupStaleStates(
 
           if (data.active !== true) continue;
 
-          const meta = (data._meta as Record<string, unknown> | undefined) ?? {};
+          const meta =
+            (data._meta as Record<string, unknown> | undefined) ?? {};
 
-          if (isStateStale(meta as { updatedAt?: string; heartbeatAt?: string }, now, maxAgeMs)) {
+          if (
+            isStateStale(
+              meta as { updatedAt?: string; heartbeatAt?: string },
+              now,
+              maxAgeMs,
+            )
+          ) {
             console.warn(
               `[state-manager] cleanupStaleStates: marking "${file}" inactive (last updated ${meta.updatedAt ?? "unknown"})`,
             );
@@ -595,7 +612,9 @@ export function cleanupStaleStates(
             try {
               atomicWriteJsonSync(filePath, data);
               cleaned++;
-            } catch { /* best-effort */ }
+            } catch {
+              /* best-effort */
+            }
           }
         } catch {
           // Skip files that can't be read/parsed
@@ -613,7 +632,9 @@ export function cleanupStaleStates(
   const sessionsDir = path.join(stateDir, "sessions");
   if (fs.existsSync(sessionsDir)) {
     try {
-      const sessionEntries = fs.readdirSync(sessionsDir, { withFileTypes: true });
+      const sessionEntries = fs.readdirSync(sessionsDir, {
+        withFileTypes: true,
+      });
       for (const entry of sessionEntries) {
         if (entry.isDirectory()) {
           scanDir(path.join(sessionsDir, entry.name));
@@ -663,7 +684,11 @@ function withFileLock<R>(filePath: string, fn: () => R): R {
       try {
         const lockStat = fs.statSync(lockPath);
         if (Date.now() - lockStat.mtimeMs > LOCK_STALE_MS) {
-          try { fs.unlinkSync(lockPath); } catch { /* race OK */ }
+          try {
+            fs.unlinkSync(lockPath);
+          } catch {
+            /* race OK */
+          }
           continue;
         }
       } catch {
@@ -677,14 +702,20 @@ function withFileLock<R>(filePath: string, fn: () => R): R {
 
       // Brief busy-wait before retry
       const waitEnd = Date.now() + LOCK_POLL_MS;
-      while (Date.now() < waitEnd) { /* spin */ }
+      while (Date.now() < waitEnd) {
+        /* spin */
+      }
     }
   }
 
   try {
     return fn();
   } finally {
-    try { fs.unlinkSync(lockPath); } catch { /* best-effort */ }
+    try {
+      fs.unlinkSync(lockPath);
+    } catch {
+      /* best-effort */
+    }
   }
 }
 

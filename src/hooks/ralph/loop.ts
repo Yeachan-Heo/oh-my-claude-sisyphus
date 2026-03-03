@@ -10,12 +10,13 @@
  * Ported from oh-my-opencode's ralph hook.
  */
 
-import {
-  existsSync,
-  readFileSync,
-} from "fs";
+import { readFileSync } from "fs";
 import { join } from "path";
-import { writeModeState, readModeState, clearModeStateFile } from '../../lib/mode-state-io.js';
+import {
+  writeModeState,
+  readModeState,
+  clearModeStateFile,
+} from "../../lib/mode-state-io.js";
 import {
   readPrd,
   getPrdStatus,
@@ -35,23 +36,33 @@ import {
   readUltraworkState as readUltraworkStateFromModule,
   writeUltraworkState as writeUltraworkStateFromModule,
 } from "../ultrawork/index.js";
-import { resolveSessionStatePath, getOmcRoot } from "../../lib/worktree-paths.js";
+import {
+  resolveSessionStatePath,
+  getOmcRoot,
+} from "../../lib/worktree-paths.js";
 import { readTeamPipelineState } from "../team-pipeline/state.js";
 import type { TeamPipelinePhase } from "../team-pipeline/types.js";
 
 // Forward declaration to avoid circular import - check ultraqa state file directly
-export function isUltraQAActive(directory: string, sessionId?: string): boolean {
+export function isUltraQAActive(
+  directory: string,
+  sessionId?: string,
+): boolean {
   // When sessionId is provided, ONLY check session-scoped path — no legacy fallback
   if (sessionId) {
-    const sessionFile = resolveSessionStatePath('ultraqa', sessionId, directory);
-    if (!existsSync(sessionFile)) {
-      return false;
-    }
+    const sessionFile = resolveSessionStatePath(
+      "ultraqa",
+      sessionId,
+      directory,
+    );
     try {
       const content = readFileSync(sessionFile, "utf-8");
       const state = JSON.parse(content);
       return state && state.active === true;
-    } catch {
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+        return false;
+      }
       return false; // NO legacy fallback
     }
   }
@@ -59,14 +70,14 @@ export function isUltraQAActive(directory: string, sessionId?: string): boolean 
   // No sessionId: legacy path (backward compat)
   const omcDir = getOmcRoot(directory);
   const stateFile = join(omcDir, "state", "ultraqa-state.json");
-  if (!existsSync(stateFile)) {
-    return false;
-  }
   try {
     const content = readFileSync(stateFile, "utf-8");
     const state = JSON.parse(content);
     return state && state.active === true;
-  } catch {
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      return false;
+    }
     return false;
   }
 }
@@ -116,11 +127,19 @@ const DEFAULT_MAX_ITERATIONS = 10;
 /**
  * Read Ralph Loop state from disk
  */
-export function readRalphState(directory: string, sessionId?: string): RalphLoopState | null {
-  const state = readModeState<RalphLoopState>('ralph', directory, sessionId);
+export function readRalphState(
+  directory: string,
+  sessionId?: string,
+): RalphLoopState | null {
+  const state = readModeState<RalphLoopState>("ralph", directory, sessionId);
 
   // Validate session identity
-  if (state && sessionId && state.session_id && state.session_id !== sessionId) {
+  if (
+    state &&
+    sessionId &&
+    state.session_id &&
+    state.session_id !== sessionId
+  ) {
     return null;
   }
 
@@ -133,22 +152,33 @@ export function readRalphState(directory: string, sessionId?: string): RalphLoop
 export function writeRalphState(
   directory: string,
   state: RalphLoopState,
-  sessionId?: string
+  sessionId?: string,
 ): boolean {
-  return writeModeState('ralph', state as unknown as Record<string, unknown>, directory, sessionId);
+  return writeModeState(
+    "ralph",
+    state as unknown as Record<string, unknown>,
+    directory,
+    sessionId,
+  );
 }
 
 /**
  * Clear Ralph Loop state (includes ghost-legacy cleanup)
  */
-export function clearRalphState(directory: string, sessionId?: string): boolean {
-  return clearModeStateFile('ralph', directory, sessionId);
+export function clearRalphState(
+  directory: string,
+  sessionId?: string,
+): boolean {
+  return clearModeStateFile("ralph", directory, sessionId);
 }
 
 /**
  * Clear ultrawork state (only if linked to ralph)
  */
-export function clearLinkedUltraworkState(directory: string, sessionId?: string): boolean {
+export function clearLinkedUltraworkState(
+  directory: string,
+  sessionId?: string,
+): boolean {
   const state = readUltraworkStateFromModule(directory, sessionId);
 
   // Only clear if it was linked to ralph (auto-activated)
@@ -156,7 +186,7 @@ export function clearLinkedUltraworkState(directory: string, sessionId?: string)
     return true;
   }
 
-  return clearModeStateFile('ultrawork', directory, sessionId);
+  return clearModeStateFile("ultrawork", directory, sessionId);
 }
 
 /**
@@ -164,7 +194,7 @@ export function clearLinkedUltraworkState(directory: string, sessionId?: string)
  */
 export function incrementRalphIteration(
   directory: string,
-  sessionId?: string
+  sessionId?: string,
 ): RalphLoopState | null {
   const state = readRalphState(directory, sessionId);
 
@@ -196,7 +226,10 @@ export function detectNoPrdFlag(prompt: string): boolean {
  * Strip --no-prd flag from prompt text and trim whitespace
  */
 export function stripNoPrdFlag(prompt: string): string {
-  return prompt.replace(/--no-prd/gi, '').replace(/\s+/g, ' ').trim();
+  return prompt
+    .replace(/--no-prd/gi, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 /**
@@ -426,22 +459,28 @@ export function recordPattern(directory: string, pattern: string): boolean {
 export function getTeamPhaseDirective(
   directory: string,
   sessionId?: string,
-): 'continue' | 'complete' | null {
+): "continue" | "complete" | null {
   const teamState = readTeamPipelineState(directory, sessionId);
   if (!teamState || !teamState.active) {
     // Check terminal states even when active=false
     if (teamState) {
-      const terminalPhases: TeamPipelinePhase[] = ['complete', 'failed'];
+      const terminalPhases: TeamPipelinePhase[] = ["complete", "failed"];
       if (terminalPhases.includes(teamState.phase)) {
-        return 'complete';
+        return "complete";
       }
     }
     return null;
   }
 
-  const continuePhases: TeamPipelinePhase[] = ['team-verify', 'team-fix', 'team-exec', 'team-plan', 'team-prd'];
+  const continuePhases: TeamPipelinePhase[] = [
+    "team-verify",
+    "team-fix",
+    "team-exec",
+    "team-plan",
+    "team-prd",
+  ];
   if (continuePhases.includes(teamState.phase)) {
-    return 'continue';
+    return "continue";
   }
 
   return null;
