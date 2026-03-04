@@ -1,6 +1,15 @@
 ---
 name: omc-schedule
 description: Schedule a Claude Code task to run automatically at a future time — enables unattended resumption after rate limit resets
+triggers:
+  - "schedule"
+  - "rate-limit"
+  - "rate limit"
+  - "resume after"
+  - "run later"
+  - "run at"
+  - "schedule for"
+  - "omc-schedule"
 ---
 
 # omc-schedule
@@ -91,7 +100,7 @@ Convert to Unix timestamp (seconds since epoch).
 ```
 <random 8-char hex>
 ```
-Use `Math.random().toString(16).slice(2, 10)` or similar.
+Use `node -e "const {randomBytes}=require('crypto');console.log(randomBytes(4).toString('hex'))"` or in Node ESM: `import { randomBytes } from 'crypto'; randomBytes(4).toString('hex')`.
 
 **Step 3: Save to scheduled-tasks.json**
 ```json
@@ -126,12 +135,19 @@ tmux has-session -t omc-sched-daemon 2>/dev/null
 
 If not running, start it:
 ```bash
-# Find the daemon script path
-DAEMON_SCRIPT="$(npm root -g)/oh-my-claudecode/scripts/schedule-daemon.mjs 2>/dev/null || \
-  ~/.claude/plugins/cache/omc/oh-my-claudecode/*/scripts/schedule-daemon.mjs | head -1"
+# Find the daemon script — try npm global install first, then plugin cache
+DAEMON_SCRIPT="$(npm root -g 2>/dev/null)/oh-my-claudecode/scripts/schedule-daemon.mjs"
+if [ ! -f "$DAEMON_SCRIPT" ]; then
+  DAEMON_SCRIPT=$(ls ~/.claude/plugins/cache/omc/oh-my-claudecode/*/scripts/schedule-daemon.mjs 2>/dev/null | head -1)
+fi
+if [ -z "$DAEMON_SCRIPT" ] || [ ! -f "$DAEMON_SCRIPT" ]; then
+  echo "Error: schedule-daemon.mjs not found. Run 'omc update' to fix." >&2
+  exit 1
+fi
 
+mkdir -p .omc/logs
 tmux new-session -d -s omc-sched-daemon \
-  "node $DAEMON_SCRIPT --watch-dir $(pwd) 2>&1 | tee .omc/logs/schedule-daemon.log"
+  "node \"$DAEMON_SCRIPT\" --watch-dir \"$(pwd)\" 2>&1 | tee .omc/logs/schedule-daemon.log"
 ```
 
 **Step 5: Confirm to user**
@@ -156,3 +172,5 @@ To monitor: tmux attach -t omc-sched-daemon
 - **Multiple tasks**: Multiple tasks can be queued; the daemon processes them in scheduled order.
 - **Context handoff**: Use `/oh-my-claudecode:note --priority` before scheduling to save context that the resumed session will load automatically.
 - **tmux required**: The daemon runs in a tmux session. If tmux is not installed, fall back to a background `nohup` process with a warning.
+- **Notifications**: The daemon reads `~/.claude/.omc-config.json` for Telegram/Discord settings configured via `/oh-my-claudecode:configure-notifications`. Falls back to macOS/Linux system notifications.
+- **Daemon cleanup**: `/oh-my-claudecode:cancel --force` kills the `omc-sched-daemon` tmux session. To stop manually: `tmux kill-session -t omc-sched-daemon`.

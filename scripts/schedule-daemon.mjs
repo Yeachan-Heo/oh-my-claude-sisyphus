@@ -12,8 +12,8 @@
  *   tmux new-session -d -s omc-sched-daemon "node schedule-daemon.mjs --watch-dir /path/to/project"
  */
 
-import { execSync, spawn } from 'child_process';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
+import { spawnSync, spawn } from 'child_process';
+import { existsSync, mkdirSync, readFileSync, writeFileSync, createWriteStream } from 'fs';
 import { join, resolve } from 'path';
 import { homedir } from 'os';
 
@@ -24,6 +24,10 @@ const CLAUDE_BIN = process.env.CLAUDE_BIN || 'claude';
 
 // Working directory: prefer --watch-dir arg, then cwd
 const watchDirArg = process.argv.indexOf('--watch-dir');
+if (watchDirArg !== -1 && !process.argv[watchDirArg + 1]) {
+  console.error('Error: --watch-dir requires a path argument');
+  process.exit(1);
+}
 const PROJECT_DIR = resolve(
   watchDirArg !== -1 ? process.argv[watchDirArg + 1] : process.cwd()
 );
@@ -31,6 +35,7 @@ const PROJECT_DIR = resolve(
 const OMC_STATE_DIR = join(PROJECT_DIR, '.omc', 'state');
 const TASKS_FILE    = join(OMC_STATE_DIR, 'scheduled-tasks.json');
 const LOG_DIR       = join(PROJECT_DIR, '.omc', 'logs', 'scheduled');
+const OMC_CONFIG    = join(homedir(), '.claude', '.omc-config.json');
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -49,39 +54,55 @@ function readTasks() {
   }
 }
 
+// Serialized write queue — prevents concurrent read-modify-write races
+let writeLock = Promise.resolve();
 function writeTasks(tasks) {
-  mkdirSync(OMC_STATE_DIR, { recursive: true });
-  writeFileSync(TASKS_FILE, JSON.stringify({ tasks }, null, 2), 'utf8');
+  writeLock = writeLock.then(() => {
+    mkdirSync(OMC_STATE_DIR, { recursive: true });
+    writeFileSync(TASKS_FILE, JSON.stringify({ tasks }, null, 2), 'utf8');
+  });
+  return writeLock;
 }
 
 function sendNotification(title, body) {
-  // Try OMC notification hook if available (Discord/Telegram/Slack).
-  // Falls back to macOS/Linux system notification.
+  // Try OMC notification config (~/.claude/.omc-config.json)
   try {
-    const hook = join(PROJECT_DIR, '.omc', 'state', 'notification-config.json');
-    if (existsSync(hook)) {
-      // OMC notification infrastructure — best-effort
-      execSync(
-        `node "${resolve(import.meta.dirname, 'send-notification.mjs')}" ` +
-        `--title "${title.replace(/"/g, '\\"')}" ` +
-        `--body "${body.replace(/"/g, '\\"')}"`,
-        { stdio: 'ignore', timeout: 10_000 }
-      );
-      return;
+    if (existsSync(OMC_CONFIG)) {
+      const cfg = JSON.parse(readFileSync(OMC_CONFIG, 'utf8'));
+      const n = cfg.notifications ?? {};
+      if (n.telegram?.enabled && n.telegram?.botToken && n.telegram?.chatId) {
+        // Telegram: plain HTTP, no shell involved
+        const payload = JSON.stringify({ chat_id: n.telegram.chatId, text: `${title}\n${body}` });
+        spawnSync('curl', [
+          '-s', '-X', 'POST',
+          `https://api.telegram.org/bot${n.telegram.botToken}/sendMessage`,
+          '-H', 'Content-Type: application/json',
+          '-d', payload,
+        ], { timeout: 10_000 });
+        return;
+      }
+      if (n.discord?.enabled && n.discord?.webhookUrl) {
+        const payload = JSON.stringify({ content: `**${title}**\n${body}` });
+        spawnSync('curl', [
+          '-s', '-X', 'POST', n.discord.webhookUrl,
+          '-H', 'Content-Type: application/json',
+          '-d', payload,
+        ], { timeout: 10_000 });
+        return;
+      }
     }
-  } catch { /* ignore */ }
+  } catch { /* ignore — fall through to system notifications */ }
 
-  // macOS fallback
+  // macOS fallback — use spawnSync to avoid shell injection
   try {
-    execSync(
-      `osascript -e 'display notification "${body.replace(/'/g, '')}" with title "${title.replace(/'/g, '')}"'`,
-      { stdio: 'ignore', timeout: 5_000 }
-    );
+    spawnSync('osascript', [
+      '-e', `display notification ${JSON.stringify(body)} with title ${JSON.stringify(title)}`,
+    ], { timeout: 5_000 });
   } catch { /* non-critical */ }
 
-  // Linux fallback
+  // Linux fallback — use spawnSync argument array, no shell involved
   try {
-    execSync(`notify-send "${title}" "${body}"`, { stdio: 'ignore', timeout: 5_000 });
+    spawnSync('notify-send', [title, body], { timeout: 5_000 });
   } catch { /* non-critical */ }
 }
 
@@ -94,16 +115,24 @@ function runTask(task) {
 
   log(`Running task ${task.id}: "${task.prompt.slice(0, 60)}..."`);
 
-  const header = [
-    `# omc-schedule task: ${task.id}`,
-    `# Prompt: ${task.prompt}`,
-    `# Directory: ${task.workingDirectory}`,
-    `# Started: ${startedAt}`,
-    '',
-  ].join('\n');
-  writeFileSync(logFile, header, 'utf8');
+  // Validate working directory exists before spawning
+  if (!existsSync(task.workingDirectory)) {
+    return Promise.reject(
+      new Error(`workingDirectory not found: ${task.workingDirectory}`)
+    );
+  }
 
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
+    // Open log stream first, write header through it
+    const logStream = createWriteStream(logFile, { flags: 'w' });
+    logStream.write([
+      `# omc-schedule task: ${task.id}`,
+      `# Prompt: ${task.prompt}`,
+      `# Directory: ${task.workingDirectory}`,
+      `# Started: ${startedAt}`,
+      '',
+    ].join('\n'));
+
     const child = spawn(
       CLAUDE_BIN,
       ['-p', task.prompt, '--dangerously-skip-permissions'],
@@ -114,17 +143,19 @@ function runTask(task) {
       }
     );
 
-    const logStream = require('fs').createWriteStream(logFile, { flags: 'a' });
+    child.on('error', (err) => {
+      logStream.end(`\n# Spawn error: ${err.message}\n`);
+      reject(new Error(`Failed to spawn ${CLAUDE_BIN}: ${err.message}`));
+    });
 
-    child.stdout.pipe(logStream);
-    child.stderr.pipe(logStream);
+    child.stdout.pipe(logStream, { end: false });
+    child.stderr.pipe(logStream, { end: false });
     child.stdout.on('data', (d) => process.stdout.write(d));
     child.stderr.on('data', (d) => process.stderr.write(d));
 
     child.on('close', (code) => {
       const finishedAt = new Date().toISOString();
-      const footer = `\n\n# Finished: ${finishedAt} — exit code: ${code}\n`;
-      writeFileSync(logFile, footer, { flag: 'a' });
+      logStream.end(`\n\n# Finished: ${finishedAt} — exit code: ${code}\n`);
 
       if (code === 0) {
         log(`Task ${task.id} completed successfully`);
@@ -144,6 +175,22 @@ function runTask(task) {
   });
 }
 
+// ─── Startup recovery ─────────────────────────────────────────────────────────
+
+function recoverOrphanedTasks() {
+  const tasks = readTasks();
+  const orphans = tasks.filter(t => t.status === 'running');
+  if (orphans.length === 0) return;
+
+  log(`Recovering ${orphans.length} orphaned task(s) left in 'running' state from previous daemon`);
+  const recovered = tasks.map(t =>
+    t.status === 'running'
+      ? { ...t, status: 'failed', error: 'daemon restarted while running', finishedAt: new Date().toISOString() }
+      : t
+  );
+  writeTasks(recovered);
+}
+
 // ─── Poll loop ────────────────────────────────────────────────────────────────
 
 const running = new Set(); // task IDs currently executing
@@ -161,11 +208,11 @@ async function poll() {
     const updated = tasks.map(t =>
       t.id === task.id ? { ...t, status: 'running', startedAt: new Date().toISOString() } : t
     );
-    writeTasks(updated);
+    await writeTasks(updated);
     running.add(task.id);
 
     // Run asynchronously (don't block the poll loop)
-    runTask(task).then(({ code }) => {
+    runTask(task).then(async ({ code }) => {
       running.delete(task.id);
       const afterRun = readTasks();
       const final = afterRun.map(t =>
@@ -173,15 +220,15 @@ async function poll() {
           ? { ...t, status: code === 0 ? 'completed' : 'failed', finishedAt: new Date().toISOString() }
           : t
       );
-      writeTasks(final);
-    }).catch((err) => {
+      await writeTasks(final);
+    }).catch(async (err) => {
       running.delete(task.id);
       log(`Task ${task.id} threw: ${err.message}`);
       const afterRun = readTasks();
       const final = afterRun.map(t =>
-        t.id === task.id ? { ...t, status: 'failed', error: err.message } : t
+        t.id === task.id ? { ...t, status: 'failed', error: err.message, finishedAt: new Date().toISOString() } : t
       );
-      writeTasks(final);
+      await writeTasks(final);
     });
   }
 }
@@ -193,10 +240,31 @@ log(`Watching: ${TASKS_FILE}`);
 log(`Log dir:  ${LOG_DIR}`);
 log(`Poll interval: ${POLL_INTERVAL_MS / 1000}s`);
 
+// Recover tasks left in 'running' state from a previous daemon crash
+recoverOrphanedTasks();
+
 // Run immediately, then on interval
 poll();
 setInterval(poll, POLL_INTERVAL_MS);
 
-// Graceful shutdown
-process.on('SIGINT',  () => { log('Shutting down (SIGINT)');  process.exit(0); });
-process.on('SIGTERM', () => { log('Shutting down (SIGTERM)'); process.exit(0); });
+// Graceful shutdown — wait for in-flight tasks
+let shuttingDown = false;
+async function shutdown(signal) {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  log(`Shutting down (${signal})`);
+  if (running.size > 0) {
+    log(`Waiting for ${running.size} in-flight task(s)...`);
+    const deadline = Date.now() + 30_000;
+    while (running.size > 0 && Date.now() < deadline) {
+      await new Promise(r => setTimeout(r, 500));
+    }
+    if (running.size > 0) {
+      log(`Timeout reached — ${running.size} task(s) still running (will be recovered on next start)`);
+    }
+  }
+  process.exit(0);
+}
+
+process.on('SIGINT',  () => shutdown('SIGINT'));
+process.on('SIGTERM', () => shutdown('SIGTERM'));
