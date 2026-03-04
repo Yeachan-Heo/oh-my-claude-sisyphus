@@ -448,6 +448,8 @@ export interface HudConfig {
   rateLimitsProvider?: RateLimitsProviderConfig;
   /** Optional maximum width (columns) for statusline output. Lines exceeding this width are truncated with ellipsis. Useful when the terminal shares space with IDE panels or tabs. */
   maxWidth?: number;
+  /** Controls how lines exceeding maxWidth are handled. 'truncate' cuts with ellipsis (default), 'wrap' breaks at element boundaries onto next line. */
+  wrapMode?: 'truncate' | 'wrap';
 }
 
 export const DEFAULT_HUD_CONFIG: HudConfig = {

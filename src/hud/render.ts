@@ -88,6 +88,62 @@ export function truncateLineToMaxWidth(line: string, maxWidth: number): string {
 }
 
 /**
+ * Wrap a single line at element boundaries (` | ` separators) to fit within maxWidth.
+ * Each element is treated as an atomic unit — never broken mid-element.
+ * Returns an array of wrapped lines, each fitting within maxWidth.
+ *
+ * @param line - The line to wrap (may contain ANSI codes and ` | ` separators)
+ * @param maxWidth - Maximum visual width in terminal columns
+ * @returns Array of wrapped lines
+ */
+export function wrapLineAtElements(line: string, maxWidth: number): string[] {
+  if (maxWidth <= 0) return [''];
+  if (stringWidth(line) <= maxWidth) return [line];
+
+  // Split by the dim(' | ') separator pattern.
+  // The separator includes ANSI dim codes: \x1b[2m | \x1b[22m
+  // We split on both plain and ANSI-wrapped separators.
+  const SEPARATOR_PATTERN = /(?:\x1b\[2m)? \| (?:\x1b\[22m)?/;
+  const parts = line.split(SEPARATOR_PATTERN);
+
+  if (parts.length <= 1) {
+    // No separators — fall back to truncation
+    return [truncateLineToMaxWidth(line, maxWidth)];
+  }
+
+  const separator = ' | ';
+  const separatorWidth = 3; // visual width of " | "
+  const wrappedLines: string[] = [];
+  let currentLine = '';
+  let currentWidth = 0;
+
+  for (const part of parts) {
+    const partWidth = stringWidth(part);
+
+    if (currentLine === '') {
+      // First element on this line
+      currentLine = part;
+      currentWidth = partWidth;
+    } else if (currentWidth + separatorWidth + partWidth <= maxWidth) {
+      // Fits on current line
+      currentLine += separator + part;
+      currentWidth += separatorWidth + partWidth;
+    } else {
+      // Doesn't fit — start a new line
+      wrappedLines.push(currentLine);
+      currentLine = part;
+      currentWidth = partWidth;
+    }
+  }
+
+  if (currentLine) {
+    wrappedLines.push(currentLine);
+  }
+
+  return wrappedLines;
+}
+
+/**
  * Limit output lines to prevent input field shrinkage (Issue #222).
  * Trims lines from the end while preserving the first (header) line.
  *
@@ -325,9 +381,15 @@ export async function render(context: HudRenderContext, config: HudConfig): Prom
 
   let finalLines = limitOutputLines([...outputLines, ...detailLines], config.elements.maxOutputLines);
 
-  // Apply maxWidth truncation if configured (Issue #1086)
+  // Apply maxWidth handling if configured (Issue #1086, #1319)
   if (config.maxWidth && config.maxWidth > 0) {
-    finalLines = finalLines.map(line => truncateLineToMaxWidth(line, config.maxWidth!));
+    if (config.wrapMode === 'wrap') {
+      // Wrap at element boundaries — no information loss
+      finalLines = finalLines.flatMap(line => wrapLineAtElements(line, config.maxWidth!));
+    } else {
+      // Default: truncate with ellipsis
+      finalLines = finalLines.map(line => truncateLineToMaxWidth(line, config.maxWidth!));
+    }
   }
 
   return finalLines.join('\n');
