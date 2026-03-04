@@ -192,6 +192,43 @@ describe('buildWorkerStartCommand', () => {
     })).not.toThrow();
   });
 
+  it('uses exec \"$@\" for launchBinary with non-fish shells', () => {
+    vi.spyOn(process, 'platform', 'get').mockReturnValue('linux');
+    vi.stubEnv('SHELL', '/bin/zsh');
+    vi.stubEnv('HOME', '/home/tester');
+
+    const cmd = buildWorkerStartCommand({
+      teamName: 't',
+      workerName: 'w',
+      envVars: { OMC_TEAM_WORKER: 't/w' },
+      launchBinary: 'codex',
+      launchArgs: ['--full-auto'],
+      cwd: '/tmp'
+    });
+
+    expect(cmd).toContain("exec \"$@\"");
+    expect(cmd).toContain("'--' 'codex' '--full-auto'");
+  });
+
+  it('uses exec $argv for launchBinary with fish shell', () => {
+    vi.spyOn(process, 'platform', 'get').mockReturnValue('linux');
+    vi.stubEnv('SHELL', '/usr/bin/fish');
+    vi.stubEnv('HOME', '/home/tester');
+
+    const cmd = buildWorkerStartCommand({
+      teamName: 't',
+      workerName: 'w',
+      envVars: { OMC_TEAM_WORKER: 't/w' },
+      launchBinary: 'codex',
+      launchArgs: ['--full-auto'],
+      cwd: '/tmp'
+    });
+
+    expect(cmd).toContain('exec $argv');
+    expect(cmd).not.toContain('exec "$@"');
+    expect(cmd).toContain("'--' 'codex' '--full-auto'");
+  });
+
   it('rejects relative launchBinary containing spaces', () => {
     vi.spyOn(process, 'platform', 'get').mockReturnValue('linux');
 
