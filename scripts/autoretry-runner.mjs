@@ -4,11 +4,11 @@
  *
  * Runs `claude -p "<prompt>" --dangerously-skip-permissions` in a working
  * directory, detects rate-limit errors from stdout/stderr, waits the required
- * cool-down period, then resumes via `claude --continue
+ * cool-down period, then resumes via `claude --continue -p "..."
  * --dangerously-skip-permissions` — all without human intervention.
  *
  * Usage:
- *   node autoretry-runner.mjs --prompt "..." --work-dir "/abs/path"
+ *   node autoretry-runner.mjs --prompt "..." --work-dir "/abs/path" [--session-name "omc-autoretry-xxxx"]
  *
  * The runner exits 0 on success, 1 on 3 consecutive non-rate-limit failures.
  */
@@ -34,8 +34,9 @@ function argValue(flag) {
   return idx !== -1 ? process.argv[idx + 1] : null;
 }
 
-const promptArg  = argValue('--prompt');
-const workDirArg = argValue('--work-dir');
+const promptArg      = argValue('--prompt');
+const workDirArg     = argValue('--work-dir');
+const sessionNameArg = argValue('--session-name'); // optional: tmux session name
 
 if (!promptArg) {
   console.error('Error: --prompt "<text>" is required');
@@ -59,7 +60,7 @@ const SESSION_ID   = randomBytes(4).toString('hex');
 const LOG_DIR      = join(WORK_DIR, '.omc', 'logs', 'autoretry');
 const LOG_FILE     = join(LOG_DIR, `${SESSION_ID}.log`);
 const STATE_DIR    = join(WORK_DIR, '.omc', 'state');
-const STATUS_FILE  = join(STATE_DIR, 'autoretry-status.json');
+const STATUS_FILE  = join(STATE_DIR, `autoretry-${SESSION_ID}-status.json`);
 
 mkdirSync(LOG_DIR,   { recursive: true });
 mkdirSync(STATE_DIR, { recursive: true });
@@ -68,8 +69,7 @@ mkdirSync(STATE_DIR, { recursive: true });
 
 function log(msg) {
   const ts = new Date().toISOString();
-  const line = `[omc-autoretry ${ts}] ${msg}`;
-  console.log(line);
+  console.log(`[omc-autoretry ${ts}] ${msg}`);
 }
 
 // Serialized write lock — prevents concurrent read-modify-write races
@@ -85,21 +85,21 @@ function writeStatus(patch) {
     } catch { /* start fresh */ }
     const next = { ...current, ...patch };
     writeFileSync(STATUS_FILE, JSON.stringify(next, null, 2), 'utf8');
-    writeLock = Promise.resolve();
+    // NOTE: do NOT reset writeLock here — that would orphan any queued writes
   });
   return writeLock;
 }
 
 // ─── Rate-limit detection ─────────────────────────────────────────────────────
 
-// Patterns matched case-insensitively against accumulated output chunks
+// Patterns matched case-insensitively against accumulated output chunks.
+// Kept specific to avoid false positives on legitimate task output.
 const RATE_LIMIT_PATTERNS = [
   /rate\s+limit/i,
-  /try\s+again\s+in/i,
+  /try\s+again\s+in\s+\d/i,           // require a digit after "in" to reduce false positives
   /you'?ve\s+hit\s+your\s+limit/i,
-  /429/,
-  /overloaded/i,
-  /claude\s+is\s+overloaded/i,
+  /\bHTTP\s*429\b|\bstatus\s+(?:code\s+)?429\b|\berror\s+429\b/i,  // 429 with context
+  /claude\s+is\s+overloaded/i,        // specific — NOT bare "overloaded"
 ];
 
 function isRateLimit(text) {
@@ -159,14 +159,14 @@ function sendNotification(title, body) {
     }
   } catch { /* fall through to system notifications */ }
 
-  // macOS
+  // macOS — use argument array to avoid shell injection
   try {
     spawnSync('osascript', [
       '-e', `display notification ${JSON.stringify(body)} with title ${JSON.stringify(title)}`,
     ], { timeout: 5_000 });
   } catch { /* non-critical */ }
 
-  // Linux
+  // Linux — argument array, no shell
   try {
     spawnSync('notify-send', [title, body], { timeout: 5_000 });
   } catch { /* non-critical */ }
@@ -175,29 +175,27 @@ function sendNotification(title, body) {
 // ─── Countdown logger ─────────────────────────────────────────────────────────
 
 /**
- * Logs a countdown to the console (and optionally to a stream) every minute.
- * Returns a Promise that resolves after `waitSeconds` seconds have elapsed.
+ * Logs a countdown to the console every minute.
+ * Uses wall-clock anchor so drift doesn't affect wait accuracy.
+ * Returns a Promise that resolves after waitSeconds seconds have elapsed.
  */
 function countdown(waitSeconds, logStream) {
   return new Promise((resolve) => {
     const waitUntil = Date.now() + waitSeconds * 1000;
-    const intervalMs = 60_000; // log every minute
 
     const tick = () => {
       const remaining = Math.max(0, Math.ceil((waitUntil - Date.now()) / 1000));
       const h = Math.floor(remaining / 3600);
       const m = Math.floor((remaining % 3600) / 60);
       const s = remaining % 60;
-      const formatted = `${h}h ${m}m ${s}s`;
-      const line = `[omc-autoretry] Rate-limit wait: ${formatted} remaining`;
+      const line = `[omc-autoretry] Rate-limit wait: ${h}h ${m}m ${s}s remaining`;
       log(line);
-      if (logStream) logStream.write(`\n${line}`);
+      if (logStream && !logStream.destroyed) logStream.write(`\n${line}`);
 
       if (remaining <= 0) {
         resolve();
       } else {
-        const nextDelay = Math.min(intervalMs, remaining * 1000);
-        setTimeout(tick, nextDelay);
+        setTimeout(tick, Math.min(60_000, remaining * 1000));
       }
     };
 
@@ -207,9 +205,11 @@ function countdown(waitSeconds, logStream) {
 
 // ─── Claude runner ────────────────────────────────────────────────────────────
 
+let activeChild = null; // module-level — for signal handler cleanup
+
 /**
  * Spawns a claude process, streams output to terminal + logStream.
- * Resolves with { code, rateLimited, waitSeconds, rateLimitMsg }.
+ * Resolves with { code, rateLimited, waitSeconds }.
  */
 function runClaude(args, logStream) {
   return new Promise((resolveP) => {
@@ -218,40 +218,45 @@ function runClaude(args, logStream) {
       env: { ...process.env },
       stdio: ['ignore', 'pipe', 'pipe'],
     });
+    activeChild = child;
 
     let logClosed = false;
-    let outputBuffer = ''; // accumulates recent output for rate-limit scanning
+    let outputBuffer = ''; // last ~4 KB of output for rate-limit scanning
 
     child.on('error', (err) => {
       logClosed = true;
-      const msg = `\n# Spawn error: ${err.message}\n`;
-      logStream.write(msg);
-      resolveP({ code: 1, rateLimited: false, waitSeconds: 0, rateLimitMsg: '' });
+      activeChild = null;
+      if (!logStream.destroyed) logStream.write(`\n# Spawn error: ${err.message}\n`);
+      resolveP({ code: 1, rateLimited: false, waitSeconds: 0 });
     });
 
     function handleChunk(chunk) {
       const text = chunk.toString();
       outputBuffer += text;
-      // Keep only the last 4 KB to avoid unbounded growth
+      // Truncate at newline boundary to avoid splitting rate-limit messages
       if (outputBuffer.length > 4096) {
-        outputBuffer = outputBuffer.slice(-4096);
+        const trimmed = outputBuffer.slice(-4096);
+        const nl = trimmed.indexOf('\n');
+        outputBuffer = nl !== -1 ? trimmed.slice(nl + 1) : trimmed;
       }
-      logStream.write(text);
+      if (!logStream.destroyed) logStream.write(text);
     }
 
     child.stdout.on('data', (d) => { process.stdout.write(d); handleChunk(d); });
     child.stderr.on('data', (d) => { process.stderr.write(d); handleChunk(d); });
 
     child.on('close', (code) => {
+      activeChild = null;
       if (logClosed) return;
 
       const finishedAt = new Date().toISOString();
-      logStream.write(`\n\n# Finished: ${finishedAt} — exit code: ${code}\n`);
+      if (!logStream.destroyed) {
+        logStream.write(`\n\n# Finished: ${finishedAt} — exit code: ${code}\n`);
+      }
 
       const rateLimited = isRateLimit(outputBuffer);
       const waitSeconds = rateLimited ? parseWaitSeconds(outputBuffer) : 0;
-
-      resolveP({ code, rateLimited, waitSeconds, rateLimitMsg: outputBuffer });
+      resolveP({ code, rateLimited, waitSeconds });
     });
   });
 }
@@ -259,13 +264,15 @@ function runClaude(args, logStream) {
 // ─── Main loop ────────────────────────────────────────────────────────────────
 
 async function main() {
-  log(`Session ID : ${SESSION_ID}`);
-  log(`Prompt     : ${promptArg.slice(0, 80)}${promptArg.length > 80 ? '...' : ''}`);
-  log(`Work dir   : ${WORK_DIR}`);
-  log(`Log file   : ${LOG_FILE}`);
+  log(`Session ID  : ${SESSION_ID}`);
+  log(`Prompt      : ${promptArg.slice(0, 80)}${promptArg.length > 80 ? '...' : ''}`);
+  log(`Work dir    : ${WORK_DIR}`);
+  log(`Log file    : ${LOG_FILE}`);
+  if (sessionNameArg) log(`tmux session: ${sessionNameArg}`);
 
   // Open a persistent log stream for the whole session
   const logStream = createWriteStream(LOG_FILE, { flags: 'w' });
+  logStream.on('error', (err) => log(`Log stream error: ${err.message}`));
   logStream.write([
     `# omc-autoretry session: ${SESSION_ID}`,
     `# Prompt: ${promptArg}`,
@@ -274,9 +281,24 @@ async function main() {
     '',
   ].join('\n'));
 
+  // Graceful shutdown — kill active child, flush log
+  function shutdown(signal) {
+    log(`Received ${signal} — shutting down`);
+    if (activeChild) {
+      activeChild.kill('SIGTERM');
+      activeChild = null;
+    }
+    writeStatus({ status: 'cancelled', cancelledAt: new Date().toISOString() }).then(() => {
+      logStream.end(`\n# Cancelled by ${signal}\n`, () => process.exit(130));
+    });
+  }
+  process.on('SIGINT',  () => shutdown('SIGINT'));
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
+
   // Write initial status
   await writeStatus({
     sessionId: SESSION_ID,
+    tmuxSession: sessionNameArg ?? null,
     prompt: promptArg,
     status: 'running',
     waitUntil: null,
@@ -285,41 +307,47 @@ async function main() {
     startedAt: new Date().toISOString(),
   });
 
-  let attempt        = 1;
-  let isFirstRun     = true;
+  let attempt          = 1;
   let consecutiveFails = 0;
+  let useOriginalPrompt = true; // first run always uses original prompt
 
   // eslint-disable-next-line no-constant-condition
   while (true) {
-    const args = isFirstRun
+    // Guard: re-check work-dir existence before each spawn
+    if (!existsSync(WORK_DIR)) {
+      log(`FATAL: work-dir no longer exists: ${WORK_DIR}`);
+      await writeStatus({ status: 'failed', error: 'work-dir removed', failedAt: new Date().toISOString() });
+      logStream.end('\n# FATAL: work-dir removed\n', () => process.exit(1));
+      return;
+    }
+
+    const args = useOriginalPrompt
       ? ['-p', promptArg, '--dangerously-skip-permissions']
       : ['--continue', '-p', 'The previous session was interrupted by a rate limit. Please continue the task where you left off.', '--dangerously-skip-permissions'];
 
-    const attemptLabel = isFirstRun ? 'initial run' : `resume (attempt ${attempt})`;
+    const attemptLabel = useOriginalPrompt ? 'initial run' : `rate-limit resume (attempt ${attempt})`;
     log(`Starting ${attemptLabel}`);
     logStream.write(`\n\n# === Attempt ${attempt}: ${attemptLabel} — ${new Date().toISOString()} ===\n\n`);
 
     await writeStatus({ status: 'running', attempt });
 
-    const { code, rateLimited, waitSeconds, rateLimitMsg } = await runClaude(args, logStream);
+    const { code, rateLimited, waitSeconds } = await runClaude(args, logStream);
 
     if (code === 0) {
       log(`Completed successfully (attempt ${attempt})`);
       logStream.write(`\n# === Session complete: exit 0 ===\n`);
-      logStream.end();
-
       await writeStatus({ status: 'completed', completedAt: new Date().toISOString() });
-
       sendNotification(
-        'omc-autoretry: Complete',
+        'omc-autoretry: Complete ✅',
         `"${promptArg.slice(0, 80)}" finished after ${attempt} attempt(s). Log: ${LOG_FILE}`
       );
-      process.exit(0);
+      logStream.end(() => process.exit(0));
+      return;
     }
 
     if (rateLimited) {
-      consecutiveFails = 0; // a rate-limit response is not a "real" failure
-      isFirstRun = false;
+      consecutiveFails = 0;
+      useOriginalPrompt = false; // resume via --continue after rate limit
       attempt += 1;
 
       const waitUntil = new Date(Date.now() + waitSeconds * 1000).toISOString();
@@ -329,9 +357,8 @@ async function main() {
       logStream.write(`\n# Rate limit detected. Waiting ${waitSeconds}s until ${waitUntil}\n`);
 
       await writeStatus({ status: 'waiting', waitUntil, attempt });
-
       sendNotification(
-        'omc-autoretry: Rate limited',
+        'omc-autoretry: Rate limited ⏳',
         `Will resume in ${h}h ${m}m. Session: ${SESSION_ID}`
       );
 
@@ -340,29 +367,26 @@ async function main() {
       log(`Wait complete — resuming`);
       logStream.write(`\n# Wait complete — resuming at ${new Date().toISOString()}\n`);
     } else {
-      // Non-rate-limit failure
+      // Non-rate-limit failure: retry from original prompt for a clean slate
       consecutiveFails += 1;
-      isFirstRun = false;
+      useOriginalPrompt = true; // reset to original prompt — don't --continue a failed session
       attempt += 1;
 
       log(`Non-rate-limit exit (code ${code}) — consecutive failures: ${consecutiveFails}/${MAX_FAILURES}`);
-      logStream.write(`\n# Exit code ${code} (not a rate limit). Consecutive failures: ${consecutiveFails}/${MAX_FAILURES}\n`);
+      logStream.write(`\n# Exit code ${code} (not a rate limit). Will retry with original prompt. Consecutive failures: ${consecutiveFails}/${MAX_FAILURES}\n`);
 
       if (consecutiveFails >= MAX_FAILURES) {
         log(`Aborting after ${MAX_FAILURES} consecutive non-rate-limit failures`);
-        logStream.write(`\n# === ABORTED: too many failures ===\n`);
-        logStream.end();
-
         await writeStatus({ status: 'failed', failedAt: new Date().toISOString() });
-
         sendNotification(
-          'omc-autoretry: Failed',
+          'omc-autoretry: Failed ❌',
           `"${promptArg.slice(0, 80)}" failed ${MAX_FAILURES}x in a row. Log: ${LOG_FILE}`
         );
-        process.exit(1);
+        logStream.end('\n# === ABORTED: too many failures ===\n', () => process.exit(1));
+        return;
       }
 
-      // Brief back-off before retrying a non-rate-limit failure (30 s)
+      // Brief back-off (30s) before retrying
       log(`Retrying in 30 seconds...`);
       await new Promise(r => setTimeout(r, 30_000));
     }
