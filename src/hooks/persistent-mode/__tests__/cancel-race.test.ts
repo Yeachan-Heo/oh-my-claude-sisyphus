@@ -1,9 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync, existsSync } from 'fs';
-import { join } from 'path';
+import { join, resolve } from 'path';
 import { tmpdir } from 'os';
 import { execFileSync } from 'child_process';
 import { checkPersistentModes } from '../index.js';
+
+const CJS_SCRIPT = resolve(__dirname, '../../../../scripts/persistent-mode.cjs');
 
 function makeRalphSession(tempDir: string, sessionId: string): string {
   const stateDir = join(tempDir, '.omc', 'state', 'sessions', sessionId);
@@ -96,6 +98,200 @@ describe('persistent-mode cancel race guard (issue #921)', () => {
       expect(ralphState.max_iterations).toBe(10);
 
       expect(existsSync(join(stateDir, 'ultrawork-state.json'))).toBe(false);
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe('persistent-mode.cjs cancel-signal check (issue #1058)', () => {
+  function runCjsHook(input: Record<string, unknown>): Record<string, unknown> {
+    const stdout = execFileSync(process.execPath, [CJS_SCRIPT], {
+      input: JSON.stringify(input),
+      encoding: 'utf-8',
+      timeout: 5000,
+    });
+    // Parse the last JSON line (the script may emit multiple lines)
+    const lines = stdout.trim().split('\n');
+    return JSON.parse(lines[lines.length - 1]) as Record<string, unknown>;
+  }
+
+  it('should return continue:true when cancel-signal-state.json is active (ultrawork)', () => {
+    const sessionId = 'session-1058-cjs-ultrawork';
+    const tempDir = mkdtempSync(join(tmpdir(), 'cjs-cancel-signal-uw-'));
+
+    try {
+      const stateDir = join(tempDir, '.omc', 'state', 'sessions', sessionId);
+      mkdirSync(stateDir, { recursive: true });
+
+      // Write active ultrawork state
+      writeFileSync(
+        join(stateDir, 'ultrawork-state.json'),
+        JSON.stringify({
+          active: true,
+          started_at: new Date().toISOString(),
+          original_prompt: 'test task',
+          session_id: sessionId,
+          project_path: tempDir,
+          reinforcement_count: 0,
+          last_checked_at: new Date().toISOString(),
+        })
+      );
+
+      // Write active cancel signal
+      writeFileSync(
+        join(stateDir, 'cancel-signal-state.json'),
+        JSON.stringify({
+          requested_at: new Date().toISOString(),
+          expires_at: new Date(Date.now() + 30_000).toISOString(),
+          source: 'test',
+        })
+      );
+
+      const result = runCjsHook({
+        cwd: tempDir,
+        sessionId,
+        stop_reason: 'end_turn',
+      });
+
+      expect(result.continue).toBe(true);
+
+      // Ultrawork state should NOT have been incremented
+      const uwState = JSON.parse(readFileSync(join(stateDir, 'ultrawork-state.json'), 'utf-8'));
+      expect(uwState.reinforcement_count).toBe(0);
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  it('should return continue:true when cancel-signal-state.json is active (ralph)', () => {
+    const sessionId = 'session-1058-cjs-ralph';
+    const tempDir = mkdtempSync(join(tmpdir(), 'cjs-cancel-signal-ralph-'));
+
+    try {
+      const stateDir = join(tempDir, '.omc', 'state', 'sessions', sessionId);
+      mkdirSync(stateDir, { recursive: true });
+
+      // Write active ralph state at max iteration
+      writeFileSync(
+        join(stateDir, 'ralph-state.json'),
+        JSON.stringify({
+          active: true,
+          iteration: 10,
+          max_iterations: 10,
+          started_at: new Date().toISOString(),
+          prompt: 'Finish all work',
+          session_id: sessionId,
+          project_path: tempDir,
+          linked_ultrawork: true,
+        })
+      );
+
+      // Write active cancel signal
+      writeFileSync(
+        join(stateDir, 'cancel-signal-state.json'),
+        JSON.stringify({
+          requested_at: new Date().toISOString(),
+          expires_at: new Date(Date.now() + 30_000).toISOString(),
+          source: 'test',
+        })
+      );
+
+      const result = runCjsHook({
+        cwd: tempDir,
+        sessionId,
+        stop_reason: 'end_turn',
+      });
+
+      expect(result.continue).toBe(true);
+
+      // Ralph state should NOT have been modified
+      const ralphState = JSON.parse(readFileSync(join(stateDir, 'ralph-state.json'), 'utf-8'));
+      expect(ralphState.iteration).toBe(10);
+      expect(ralphState.max_iterations).toBe(10);
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  it('should block when ultrawork is active but NO cancel signal exists', () => {
+    const sessionId = 'session-1058-cjs-no-cancel';
+    const tempDir = mkdtempSync(join(tmpdir(), 'cjs-no-cancel-signal-'));
+
+    try {
+      const stateDir = join(tempDir, '.omc', 'state', 'sessions', sessionId);
+      mkdirSync(stateDir, { recursive: true });
+
+      // Write active ultrawork state (no cancel signal)
+      writeFileSync(
+        join(stateDir, 'ultrawork-state.json'),
+        JSON.stringify({
+          active: true,
+          started_at: new Date().toISOString(),
+          original_prompt: 'test task',
+          session_id: sessionId,
+          project_path: tempDir,
+          reinforcement_count: 0,
+          last_checked_at: new Date().toISOString(),
+        })
+      );
+
+      const result = runCjsHook({
+        cwd: tempDir,
+        sessionId,
+        stop_reason: 'end_turn',
+      });
+
+      // Should block (decision: "block") because ultrawork is active and no cancel signal
+      expect(result.decision).toBe('block');
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  it('should NOT honor expired cancel signals', () => {
+    const sessionId = 'session-1058-cjs-expired';
+    const tempDir = mkdtempSync(join(tmpdir(), 'cjs-expired-cancel-'));
+
+    try {
+      const stateDir = join(tempDir, '.omc', 'state', 'sessions', sessionId);
+      mkdirSync(stateDir, { recursive: true });
+
+      // Write active ultrawork state
+      writeFileSync(
+        join(stateDir, 'ultrawork-state.json'),
+        JSON.stringify({
+          active: true,
+          started_at: new Date().toISOString(),
+          original_prompt: 'test task',
+          session_id: sessionId,
+          project_path: tempDir,
+          reinforcement_count: 0,
+          last_checked_at: new Date().toISOString(),
+        })
+      );
+
+      // Write EXPIRED cancel signal (expired 10 seconds ago)
+      writeFileSync(
+        join(stateDir, 'cancel-signal-state.json'),
+        JSON.stringify({
+          requested_at: new Date(Date.now() - 40_000).toISOString(),
+          expires_at: new Date(Date.now() - 10_000).toISOString(),
+          source: 'test',
+        })
+      );
+
+      const result = runCjsHook({
+        cwd: tempDir,
+        sessionId,
+        stop_reason: 'end_turn',
+      });
+
+      // Should block because cancel signal is expired — ultrawork still active
+      expect(result.decision).toBe('block');
+
+      // Expired signal file should have been cleaned up
+      expect(existsSync(join(stateDir, 'cancel-signal-state.json'))).toBe(false);
     } finally {
       rmSync(tempDir, { recursive: true, force: true });
     }

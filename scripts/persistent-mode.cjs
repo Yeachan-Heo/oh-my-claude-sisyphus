@@ -14,6 +14,7 @@ const {
   writeFileSync,
   readdirSync,
   mkdirSync,
+  unlinkSync,
 } = require("fs");
 const { join, dirname, resolve, normalize } = require("path");
 const { homedir } = require("os");
@@ -121,6 +122,40 @@ async function sendStopNotification(modeName, stateData, sessionId, directory) {
   } catch {
     // Notification module not available, skip silently
   }
+}
+
+/**
+ * TTL for cancel signals (30 seconds, matching index.ts CANCEL_SIGNAL_TTL_MS).
+ */
+const CANCEL_SIGNAL_TTL_MS = 30_000;
+
+/**
+ * Check whether this session is in an explicit cancel window.
+ * Used to prevent stop-hook re-enforcement races during /cancel.
+ * Mirrors isSessionCancelInProgress() from src/hooks/persistent-mode/index.ts.
+ */
+function isSessionCancelInProgress(stateDir, sessionId) {
+  if (!sessionId) return false;
+  if (!/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,255}$/.test(sessionId)) return false;
+
+  const sessionsDir = join(stateDir, 'sessions', sessionId);
+  const signalPath = join(sessionsDir, 'cancel-signal-state.json');
+  const signal = readJsonFile(signalPath);
+  if (!signal) return false;
+
+  const now = Date.now();
+  const expiresAt = signal.expires_at ? new Date(signal.expires_at).getTime() : NaN;
+  const requestedAt = signal.requested_at ? new Date(signal.requested_at).getTime() : NaN;
+  const fallbackExpiry = Number.isFinite(requestedAt) ? requestedAt + CANCEL_SIGNAL_TTL_MS : NaN;
+  const effectiveExpiry = Number.isFinite(expiresAt) ? expiresAt : fallbackExpiry;
+
+  if (!Number.isFinite(effectiveExpiry) || effectiveExpiry <= now) {
+    // Expired — clean up and return false
+    try { unlinkSync(signalPath); } catch {}
+    return false;
+  }
+
+  return true;
 }
 
 /**
@@ -395,6 +430,13 @@ async function main() {
 
     // Respect user abort (Ctrl+C, cancel)
     if (isUserAbort(data)) {
+      console.log(JSON.stringify({ continue: true, suppressOutput: true }));
+      return;
+    }
+
+    // Check for cancel signal from /cancel flow (issue #1058)
+    // Prevents infinite loop when persistent modes are active during cancellation.
+    if (isSessionCancelInProgress(stateDir, sessionId)) {
       console.log(JSON.stringify({ continue: true, suppressOutput: true }));
       return;
     }
