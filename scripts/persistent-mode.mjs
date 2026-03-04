@@ -378,6 +378,38 @@ function isUserAbort(data) {
   );
 }
 
+const AUTHENTICATION_ERROR_PATTERNS = [
+  "authentication_error",
+  "authentication_failed",
+  "auth_error",
+  "unauthorized",
+  "unauthorised",
+  "401",
+  "403",
+  "forbidden",
+  "invalid_token",
+  "token_invalid",
+  "token_expired",
+  "expired_token",
+  "oauth_expired",
+  "oauth_token_expired",
+  "invalid_grant",
+  "insufficient_scope",
+];
+
+function isAuthenticationError(data) {
+  const reason = (data.stop_reason || data.stopReason || "").toLowerCase();
+  const endTurnReason = (
+    data.end_turn_reason ||
+    data.endTurnReason ||
+    ""
+  ).toLowerCase();
+
+  return AUTHENTICATION_ERROR_PATTERNS.some(
+    (pattern) => reason.includes(pattern) || endTurnReason.includes(pattern),
+  );
+}
+
 async function main() {
   try {
     const input = await readStdin();
@@ -403,6 +435,12 @@ async function main() {
 
     // Respect user abort (Ctrl+C, cancel)
     if (isUserAbort(data)) {
+      console.log(JSON.stringify({ continue: true, suppressOutput: true }));
+      return;
+    }
+
+    // Never block auth failures (401/403/expired OAuth): allow re-auth flow.
+    if (isAuthenticationError(data)) {
       console.log(JSON.stringify({ continue: true, suppressOutput: true }));
       return;
     }

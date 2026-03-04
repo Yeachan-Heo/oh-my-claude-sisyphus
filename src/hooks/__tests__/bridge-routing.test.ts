@@ -7,7 +7,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { existsSync, mkdtempSync, readFileSync, rmSync } from 'fs';
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import { execFileSync } from 'child_process';
@@ -190,6 +190,57 @@ describe('processHook - Routing Matrix', () => {
 
       const result = await processHook('stop-continuation', input);
       expect(result.continue).toBe(true);
+    });
+
+    it('should enforce team continuation for active non-terminal team state', async () => {
+      const tempDir = mkdtempSync(join(tmpdir(), 'bridge-routing-team-'));
+      const sessionId = 'team-stage-enforced';
+      try {
+        execFileSync('git', ['init'], { cwd: tempDir, stdio: 'pipe' });
+        const teamStateDir = join(tempDir, '.omc', 'state', 'sessions', sessionId);
+        mkdirSync(teamStateDir, { recursive: true });
+        writeFileSync(
+          join(teamStateDir, 'team-state.json'),
+          JSON.stringify({ active: true, stage: 'team-exec', session_id: sessionId }, null, 2)
+        );
+
+        const result = await processHook('persistent-mode', {
+          sessionId,
+          directory: tempDir,
+          stop_reason: 'end_turn',
+        } as HookInput);
+
+        expect(result.continue).toBe(false);
+        expect(result.message).toContain('[TEAM MODE CONTINUATION]');
+      } finally {
+        rmSync(tempDir, { recursive: true, force: true });
+      }
+    });
+
+    it('should bypass team continuation for auth error stop reasons', async () => {
+      const tempDir = mkdtempSync(join(tmpdir(), 'bridge-routing-team-auth-'));
+      const sessionId = 'team-stage-auth-bypass';
+      try {
+        execFileSync('git', ['init'], { cwd: tempDir, stdio: 'pipe' });
+        const teamStateDir = join(tempDir, '.omc', 'state', 'sessions', sessionId);
+        mkdirSync(teamStateDir, { recursive: true });
+        writeFileSync(
+          join(teamStateDir, 'team-state.json'),
+          JSON.stringify({ active: true, stage: 'team-exec', session_id: sessionId }, null, 2)
+        );
+
+        const result = await processHook('persistent-mode', {
+          sessionId,
+          directory: tempDir,
+          stop_reason: 'oauth_expired',
+        } as HookInput);
+
+        expect(result.continue).toBe(true);
+        expect(result.message).toMatch(/authentication/i);
+        expect(result.message).not.toContain('[TEAM MODE CONTINUATION]');
+      } finally {
+        rmSync(tempDir, { recursive: true, force: true });
+      }
     });
   });
 
