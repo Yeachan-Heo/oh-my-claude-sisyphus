@@ -1,3 +1,5 @@
+import { validateAnthropicBaseUrl } from '../utils/ssrf-guard.js';
+
 /**
  * Centralized Model ID Constants
  *
@@ -77,8 +79,17 @@ export function isNonClaudeProvider(): boolean {
 
   // Custom base URL suggests a proxy/gateway (CC Switch, LiteLLM, OneAPI, etc.)
   const baseUrl = process.env.ANTHROPIC_BASE_URL || '';
-  if (baseUrl && !baseUrl.includes('anthropic.com')) {
-    return true;
+  if (baseUrl) {
+    // Validate URL for SSRF protection
+    const validation = validateAnthropicBaseUrl(baseUrl);
+    if (!validation.allowed) {
+      console.error(`[SSRF Guard] Rejecting ANTHROPIC_BASE_URL: ${validation.reason}`);
+      // Treat invalid URLs as non-Claude to prevent potential SSRF
+      return true;
+    }
+    if (!baseUrl.includes('anthropic.com')) {
+      return true;
+    }
   }
 
   return false;

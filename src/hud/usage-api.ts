@@ -18,6 +18,7 @@ import { join, dirname } from 'path';
 import { execSync } from 'child_process';
 import { createHash } from 'crypto';
 import https from 'https';
+import { validateAnthropicBaseUrl } from '../utils/ssrf-guard.js';
 import type { RateLimits, UsageResult } from './types.js';
 
 // Cache configuration
@@ -379,6 +380,14 @@ function fetchUsageFromZai(): Promise<ZaiQuotaResponse | null> {
     const authToken = process.env.ANTHROPIC_AUTH_TOKEN;
 
     if (!baseUrl || !authToken) {
+      resolve(null);
+      return;
+    }
+
+    // Validate baseUrl for SSRF protection
+    const validation = validateAnthropicBaseUrl(baseUrl);
+    if (!validation.allowed) {
+      console.error(`[SSRF Guard] Blocking usage API call: ${validation.reason}`);
       resolve(null);
       return;
     }
