@@ -60,6 +60,7 @@ function writeTasks(tasks) {
   writeLock = writeLock.then(() => {
     mkdirSync(OMC_STATE_DIR, { recursive: true });
     writeFileSync(TASKS_FILE, JSON.stringify({ tasks }, null, 2), 'utf8');
+    writeLock = Promise.resolve(); // reset tail to allow GC of resolved frames
   });
   return writeLock;
 }
@@ -143,7 +144,9 @@ function runTask(task) {
       }
     );
 
+    let logClosed = false;
     child.on('error', (err) => {
+      logClosed = true;
       logStream.end(`\n# Spawn error: ${err.message}\n`);
       reject(new Error(`Failed to spawn ${CLAUDE_BIN}: ${err.message}`));
     });
@@ -154,6 +157,7 @@ function runTask(task) {
     child.stderr.on('data', (d) => process.stderr.write(d));
 
     child.on('close', (code) => {
+      if (logClosed) return; // error event already closed the stream
       const finishedAt = new Date().toISOString();
       logStream.end(`\n\n# Finished: ${finishedAt} — exit code: ${code}\n`);
 
@@ -204,12 +208,14 @@ async function poll() {
     if (task.scheduledAt > now) continue;         // not yet due
     if (running.has(task.id)) continue;           // already running
 
-    // Mark as running in the JSON immediately (prevents double-execution)
-    const updated = tasks.map(t =>
+    // Mark as running — re-read from disk each time to avoid snapshot staleness
+    // when multiple tasks are due in the same poll cycle
+    running.add(task.id);
+    const current = readTasks();
+    const updated = current.map(t =>
       t.id === task.id ? { ...t, status: 'running', startedAt: new Date().toISOString() } : t
     );
     await writeTasks(updated);
-    running.add(task.id);
 
     // Run asynchronously (don't block the poll loop)
     runTask(task).then(async ({ code }) => {
