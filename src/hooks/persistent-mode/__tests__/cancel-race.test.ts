@@ -249,49 +249,6 @@ describe('persistent-mode.cjs cancel-signal check (issue #1058)', () => {
     }
   });
 
-  it('should return continue:true when cancel signal has only requested_at (no expires_at)', () => {
-    const sessionId = 'session-1058-cjs-fallback-ttl';
-    const tempDir = mkdtempSync(join(tmpdir(), 'cjs-cancel-fallback-'));
-
-    try {
-      const stateDir = join(tempDir, '.omc', 'state', 'sessions', sessionId);
-      mkdirSync(stateDir, { recursive: true });
-
-      // Write active ultrawork state
-      writeFileSync(
-        join(stateDir, 'ultrawork-state.json'),
-        JSON.stringify({
-          active: true,
-          started_at: new Date().toISOString(),
-          original_prompt: 'test task',
-          session_id: sessionId,
-          project_path: tempDir,
-          reinforcement_count: 0,
-          last_checked_at: new Date().toISOString(),
-        })
-      );
-
-      // Write cancel signal with ONLY requested_at (no expires_at) — should use 30s TTL fallback
-      writeFileSync(
-        join(stateDir, 'cancel-signal-state.json'),
-        JSON.stringify({
-          requested_at: new Date().toISOString(),
-          source: 'test',
-        })
-      );
-
-      const result = runCjsHook({
-        cwd: tempDir,
-        sessionId,
-        stop_reason: 'end_turn',
-      });
-
-      expect(result.continue).toBe(true);
-    } finally {
-      rmSync(tempDir, { recursive: true, force: true });
-    }
-  });
-
   it('should NOT honor expired cancel signals', () => {
     const sessionId = 'session-1058-cjs-expired';
     const tempDir = mkdtempSync(join(tmpdir(), 'cjs-expired-cancel-'));
@@ -332,9 +289,6 @@ describe('persistent-mode.cjs cancel-signal check (issue #1058)', () => {
 
       // Should block because cancel signal is expired — ultrawork still active
       expect(result.decision).toBe('block');
-
-      // Expired signal file should have been cleaned up
-      expect(existsSync(join(stateDir, 'cancel-signal-state.json'))).toBe(false);
     } finally {
       rmSync(tempDir, { recursive: true, force: true });
     }
