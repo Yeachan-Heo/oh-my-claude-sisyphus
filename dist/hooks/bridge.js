@@ -12,13 +12,13 @@
  * echo "$INPUT" | node ~/.claude/omc/hook-bridge.mjs --hook=keyword-detector
  * ```
  */
-import { pathToFileURL } from 'url';
+import { pathToFileURL } from "url";
 import { existsSync, readFileSync } from "fs";
 import { join } from "path";
 import { resolveToWorktreeRoot, getOmcRoot } from "../lib/worktree-paths.js";
 // Hot-path imports: needed on every/most hook invocations (keyword-detector, pre/post-tool-use)
-import { removeCodeBlocks, getAllKeywordsWithSizeCheck, applyRalplanGate, sanitizeForKeywordDetection, NON_LATIN_SCRIPT_PATTERN } from "./keyword-detector/index.js";
-import { processOrchestratorPreTool, processOrchestratorPostTool } from "./omc-orchestrator/index.js";
+import { removeCodeBlocks, getAllKeywordsWithSizeCheck, applyRalplanGate, sanitizeForKeywordDetection, NON_LATIN_SCRIPT_PATTERN, } from "./keyword-detector/index.js";
+import { processOrchestratorPreTool, processOrchestratorPostTool, } from "./omc-orchestrator/index.js";
 import { normalizeHookInput } from "./bridge-normalize.js";
 import { addBackgroundTask, getRunningTaskCount, } from "../hud/background-tasks.js";
 import { readHudState, writeHudState } from "../hud/state.js";
@@ -26,9 +26,9 @@ import { loadConfig } from "../config/loader.js";
 import { writeSkillActiveState } from "./skill-state/index.js";
 import { ULTRAWORK_MESSAGE, ULTRATHINK_MESSAGE, SEARCH_MESSAGE, ANALYZE_MESSAGE, RALPH_MESSAGE, PROMPT_TRANSLATION_MESSAGE, } from "../installer/hooks.js";
 // Agent dashboard is used in pre/post-tool-use hot path
-import { getAgentDashboard, } from "./subagent-tracker/index.js";
+import { getAgentDashboard } from "./subagent-tracker/index.js";
 // Session replay recordFileTouch is used in pre-tool-use hot path
-import { recordFileTouch, } from "./subagent-tracker/session-replay.js";
+import { recordFileTouch } from "./subagent-tracker/session-replay.js";
 // Security: wrap untrusted file content to prevent prompt injection
 import { wrapUntrustedFileContent } from "../agents/prompt-helpers.js";
 const PKILL_F_FLAG_PATTERN = /\bpkill\b.*\s-f\b/;
@@ -74,10 +74,13 @@ function readTeamStagedState(directory, sessionId) {
     return null;
 }
 function getTeamStage(state) {
-    return state.stage || state.current_stage || state.currentStage || "team-exec";
+    return (state.stage || state.current_stage || state.currentStage || "team-exec");
 }
 function isTeamStateTerminal(state) {
-    if (state.terminal === true || state.cancelled === true || state.canceled === true || state.completed === true) {
+    if (state.terminal === true ||
+        state.cancelled === true ||
+        state.canceled === true ||
+        state.completed === true) {
         return true;
     }
     const status = String(state.status || "").toLowerCase();
@@ -194,13 +197,16 @@ async function processKeywordDetector(input) {
     // Apply ralplan-first gate BEFORE task-size suppression (issue #997).
     // Reconstruct the full keyword set so the gate sees execution keywords
     // that task-size suppression may have already removed for small tasks.
-    const fullKeywords = [...sizeCheckResult.keywords, ...sizeCheckResult.suppressedKeywords];
+    const fullKeywords = [
+        ...sizeCheckResult.keywords,
+        ...sizeCheckResult.suppressedKeywords,
+    ];
     const gateResult = applyRalplanGate(fullKeywords, cleanedText);
     let keywords;
     if (gateResult.gateApplied) {
         // Gate fired: redirect to ralplan (task-size suppression is moot — we're planning, not executing)
         keywords = gateResult.keywords;
-        const gated = gateResult.gatedKeywords.join(', ');
+        const gated = gateResult.gatedKeywords.join(", ");
         messages.push(`[RALPLAN GATE] Redirecting ${gated} → ralplan for scoping.\n` +
             `Tip: add a concrete anchor to run directly next time:\n` +
             `  \u2022 "ralph fix the bug in src/auth.ts"  (file path)\n` +
@@ -212,8 +218,9 @@ async function processKeywordDetector(input) {
         // Gate did not fire: use task-size-suppressed result as normal
         keywords = sizeCheckResult.keywords;
         // Notify user when heavy modes were suppressed for a small task
-        if (sizeCheckResult.suppressedKeywords.length > 0 && sizeCheckResult.taskSizeResult) {
-            const suppressed = sizeCheckResult.suppressedKeywords.join(', ');
+        if (sizeCheckResult.suppressedKeywords.length > 0 &&
+            sizeCheckResult.taskSizeResult) {
+            const suppressed = sizeCheckResult.suppressedKeywords.join(", ");
             const reason = sizeCheckResult.taskSizeResult.reason;
             messages.push(`[TASK-SIZE: SMALL] Heavy orchestration mode(s) suppressed: ${suppressed}.\n` +
                 `Reason: ${reason}\n` +
@@ -236,7 +243,7 @@ async function processKeywordDetector(input) {
     }
     if (keywords.length === 0) {
         if (messages.length > 0) {
-            return { continue: true, message: messages.join('\n\n---\n\n') };
+            return { continue: true, message: messages.join("\n\n---\n\n") };
         }
         return { continue: true };
     }
@@ -245,7 +252,7 @@ async function processKeywordDetector(input) {
         switch (keywordType) {
             case "ralph": {
                 // Lazy-load ralph module
-                const { createRalphLoopHook, findPrdPath: findPrd, initPrd: initPrdFn, initProgress: initProgressFn, detectNoPrdFlag: detectNoPrd, stripNoPrdFlag: stripNoPrd } = await import("./ralph/index.js");
+                const { createRalphLoopHook, findPrdPath: findPrd, initPrd: initPrdFn, initProgress: initProgressFn, detectNoPrdFlag: detectNoPrd, stripNoPrdFlag: stripNoPrd, } = await import("./ralph/index.js");
                 // Handle --no-prd flag
                 const noPrd = detectNoPrd(promptText);
                 const cleanPrompt = noPrd ? stripNoPrd(promptText) : promptText;
@@ -255,9 +262,13 @@ async function processKeywordDetector(input) {
                     const { basename } = await import("path");
                     const { execSync } = await import("child_process");
                     const projectName = basename(directory);
-                    let branchName = 'ralph/task';
+                    let branchName = "ralph/task";
                     try {
-                        branchName = execSync('git rev-parse --abbrev-ref HEAD', { cwd: directory, encoding: 'utf-8', timeout: 5000 }).trim();
+                        branchName = execSync("git rev-parse --abbrev-ref HEAD", {
+                            cwd: directory,
+                            encoding: "utf-8",
+                            timeout: 5000,
+                        }).trim();
                     }
                     catch {
                         // Not a git repo or git not available — use fallback
@@ -342,7 +353,7 @@ async function processPersistentMode(input) {
     const sessionId = input.sessionId ?? rawSessionId;
     const directory = resolveToWorktreeRoot(input.directory);
     // Lazy-load persistent-mode and todo-continuation modules
-    const { checkPersistentModes, createHookOutput, shouldSendIdleNotification, recordIdleNotificationSent } = await import("./persistent-mode/index.js");
+    const { checkPersistentModes, createHookOutput, shouldSendIdleNotification, recordIdleNotificationSent, } = await import("./persistent-mode/index.js");
     const { isExplicitCancelCommand } = await import("./todo-continuation/index.js");
     // Extract stop context for abort detection (supports both camelCase and snake_case)
     const stopContext = {
@@ -361,12 +372,16 @@ async function processPersistentMode(input) {
     const result = await checkPersistentModes(sessionId, directory, stopContext);
     const output = createHookOutput(result);
     const teamState = readTeamStagedState(directory, sessionId);
-    if (!teamState || teamState.active !== true || isTeamStateTerminal(teamState)) {
+    if (!teamState ||
+        teamState.active !== true ||
+        isTeamStateTerminal(teamState)) {
         // No persistent mode and no active team — Claude is truly idle.
         // Send session-idle notification (non-blocking) unless this was a user abort or context limit.
         if (result.mode === "none" && sessionId) {
-            const isAbort = stopContext.user_requested === true || stopContext.userRequested === true;
-            const isContextLimit = stopContext.stop_reason === "context_limit" || stopContext.stopReason === "context_limit";
+            const isAbort = stopContext.user_requested === true ||
+                stopContext.userRequested === true;
+            const isContextLimit = stopContext.stop_reason === "context_limit" ||
+                stopContext.stopReason === "context_limit";
             if (!isAbort && !isContextLimit) {
                 // Always wake OpenClaw on stop — cooldown only applies to user-facing notifications
                 _openclaw.wake("stop", { sessionId, projectPath: directory });
@@ -375,11 +390,13 @@ async function processPersistentMode(input) {
                 const stateDir = join(getOmcRoot(directory), "state");
                 if (shouldSendIdleNotification(stateDir, sessionId)) {
                     recordIdleNotificationSent(stateDir, sessionId);
-                    import("../notifications/index.js").then(({ notify }) => notify("session-idle", {
+                    import("../notifications/index.js")
+                        .then(({ notify }) => notify("session-idle", {
                         sessionId,
                         projectPath: directory,
                         profileName: process.env.OMC_NOTIFY_PROFILE,
-                    }).catch(() => { })).catch(() => { });
+                    }).catch(() => { }))
+                        .catch(() => { });
                 }
             }
             // IMPORTANT: Do NOT clean up reply-listener/session-registry on Stop hooks.
@@ -390,6 +407,12 @@ async function processPersistentMode(input) {
     }
     // Explicit cancel should suppress team continuation prompts.
     if (isExplicitCancelCommand(stopContext)) {
+        return output;
+    }
+    // Auth errors should suppress team continuation prompts.
+    // Blocking 401/token-expired stops causes an infinite retry loop (issue #1308).
+    const { isAuthenticationError } = await import("./todo-continuation/index.js");
+    if (isAuthenticationError(stopContext)) {
         return output;
     }
     const stage = getTeamStage(teamState);
@@ -433,11 +456,13 @@ async function processSessionStart(input) {
     initSilentAutoUpdate();
     // Send session-start notification (non-blocking, swallows errors)
     if (sessionId) {
-        import("../notifications/index.js").then(({ notify }) => notify("session-start", {
+        import("../notifications/index.js")
+            .then(({ notify }) => notify("session-start", {
             sessionId,
             projectPath: directory,
             profileName: process.env.OMC_NOTIFY_PROFILE,
-        }).catch(() => { })).catch(() => { });
+        }).catch(() => { }))
+            .catch(() => { });
         // Wake OpenClaw gateway for session-start (non-blocking)
         _openclaw.wake("session-start", { sessionId, projectPath: directory });
     }
@@ -446,7 +471,8 @@ async function processSessionStart(input) {
         Promise.all([
             import("../notifications/reply-listener.js"),
             import("../notifications/config.js"),
-        ]).then(([{ startReplyListener }, { getReplyConfig, getNotificationConfig, getReplyListenerPlatformConfig },]) => {
+        ])
+            .then(([{ startReplyListener }, { getReplyConfig, getNotificationConfig, getReplyListenerPlatformConfig, },]) => {
             const replyConfig = getReplyConfig();
             if (!replyConfig)
                 return;
@@ -456,7 +482,8 @@ async function processSessionStart(input) {
                 ...replyConfig,
                 ...platformConfig,
             });
-        }).catch(() => { });
+        })
+            .catch(() => { });
     }
     const messages = [];
     // Inject startup codebase map (issue #804) — first context item so agents orient quickly
@@ -543,10 +570,10 @@ Resume from this stage and continue the staged Team workflow.
         }
     }
     // Load root AGENTS.md if it exists (deepinit output - issue #613)
-    const agentsMdPath = join(directory, 'AGENTS.md');
+    const agentsMdPath = join(directory, "AGENTS.md");
     if (existsSync(agentsMdPath)) {
         try {
-            let agentsContent = readFileSync(agentsMdPath, 'utf-8').trim();
+            let agentsContent = readFileSync(agentsMdPath, "utf-8").trim();
             if (agentsContent) {
                 // Truncate to ~5000 tokens (20000 chars) to avoid context bloat
                 const MAX_AGENTS_CHARS = 20000;
@@ -606,13 +633,18 @@ Please continue working on these tasks.
 export function dispatchAskUserQuestionNotification(sessionId, directory, toolInput) {
     const input = toolInput;
     const questions = input?.questions || [];
-    const questionText = questions.map(q => q.question || "").filter(Boolean).join("; ") || "User input requested";
-    import("../notifications/index.js").then(({ notify }) => notify("ask-user-question", {
+    const questionText = questions
+        .map((q) => q.question || "")
+        .filter(Boolean)
+        .join("; ") || "User input requested";
+    import("../notifications/index.js")
+        .then(({ notify }) => notify("ask-user-question", {
         sessionId,
         projectPath: directory,
         question: questionText,
         profileName: process.env.OMC_NOTIFY_PROFILE,
-    }).catch(() => { })).catch(() => { });
+    }).catch(() => { }))
+        .catch(() => { });
 }
 /** @internal Object wrapper so tests can spy on the dispatch call. */
 export const _notify = {
@@ -630,7 +662,9 @@ export const _openclaw = {
     wake: (event, context) => {
         if (process.env.OMC_OPENCLAW !== "1")
             return;
-        import("../openclaw/index.js").then(({ wakeOpenClaw }) => wakeOpenClaw(event, context).catch(() => { })).catch(() => { });
+        import("../openclaw/index.js")
+            .then(({ wakeOpenClaw }) => wakeOpenClaw(event, context).catch(() => { }))
+            .catch(() => { });
     },
 };
 /**
@@ -677,7 +711,10 @@ function processPreToolUse(input) {
             projectPath: directory,
             question: (() => {
                 const ti = input.toolInput;
-                return ti?.questions?.map(q => q.question || "").filter(Boolean).join("; ") || "";
+                return (ti?.questions
+                    ?.map((q) => q.question || "")
+                    .filter(Boolean)
+                    .join("; ") || "");
             })(),
         });
     }
@@ -706,13 +743,15 @@ function processPreToolUse(input) {
         const agentName = agentType?.includes(":")
             ? agentType.split(":").pop()
             : agentType;
-        import("../notifications/index.js").then(({ notify }) => notify("agent-call", {
+        import("../notifications/index.js")
+            .then(({ notify }) => notify("agent-call", {
             sessionId: input.sessionId,
             projectPath: directory,
             agentName,
             agentType,
             profileName: process.env.OMC_NOTIFY_PROFILE,
-        }).catch(() => { })).catch(() => { });
+        }).catch(() => { }))
+            .catch(() => { });
     }
     // Warn about pkill -f self-termination risk (issue #210)
     // Matches: pkill -f, pkill -9 -f, pkill --full, etc.
@@ -791,7 +830,9 @@ function processPreToolUse(input) {
     }
     return {
         continue: true,
-        ...(enforcementResult.message ? { message: enforcementResult.message } : {}),
+        ...(enforcementResult.message
+            ? { message: enforcementResult.message }
+            : {}),
         ...(forceInheritInput ? { modifiedInput: forceInheritInput } : {}),
     };
 }
@@ -803,11 +844,7 @@ function getInvokedSkillName(toolInput) {
         return null;
     }
     const input = toolInput;
-    const rawSkill = input.skill ??
-        input.skill_name ??
-        input.skillName ??
-        input.command ??
-        null;
+    const rawSkill = input.skill ?? input.skill_name ?? input.skillName ?? input.command ?? null;
     if (typeof rawSkill !== "string" || rawSkill.trim().length === 0) {
         return null;
     }
@@ -826,7 +863,7 @@ async function processPostToolUse(input) {
     if (toolName === "skill") {
         const skillName = getInvokedSkillName(input.toolInput);
         if (skillName === "ralph") {
-            const { createRalphLoopHook, findPrdPath: findPrd, initPrd: initPrdFn, initProgress: initProgressFn, detectNoPrdFlag: detectNoPrd, stripNoPrdFlag: stripNoPrd } = await import("./ralph/index.js");
+            const { createRalphLoopHook, findPrdPath: findPrd, initPrd: initPrdFn, initProgress: initProgressFn, detectNoPrdFlag: detectNoPrd, stripNoPrdFlag: stripNoPrd, } = await import("./ralph/index.js");
             const rawPrompt = typeof input.prompt === "string" && input.prompt.trim().length > 0
                 ? input.prompt
                 : "Ralph loop activated via Skill tool";
@@ -839,9 +876,13 @@ async function processPostToolUse(input) {
                 const { basename } = await import("path");
                 const { execSync } = await import("child_process");
                 const projectName = basename(directory);
-                let branchName = 'ralph/task';
+                let branchName = "ralph/task";
                 try {
-                    branchName = execSync('git rev-parse --abbrev-ref HEAD', { cwd: directory, encoding: 'utf-8', timeout: 5000 }).trim();
+                    branchName = execSync("git rev-parse --abbrev-ref HEAD", {
+                        cwd: directory,
+                        encoding: "utf-8",
+                        timeout: 5000,
+                    }).trim();
                 }
                 catch {
                     // Not a git repo or git not available — use fallback
@@ -1020,7 +1061,8 @@ export async function processHook(hookType, rawInput) {
                 const normalizedStop = input;
                 const stopInput = {
                     cwd: (normalizedStop.directory ?? normalizedStop.cwd),
-                    session_id: (normalizedStop.sessionId ?? normalizedStop.session_id),
+                    session_id: (normalizedStop.sessionId ??
+                        normalizedStop.session_id),
                     agent_id: normalizedStop.agent_id,
                     agent_type: normalizedStop.agent_type,
                     transcript_path: normalizedStop.transcript_path,
@@ -1081,7 +1123,8 @@ export async function processHook(hookType, rawInput) {
                     session_id: (rawPR.sessionId ?? rawPR.session_id),
                     cwd: (rawPR.directory ?? rawPR.cwd),
                     tool_name: (rawPR.toolName ?? rawPR.tool_name),
-                    tool_input: (rawPR.toolInput ?? rawPR.tool_input),
+                    tool_input: (rawPR.toolInput ??
+                        rawPR.tool_input),
                     transcript_path: rawPR.transcript_path,
                     permission_mode: (rawPR.permission_mode ?? "default"),
                     hook_event_name: "PermissionRequest",

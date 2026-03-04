@@ -17,7 +17,7 @@
 export declare function isValidSessionId(sessionId: string): boolean;
 export interface Todo {
     content: string;
-    status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
+    status: "pending" | "in_progress" | "completed" | "cancelled";
     priority?: string;
     id?: string;
 }
@@ -38,7 +38,7 @@ export interface Task {
     subject: string;
     description?: string;
     activeForm?: string;
-    status: 'pending' | 'in_progress' | 'completed' | 'deleted';
+    status: "pending" | "in_progress" | "completed" | "deleted";
     blocks?: string[];
     blockedBy?: string[];
 }
@@ -52,7 +52,7 @@ export interface IncompleteTodosResult {
     count: number;
     todos: Todo[];
     total: number;
-    source: 'task' | 'todo' | 'both' | 'none';
+    source: "task" | "todo" | "both" | "none";
 }
 /**
  * Context from Stop hook event
@@ -137,6 +137,16 @@ export declare function isContextLimitStop(context?: StopContext): boolean;
  * Fix for: https://github.com/Yeachan-Heo/oh-my-claudecode/issues/777
  */
 export declare function isRateLimitStop(context?: StopContext): boolean;
+/**
+ * Detect if stop was triggered by an authentication error (HTTP 401 / OAuth token expired).
+ * When the API returns an authentication error, Claude Code stops the session.
+ * Blocking these stops causes an infinite retry loop: the persistent-mode hook
+ * injects a continuation prompt, Claude immediately hits the auth error again,
+ * stops again, and the cycle repeats indefinitely.
+ *
+ * Fix for: https://github.com/Yeachan-Heo/oh-my-claudecode/issues/1308
+ */
+export declare function isAuthenticationError(context?: StopContext): boolean;
 /**
  * Get the Task directory for a session
  *

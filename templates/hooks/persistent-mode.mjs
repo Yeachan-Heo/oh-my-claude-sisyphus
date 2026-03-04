@@ -187,7 +187,12 @@ function isSessionCancelInProgress(stateDir, sessionId) {
 
   // Try session-scoped path first
   if (sessionId) {
-    const sessionSignalPath = join(stateDir, 'sessions', sessionId, 'cancel-signal-state.json');
+    const sessionSignalPath = join(
+      stateDir,
+      "sessions",
+      sessionId,
+      "cancel-signal-state.json",
+    );
     const signal = readJsonFile(sessionSignalPath);
     if (signal && signal.expires_at) {
       const expiresAt = new Date(signal.expires_at).getTime();
@@ -198,7 +203,7 @@ function isSessionCancelInProgress(stateDir, sessionId) {
   }
 
   // Fall back to legacy path
-  const legacySignalPath = join(stateDir, 'cancel-signal-state.json');
+  const legacySignalPath = join(stateDir, "cancel-signal-state.json");
   const signal = readJsonFile(legacySignalPath);
   if (signal && signal.expires_at) {
     const expiresAt = new Date(signal.expires_at).getTime();
@@ -297,7 +302,12 @@ function isValidSessionId(sessionId) {
  * Falls back to legacy local/global paths when sessionId is not provided.
  */
 
-function readStateFileWithSession(stateDir, globalStateDir, filename, sessionId) {
+function readStateFileWithSession(
+  stateDir,
+  globalStateDir,
+  filename,
+  sessionId,
+) {
   const safeSessionId = sanitizeSessionId(sessionId);
   if (safeSessionId) {
     const sessionsDir = join(stateDir, "sessions", safeSessionId);
@@ -432,6 +442,45 @@ function isContextLimitStop(data) {
 }
 
 /**
+ * Detect if stop was triggered by an authentication error (HTTP 401 / OAuth token expired).
+ * When the API returns an authentication error, Claude Code stops the session.
+ * Blocking these stops causes an infinite retry loop.
+ * Fix for: https://github.com/Yeachan-Heo/oh-my-claudecode/issues/1308
+ */
+function isAuthenticationError(data) {
+  const reason = (data.stop_reason || data.stopReason || "").toLowerCase();
+  const endTurnReason = (
+    data.end_turn_reason ||
+    data.endTurnReason ||
+    ""
+  ).toLowerCase();
+
+  const authPatterns = [
+    "authentication_error",
+    "authentication_failed",
+    "unauthorized",
+    "401",
+    "invalid_api_key",
+    "api_key_invalid",
+    "api_key_expired",
+    "token_expired",
+    "token_invalid",
+    "oauth_error",
+    "oauth_expired",
+    "permission_denied",
+    "access_denied",
+    "forbidden",
+    "403",
+    "credentials_expired",
+    "invalid_credentials",
+  ];
+
+  return authPatterns.some(
+    (p) => reason.includes(p) || endTurnReason.includes(p),
+  );
+}
+
+/**
  * Detect if stop was triggered by user abort (Ctrl+C, cancel button, etc.)
  */
 function isUserAbort(data) {
@@ -462,12 +511,15 @@ async function main() {
       data = JSON.parse(input);
     } catch {
       // Invalid JSON - allow stop to prevent hanging
-      process.stdout.write(JSON.stringify({ continue: true, suppressOutput: true }) + "\n");
+      process.stdout.write(
+        JSON.stringify({ continue: true, suppressOutput: true }) + "\n",
+      );
       return;
     }
 
     const directory = data.cwd || data.directory || process.cwd();
-    const sessionIdRaw = data.sessionId || data.session_id || data.sessionid || "";
+    const sessionIdRaw =
+      data.sessionId || data.session_id || data.sessionid || "";
     const sessionId = sanitizeSessionId(sessionIdRaw);
     const hasValidSessionId = isValidSessionId(sessionIdRaw);
     const stateDir = join(directory, ".omc", "state");
@@ -483,6 +535,13 @@ async function main() {
 
     // Respect user abort (Ctrl+C, cancel)
     if (isUserAbort(data)) {
+      console.log(JSON.stringify({ continue: true, suppressOutput: true }));
+      return;
+    }
+
+    // CRITICAL: Never block authentication error stops (401 / OAuth token expired).
+    // Blocking these causes an infinite retry loop (issue #1308).
+    if (isAuthenticationError(data)) {
       console.log(JSON.stringify({ continue: true, suppressOutput: true }));
       return;
     }
@@ -609,7 +668,8 @@ async function main() {
     ) {
       const sessionMatches = hasValidSessionId
         ? autopilot.state.session_id === sessionId
-        : !autopilot.state.session_id || autopilot.state.session_id === sessionId;
+        : !autopilot.state.session_id ||
+          autopilot.state.session_id === sessionId;
       if (sessionMatches) {
         const phase = autopilot.state.phase || "unspecified";
         if (phase !== "complete") {
@@ -646,7 +706,8 @@ async function main() {
       !isStaleState(ultrapilot.state) &&
       (hasValidSessionId
         ? ultrapilot.state.session_id === sessionId
-        : !ultrapilot.state.session_id || ultrapilot.state.session_id === sessionId) &&
+        : !ultrapilot.state.session_id ||
+          ultrapilot.state.session_id === sessionId) &&
       isStateForCurrentProject(ultrapilot.state, directory, ultrapilot.isGlobal)
     ) {
       const workers = ultrapilot.state.workers || [];
@@ -723,7 +784,8 @@ async function main() {
       !isStaleState(pipeline.state) &&
       (hasValidSessionId
         ? pipeline.state.session_id === sessionId
-        : !pipeline.state.session_id || pipeline.state.session_id === sessionId) &&
+        : !pipeline.state.session_id ||
+          pipeline.state.session_id === sessionId) &&
       isStateForCurrentProject(pipeline.state, directory, pipeline.isGlobal)
     ) {
       const currentStage = pipeline.state.current_stage || 0;
@@ -801,7 +863,8 @@ async function main() {
       !isStaleState(ultraqa.state) &&
       (hasValidSessionId
         ? ultraqa.state.session_id === sessionId
-        : !ultraqa.state.session_id || ultraqa.state.session_id === sessionId) &&
+        : !ultraqa.state.session_id ||
+          ultraqa.state.session_id === sessionId) &&
       isStateForCurrentProject(ultraqa.state, directory, ultraqa.isGlobal)
     ) {
       const cycle = ultraqa.state.cycle || 1;
@@ -839,7 +902,8 @@ async function main() {
       !isStaleState(ultrawork.state) &&
       (hasValidSessionId
         ? ultrawork.state.session_id === sessionId
-        : !ultrawork.state.session_id || ultrawork.state.session_id === sessionId) &&
+        : !ultrawork.state.session_id ||
+          ultrawork.state.session_id === sessionId) &&
       isStateForCurrentProject(ultrawork.state, directory, ultrawork.isGlobal)
     ) {
       const newCount = (ultrawork.state.reinforcement_count || 0) + 1;
@@ -879,7 +943,9 @@ async function main() {
         reason = errorGuidance + reason;
       }
 
-      console.log(JSON.stringify({ continue: false, decision: "block", reason }));
+      console.log(
+        JSON.stringify({ continue: false, decision: "block", reason }),
+      );
       return;
     }
 
@@ -892,13 +958,11 @@ async function main() {
       "skill-active-state.json",
       sessionId,
     );
-    if (
-      skillState.state?.active &&
-      !isStaleSkillState(skillState.state)
-    ) {
+    if (skillState.state?.active && !isStaleSkillState(skillState.state)) {
       const sessionMatches = hasValidSessionId
         ? skillState.state.session_id === sessionId
-        : !skillState.state.session_id || skillState.state.session_id === sessionId;
+        : !skillState.state.session_id ||
+          skillState.state.session_id === sessionId;
       if (sessionMatches) {
         const count = skillState.state.reinforcement_count || 0;
         const maxReinforcements = skillState.state.max_reinforcements || 3;
@@ -917,7 +981,9 @@ async function main() {
             reason = errorGuidance + reason;
           }
 
-          console.log(JSON.stringify({ continue: false, decision: "block", reason }));
+          console.log(
+            JSON.stringify({ continue: false, decision: "block", reason }),
+          );
           return;
         } else {
           // Reinforcement limit reached - clear state and allow stop
@@ -947,7 +1013,9 @@ async function main() {
       // Ignore stderr errors - we just need to return valid JSON
     }
     try {
-      process.stdout.write(JSON.stringify({ continue: true, suppressOutput: true }) + "\n");
+      process.stdout.write(
+        JSON.stringify({ continue: true, suppressOutput: true }) + "\n",
+      );
     } catch {
       // If stdout write fails, the hook will timeout and Claude Code will proceed
       // This is better than hanging forever
@@ -966,7 +1034,9 @@ process.on("uncaughtException", (error) => {
     // Ignore
   }
   try {
-    process.stdout.write(JSON.stringify({ continue: true, suppressOutput: true }) + "\n");
+    process.stdout.write(
+      JSON.stringify({ continue: true, suppressOutput: true }) + "\n",
+    );
   } catch {
     // If we can't write, just exit
   }
@@ -982,7 +1052,9 @@ process.on("unhandledRejection", (error) => {
     // Ignore
   }
   try {
-    process.stdout.write(JSON.stringify({ continue: true, suppressOutput: true }) + "\n");
+    process.stdout.write(
+      JSON.stringify({ continue: true, suppressOutput: true }) + "\n",
+    );
   } catch {
     // If we can't write, just exit
   }
@@ -1000,7 +1072,9 @@ const safetyTimeout = setTimeout(() => {
     // Ignore
   }
   try {
-    process.stdout.write(JSON.stringify({ continue: true, suppressOutput: true }) + "\n");
+    process.stdout.write(
+      JSON.stringify({ continue: true, suppressOutput: true }) + "\n",
+    );
   } catch {
     // If we can't write, just exit
   }

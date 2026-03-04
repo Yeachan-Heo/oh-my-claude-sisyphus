@@ -9,19 +9,19 @@
  *
  * Priority order: Ralph > Ultrawork > Todo Continuation
  */
-import { existsSync, readFileSync, unlinkSync, statSync, openSync, readSync, closeSync } from 'fs';
-import { atomicWriteJsonSync } from '../../lib/atomic-write.js';
-import { join } from 'path';
-import { homedir } from 'os';
-import { getClaudeConfigDir } from '../../utils/paths.js';
-import { readUltraworkState, writeUltraworkState, incrementReinforcement, deactivateUltrawork, getUltraworkPersistenceMessage } from '../ultrawork/index.js';
-import { resolveToWorktreeRoot, resolveSessionStatePath, getOmcRoot } from '../../lib/worktree-paths.js';
-import { readRalphState, writeRalphState, incrementRalphIteration, clearRalphState, getPrdCompletionStatus, getRalphContext, readVerificationState, recordArchitectFeedback, getArchitectVerificationPrompt, getArchitectRejectionContinuationPrompt, detectArchitectApproval, detectArchitectRejection, clearVerificationState, } from '../ralph/index.js';
-import { checkIncompleteTodos, getNextPendingTodo, isUserAbort, isContextLimitStop, isRateLimitStop, isExplicitCancelCommand } from '../todo-continuation/index.js';
-import { TODO_CONTINUATION_PROMPT } from '../../installer/hooks.js';
-import { isAutopilotActive } from '../autopilot/index.js';
-import { checkAutopilot } from '../autopilot/enforcement.js';
-import { readTeamPipelineState } from '../team-pipeline/state.js';
+import { existsSync, readFileSync, unlinkSync, statSync, openSync, readSync, closeSync, } from "fs";
+import { atomicWriteJsonSync } from "../../lib/atomic-write.js";
+import { join } from "path";
+import { homedir } from "os";
+import { getClaudeConfigDir } from "../../utils/paths.js";
+import { readUltraworkState, writeUltraworkState, incrementReinforcement, deactivateUltrawork, getUltraworkPersistenceMessage, } from "../ultrawork/index.js";
+import { resolveToWorktreeRoot, resolveSessionStatePath, getOmcRoot, } from "../../lib/worktree-paths.js";
+import { readRalphState, writeRalphState, incrementRalphIteration, clearRalphState, getPrdCompletionStatus, getRalphContext, readVerificationState, recordArchitectFeedback, getArchitectVerificationPrompt, getArchitectRejectionContinuationPrompt, detectArchitectApproval, detectArchitectRejection, clearVerificationState, } from "../ralph/index.js";
+import { checkIncompleteTodos, getNextPendingTodo, isUserAbort, isContextLimitStop, isRateLimitStop, isAuthenticationError, isExplicitCancelCommand, } from "../todo-continuation/index.js";
+import { TODO_CONTINUATION_PROMPT } from "../../installer/hooks.js";
+import { isAutopilotActive } from "../autopilot/index.js";
+import { checkAutopilot } from "../autopilot/enforcement.js";
+import { readTeamPipelineState } from "../team-pipeline/state.js";
 /** Maximum todo-continuation attempts before giving up (prevents infinite loops) */
 const MAX_TODO_CONTINUATION_ATTEMPTS = 5;
 const CANCEL_SIGNAL_TTL_MS = 30_000;
@@ -36,7 +36,7 @@ function isSessionCancelInProgress(directory, sessionId) {
         return false;
     let cancelSignalPath;
     try {
-        cancelSignalPath = resolveSessionStatePath('cancel-signal', sessionId, directory);
+        cancelSignalPath = resolveSessionStatePath("cancel-signal", sessionId, directory);
     }
     catch {
         return false;
@@ -45,12 +45,18 @@ function isSessionCancelInProgress(directory, sessionId) {
         return false;
     }
     try {
-        const raw = JSON.parse(readFileSync(cancelSignalPath, 'utf-8'));
+        const raw = JSON.parse(readFileSync(cancelSignalPath, "utf-8"));
         const now = Date.now();
         const expiresAt = raw.expires_at ? new Date(raw.expires_at).getTime() : NaN;
-        const requestedAt = raw.requested_at ? new Date(raw.requested_at).getTime() : NaN;
-        const fallbackExpiry = Number.isFinite(requestedAt) ? requestedAt + CANCEL_SIGNAL_TTL_MS : NaN;
-        const effectiveExpiry = Number.isFinite(expiresAt) ? expiresAt : fallbackExpiry;
+        const requestedAt = raw.requested_at
+            ? new Date(raw.requested_at).getTime()
+            : NaN;
+        const fallbackExpiry = Number.isFinite(requestedAt)
+            ? requestedAt + CANCEL_SIGNAL_TTL_MS
+            : NaN;
+        const effectiveExpiry = Number.isFinite(expiresAt)
+            ? expiresAt
+            : fallbackExpiry;
         if (!Number.isFinite(effectiveExpiry) || effectiveExpiry <= now) {
             unlinkSync(cancelSignalPath);
             return false;
@@ -66,13 +72,13 @@ function isSessionCancelInProgress(directory, sessionId) {
  * Returns null if file doesn't exist or error is stale (>60 seconds old).
  */
 export function readLastToolError(directory) {
-    const stateDir = join(getOmcRoot(directory), 'state');
-    const errorPath = join(stateDir, 'last-tool-error.json');
+    const stateDir = join(getOmcRoot(directory), "state");
+    const errorPath = join(stateDir, "last-tool-error.json");
     try {
         if (!existsSync(errorPath)) {
             return null;
         }
-        const content = readFileSync(errorPath, 'utf-8');
+        const content = readFileSync(errorPath, "utf-8");
         const toolError = JSON.parse(content);
         if (!toolError || !toolError.timestamp) {
             return null;
@@ -96,8 +102,8 @@ export function readLastToolError(directory) {
  * Clear tool error state file atomically.
  */
 export function clearToolErrorState(directory) {
-    const stateDir = join(getOmcRoot(directory), 'state');
-    const errorPath = join(stateDir, 'last-tool-error.json');
+    const stateDir = join(getOmcRoot(directory), "state");
+    const errorPath = join(stateDir, "last-tool-error.json");
     try {
         if (existsSync(errorPath)) {
             unlinkSync(errorPath);
@@ -113,11 +119,11 @@ export function clearToolErrorState(directory) {
  */
 export function getToolErrorRetryGuidance(toolError) {
     if (!toolError) {
-        return '';
+        return "";
     }
     const retryCount = toolError.retry_count || 1;
-    const toolName = toolError.tool_name || 'unknown';
-    const error = toolError.error || 'Unknown error';
+    const toolName = toolError.tool_name || "unknown";
+    const error = toolError.error || "Unknown error";
     if (retryCount >= 5) {
         return `[TOOL ERROR - ALTERNATIVE APPROACH NEEDED]
 The "${toolName}" operation has failed ${retryCount} times.
@@ -165,14 +171,14 @@ export function resetTodoContinuationAttempts(sessionId) {
  * Default: 60 seconds. 0 = disabled (no cooldown).
  */
 export function getIdleNotificationCooldownSeconds() {
-    const configPath = join(homedir(), '.omc', 'config.json');
+    const configPath = join(homedir(), ".omc", "config.json");
     try {
         if (!existsSync(configPath))
             return 60;
-        const config = JSON.parse(readFileSync(configPath, 'utf-8'));
+        const config = JSON.parse(readFileSync(configPath, "utf-8"));
         const cooldown = config?.notificationCooldown;
         const val = cooldown?.sessionIdleSeconds;
-        if (typeof val === 'number' && Number.isFinite(val))
+        if (typeof val === "number" && Number.isFinite(val))
             return Math.max(0, val);
     }
     catch {
@@ -183,9 +189,9 @@ export function getIdleNotificationCooldownSeconds() {
 function getIdleNotificationCooldownPath(stateDir, sessionId) {
     // Keep session segments filesystem-safe; fall back to legacy global path otherwise.
     if (sessionId && /^[a-zA-Z0-9][a-zA-Z0-9_-]{0,255}$/.test(sessionId)) {
-        return join(stateDir, 'sessions', sessionId, 'idle-notif-cooldown.json');
+        return join(stateDir, "sessions", sessionId, "idle-notif-cooldown.json");
     }
-    return join(stateDir, 'idle-notif-cooldown.json');
+    return join(stateDir, "idle-notif-cooldown.json");
 }
 /**
  * Check whether the session-idle notification cooldown has elapsed.
@@ -199,8 +205,8 @@ export function shouldSendIdleNotification(stateDir, sessionId) {
     try {
         if (!existsSync(cooldownPath))
             return true;
-        const data = JSON.parse(readFileSync(cooldownPath, 'utf-8'));
-        if (data?.lastSentAt && typeof data.lastSentAt === 'string') {
+        const data = JSON.parse(readFileSync(cooldownPath, "utf-8"));
+        if (data?.lastSentAt && typeof data.lastSentAt === "string") {
             const elapsed = (Date.now() - new Date(data.lastSentAt).getTime()) / 1000;
             if (Number.isFinite(elapsed) && elapsed < cooldownSecs)
                 return false;
@@ -233,14 +239,14 @@ const TRANSCRIPT_TAIL_BYTES = 32 * 1024; // 32 KB
 function readTranscriptTail(transcriptPath) {
     const size = statSync(transcriptPath).size;
     if (size <= TRANSCRIPT_TAIL_BYTES) {
-        return readFileSync(transcriptPath, 'utf-8');
+        return readFileSync(transcriptPath, "utf-8");
     }
-    const fd = openSync(transcriptPath, 'r');
+    const fd = openSync(transcriptPath, "r");
     try {
         const offset = size - TRANSCRIPT_TAIL_BYTES;
         const buf = Buffer.allocUnsafe(TRANSCRIPT_TAIL_BYTES);
         const bytesRead = readSync(fd, buf, 0, TRANSCRIPT_TAIL_BYTES, offset);
-        return buf.subarray(0, bytesRead).toString('utf-8');
+        return buf.subarray(0, bytesRead).toString("utf-8");
     }
     finally {
         closeSync(fd);
@@ -252,9 +258,9 @@ function readTranscriptTail(transcriptPath) {
 function checkArchitectApprovalInTranscript(sessionId) {
     const claudeDir = getClaudeConfigDir();
     const possiblePaths = [
-        join(claudeDir, 'sessions', sessionId, 'transcript.md'),
-        join(claudeDir, 'sessions', sessionId, 'messages.json'),
-        join(claudeDir, 'transcripts', `${sessionId}.md`)
+        join(claudeDir, "sessions", sessionId, "transcript.md"),
+        join(claudeDir, "sessions", sessionId, "messages.json"),
+        join(claudeDir, "transcripts", `${sessionId}.md`),
     ];
     for (const transcriptPath of possiblePaths) {
         if (existsSync(transcriptPath)) {
@@ -277,9 +283,9 @@ function checkArchitectApprovalInTranscript(sessionId) {
 function checkArchitectRejectionInTranscript(sessionId) {
     const claudeDir = getClaudeConfigDir();
     const possiblePaths = [
-        join(claudeDir, 'sessions', sessionId, 'transcript.md'),
-        join(claudeDir, 'sessions', sessionId, 'messages.json'),
-        join(claudeDir, 'transcripts', `${sessionId}.md`)
+        join(claudeDir, "sessions", sessionId, "transcript.md"),
+        join(claudeDir, "sessions", sessionId, "messages.json"),
+        join(claudeDir, "transcripts", `${sessionId}.md`),
     ];
     for (const transcriptPath of possiblePaths) {
         if (existsSync(transcriptPath)) {
@@ -295,7 +301,7 @@ function checkArchitectRejectionInTranscript(sessionId) {
             }
         }
     }
-    return { rejected: false, feedback: '' };
+    return { rejected: false, feedback: "" };
 }
 /**
  * Check Ralph Loop state and determine if it should continue
@@ -316,8 +322,8 @@ async function checkRalphLoop(sessionId, directory, cancelInProgress) {
     if (cancelInProgress) {
         return {
             shouldBlock: false,
-            message: '',
-            mode: 'none'
+            message: "",
+            mode: "none",
         };
     }
     // Self-heal linked ultrawork: if ralph is active and marked linked but ultrawork
@@ -329,12 +335,12 @@ async function checkRalphLoop(sessionId, directory, cancelInProgress) {
             const restoredState = {
                 active: true,
                 started_at: state.started_at || now,
-                original_prompt: state.prompt || 'Ralph loop task',
+                original_prompt: state.prompt || "Ralph loop task",
                 session_id: sessionId,
                 project_path: workingDir,
                 reinforcement_count: 0,
                 last_checked_at: now,
-                linked_to_ralph: true
+                linked_to_ralph: true,
             };
             writeUltraworkState(restoredState, workingDir, sessionId);
         }
@@ -345,34 +351,34 @@ async function checkRalphLoop(sessionId, directory, cancelInProgress) {
     if (teamState && teamState.active !== undefined) {
         const teamPhase = teamState.phase;
         // If team pipeline reached a terminal state, ralph should also complete
-        if (teamPhase === 'complete') {
+        if (teamPhase === "complete") {
             clearRalphState(workingDir, sessionId);
             clearVerificationState(workingDir, sessionId);
             deactivateUltrawork(workingDir, sessionId);
             return {
                 shouldBlock: false,
                 message: `[RALPH LOOP COMPLETE - TEAM] Team pipeline completed successfully. Ralph loop ending after ${state.iteration} iteration(s).`,
-                mode: 'none'
+                mode: "none",
             };
         }
-        if (teamPhase === 'failed') {
+        if (teamPhase === "failed") {
             clearRalphState(workingDir, sessionId);
             clearVerificationState(workingDir, sessionId);
             deactivateUltrawork(workingDir, sessionId);
             return {
                 shouldBlock: false,
                 message: `[RALPH LOOP STOPPED - TEAM FAILED] Team pipeline failed. Ralph loop ending after ${state.iteration} iteration(s).`,
-                mode: 'none'
+                mode: "none",
             };
         }
-        if (teamPhase === 'cancelled') {
+        if (teamPhase === "cancelled") {
             clearRalphState(workingDir, sessionId);
             clearVerificationState(workingDir, sessionId);
             deactivateUltrawork(workingDir, sessionId);
             return {
                 shouldBlock: false,
                 message: `[RALPH LOOP CANCELLED - TEAM] Team pipeline was cancelled. Ralph loop ending after ${state.iteration} iteration(s).`,
-                mode: 'none'
+                mode: "none",
             };
         }
     }
@@ -386,7 +392,7 @@ async function checkRalphLoop(sessionId, directory, cancelInProgress) {
         return {
             shouldBlock: false,
             message: `[RALPH LOOP COMPLETE - PRD] All ${prdStatus.status?.total || 0} stories are complete! Great work!`,
-            mode: 'none'
+            mode: "none",
         };
     }
     // Check for existing verification state (architect verification in progress)
@@ -404,7 +410,7 @@ async function checkRalphLoop(sessionId, directory, cancelInProgress) {
                 return {
                     shouldBlock: false,
                     message: `[RALPH LOOP VERIFIED COMPLETE] Architect verified task completion after ${state.iteration} iteration(s). Excellent work!`,
-                    mode: 'none'
+                    mode: "none",
                 };
             }
             // Check for architect rejection
@@ -418,11 +424,11 @@ async function checkRalphLoop(sessionId, directory, cancelInProgress) {
                     return {
                         shouldBlock: true,
                         message: continuationPrompt,
-                        mode: 'ralph',
+                        mode: "ralph",
                         metadata: {
                             iteration: state.iteration,
-                            maxIterations: state.max_iterations
-                        }
+                            maxIterations: state.max_iterations,
+                        },
                     };
                 }
             }
@@ -435,11 +441,11 @@ async function checkRalphLoop(sessionId, directory, cancelInProgress) {
         return {
             shouldBlock: true,
             message: verificationPrompt,
-            mode: 'ralph',
+            mode: "ralph",
             metadata: {
                 iteration: state.iteration,
-                maxIterations: state.max_iterations
-            }
+                maxIterations: state.max_iterations,
+            },
         };
     }
     // Check max iterations (cancel already checked at function entry via cached flag)
@@ -464,7 +470,7 @@ async function checkRalphLoop(sessionId, directory, cancelInProgress) {
         ? `2. Check prd.json - verify the current story's acceptance criteria are met, then mark it passes: true. Are ALL stories complete?`
         : `2. Check your todo list - are ALL items marked complete?`;
     const continuationPrompt = `<ralph-continuation>
-${errorGuidance ? errorGuidance + '\n' : ''}
+${errorGuidance ? errorGuidance + "\n" : ""}
 [RALPH - ITERATION ${newState.iteration}/${newState.max_iterations}]
 
 The task is NOT complete yet. Continue working.
@@ -476,7 +482,7 @@ ${prdInstruction}
 4. When FULLY complete (after Architect verification), run \`/oh-my-claudecode:cancel\` to cleanly exit and clean up state files. If cancel fails, retry with \`/oh-my-claudecode:cancel --force\`.
 5. Do NOT stop until the task is truly done
 
-${newState.prompt ? `Original task: ${newState.prompt}` : ''}
+${newState.prompt ? `Original task: ${newState.prompt}` : ""}
 
 </ralph-continuation>
 
@@ -486,12 +492,12 @@ ${newState.prompt ? `Original task: ${newState.prompt}` : ''}
     return {
         shouldBlock: true,
         message: continuationPrompt,
-        mode: 'ralph',
+        mode: "ralph",
         metadata: {
             iteration: newState.iteration,
             maxIterations: newState.max_iterations,
-            toolError: toolError || undefined
-        }
+            toolError: toolError || undefined,
+        },
     };
 }
 /**
@@ -511,8 +517,8 @@ async function checkUltrawork(sessionId, directory, _hasIncompleteTodos, cancelI
     if (cancelInProgress) {
         return {
             shouldBlock: false,
-            message: '',
-            mode: 'none'
+            message: "",
+            mode: "none",
         };
     }
     // Reinforce ultrawork mode - ALWAYS continue while active.
@@ -525,10 +531,10 @@ async function checkUltrawork(sessionId, directory, _hasIncompleteTodos, cancelI
     return {
         shouldBlock: true,
         message,
-        mode: 'ultrawork',
+        mode: "ultrawork",
         metadata: {
-            reinforcementCount: newState.reinforcement_count
-        }
+            reinforcementCount: newState.reinforcement_count,
+        },
     };
 }
 /**
@@ -547,27 +553,27 @@ async function _checkTodoContinuation(sessionId, directory) {
     // Track continuation attempts to prevent infinite loops
     const attemptCount = sessionId ? trackTodoContinuationAttempt(sessionId) : 1;
     // Use dynamic label based on source (Tasks vs todos)
-    const _sourceLabel = result.source === 'task' ? 'Tasks' : 'todos';
-    const sourceLabelLower = result.source === 'task' ? 'tasks' : 'todos';
+    const _sourceLabel = result.source === "task" ? "Tasks" : "todos";
+    const sourceLabelLower = result.source === "task" ? "tasks" : "todos";
     if (attemptCount > MAX_TODO_CONTINUATION_ATTEMPTS) {
         // Too many attempts - agent appears stuck, allow stop but warn
         return {
             shouldBlock: false,
             message: `[TODO CONTINUATION LIMIT] Attempted ${MAX_TODO_CONTINUATION_ATTEMPTS} continuations without progress. ${result.count} ${sourceLabelLower} remain incomplete. Consider reviewing the stuck ${sourceLabelLower} or asking the user for guidance.`,
-            mode: 'none',
+            mode: "none",
             metadata: {
                 todoCount: result.count,
-                todoContinuationAttempts: attemptCount
-            }
+                todoContinuationAttempts: attemptCount,
+            },
         };
     }
     const nextTodo = getNextPendingTodo(result);
     const nextTaskInfo = nextTodo
-        ? `\n\nNext ${result.source === 'task' ? 'Task' : 'todo'}: "${nextTodo.content}" (${nextTodo.status})`
-        : '';
+        ? `\n\nNext ${result.source === "task" ? "Task" : "todo"}: "${nextTodo.content}" (${nextTodo.status})`
+        : "";
     const attemptInfo = attemptCount > 1
         ? `\n[Continuation attempt ${attemptCount}/${MAX_TODO_CONTINUATION_ATTEMPTS}]`
-        : '';
+        : "";
     const message = `<todo-continuation>
 
 ${TODO_CONTINUATION_PROMPT}
@@ -582,19 +588,18 @@ ${TODO_CONTINUATION_PROMPT}
     return {
         shouldBlock: true,
         message,
-        mode: 'todo-continuation',
+        mode: "todo-continuation",
         metadata: {
             todoCount: result.count,
-            todoContinuationAttempts: attemptCount
-        }
+            todoContinuationAttempts: attemptCount,
+        },
     };
 }
 /**
  * Main persistent mode checker
  * Checks all persistent modes in priority order and returns appropriate action
  */
-export async function checkPersistentModes(sessionId, directory, stopContext // NEW: from todo-continuation types
-) {
+export async function checkPersistentModes(sessionId, directory, stopContext) {
     const workingDir = resolveToWorktreeRoot(directory);
     // CRITICAL: Never block context-limit stops.
     // Blocking these causes a deadlock where Claude Code cannot compact.
@@ -602,8 +607,8 @@ export async function checkPersistentModes(sessionId, directory, stopContext // 
     if (isContextLimitStop(stopContext)) {
         return {
             shouldBlock: false,
-            message: '',
-            mode: 'none'
+            message: "",
+            mode: "none",
         };
     }
     // Explicit /cancel paths must always bypass continuation re-enforcement.
@@ -612,8 +617,8 @@ export async function checkPersistentModes(sessionId, directory, stopContext // 
     if (isExplicitCancelCommand(stopContext)) {
         return {
             shouldBlock: false,
-            message: '',
-            mode: 'none'
+            message: "",
+            mode: "none",
         };
     }
     // Session-scoped cancel signal from state_clear during /cancel flow.
@@ -622,16 +627,16 @@ export async function checkPersistentModes(sessionId, directory, stopContext // 
     if (cancelInProgress) {
         return {
             shouldBlock: false,
-            message: '',
-            mode: 'none'
+            message: "",
+            mode: "none",
         };
     }
     // Check for user abort - skip all continuation enforcement
     if (isUserAbort(stopContext)) {
         return {
             shouldBlock: false,
-            message: '',
-            mode: 'none'
+            message: "",
+            mode: "none",
         };
     }
     // CRITICAL: Never block rate-limit stops.
@@ -642,8 +647,20 @@ export async function checkPersistentModes(sessionId, directory, stopContext // 
     if (isRateLimitStop(stopContext)) {
         return {
             shouldBlock: false,
-            message: '[RALPH PAUSED - RATE LIMITED] API rate limit detected. Ralph loop paused until the rate limit resets. Resume manually once the limit clears.',
-            mode: 'none'
+            message: "[RALPH PAUSED - RATE LIMITED] API rate limit detected. Ralph loop paused until the rate limit resets. Resume manually once the limit clears.",
+            mode: "none",
+        };
+    }
+    // CRITICAL: Never block authentication error stops.
+    // When the API returns 401 / OAuth token expired, Claude Code stops the session.
+    // Blocking these stops creates an infinite retry loop: the hook injects a
+    // continuation prompt → Claude hits the auth error again → stops again → loops.
+    // Fix for: https://github.com/Yeachan-Heo/oh-my-claudecode/issues/1308
+    if (isAuthenticationError(stopContext)) {
+        return {
+            shouldBlock: false,
+            message: "[AUTH ERROR] Authentication failed. OAuth token may have expired. Please run /login to re-authenticate, then resume your task.",
+            mode: "none",
         };
     }
     // First, check for incomplete todos (we need this info for ultrawork)
@@ -662,15 +679,15 @@ export async function checkPersistentModes(sessionId, directory, stopContext // 
             return {
                 shouldBlock: true,
                 message: autopilotResult.message,
-                mode: 'autopilot',
+                mode: "autopilot",
                 metadata: {
                     iteration: autopilotResult.metadata?.iteration,
                     maxIterations: autopilotResult.metadata?.maxIterations,
                     phase: autopilotResult.phase,
                     tasksCompleted: autopilotResult.metadata?.tasksCompleted,
                     tasksTotal: autopilotResult.metadata?.tasksTotal,
-                    toolError: autopilotResult.metadata?.toolError
-                }
+                    toolError: autopilotResult.metadata?.toolError,
+                },
             };
         }
     }
@@ -683,16 +700,16 @@ export async function checkPersistentModes(sessionId, directory, stopContext // 
     // Skills like code-review, plan, tdd, etc. write skill-active-state.json
     // when invoked via the Skill tool. This prevents premature stops mid-skill.
     try {
-        const { checkSkillActiveState } = await import('../skill-state/index.js');
+        const { checkSkillActiveState } = await import("../skill-state/index.js");
         const skillResult = checkSkillActiveState(workingDir, sessionId);
         if (skillResult.shouldBlock) {
             return {
                 shouldBlock: true,
                 message: skillResult.message,
-                mode: 'ultrawork', // Reuse ultrawork mode type for compatibility
+                mode: "ultrawork", // Reuse ultrawork mode type for compatibility
                 metadata: {
-                    phase: `skill:${skillResult.skillName || 'unknown'}`,
-                }
+                    phase: `skill:${skillResult.skillName || "unknown"}`,
+                },
             };
         }
     }
@@ -702,8 +719,8 @@ export async function checkPersistentModes(sessionId, directory, stopContext // 
     // No blocking needed
     return {
         shouldBlock: false,
-        message: '',
-        mode: 'none'
+        message: "",
+        mode: "none",
     };
 }
 /**
@@ -714,7 +731,7 @@ export async function checkPersistentModes(sessionId, directory, stopContext // 
 export function createHookOutput(result) {
     return {
         continue: !result.shouldBlock,
-        message: result.message || undefined
+        message: result.message || undefined,
     };
 }
 //# sourceMappingURL=index.js.map

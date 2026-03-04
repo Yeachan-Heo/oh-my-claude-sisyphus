@@ -18,14 +18,14 @@
  */
 function debugLog(message, ...args) {
     const debug = process.env.OMC_DEBUG;
-    if (debug === '1' || debug === 'todo-continuation' || debug === 'true') {
-        console.error('[todo-continuation]', message, ...args);
+    if (debug === "1" || debug === "todo-continuation" || debug === "true") {
+        console.error("[todo-continuation]", message, ...args);
     }
 }
-import { existsSync, readFileSync, readdirSync } from 'fs';
-import { join } from 'path';
-import { getOmcRoot } from '../../lib/worktree-paths.js';
-import { getClaudeConfigDir } from '../../utils/paths.js';
+import { existsSync, readFileSync, readdirSync } from "fs";
+import { join } from "path";
+import { getOmcRoot } from "../../lib/worktree-paths.js";
+import { getClaudeConfigDir } from "../../utils/paths.js";
 /**
  * Validates that a session ID is safe to use in file paths.
  * Session IDs should be alphanumeric with optional hyphens and underscores.
@@ -35,7 +35,7 @@ import { getClaudeConfigDir } from '../../utils/paths.js';
  * @returns true if the session ID is safe, false otherwise
  */
 export function isValidSessionId(sessionId) {
-    if (!sessionId || typeof sessionId !== 'string') {
+    if (!sessionId || typeof sessionId !== "string") {
         return false;
     }
     // Allow alphanumeric, hyphens, and underscores only
@@ -72,14 +72,23 @@ export function isUserAbort(context) {
         return true;
     // Check stop_reason patterns indicating user abort
     // Exact-match patterns: short generic words that cause false positives with .includes()
-    const exactPatterns = ['aborted', 'abort', 'cancel', 'interrupt'];
+    const exactPatterns = ["aborted", "abort", "cancel", "interrupt"];
     // Substring patterns: compound words safe for .includes() matching
-    const substringPatterns = ['user_cancel', 'user_interrupt', 'ctrl_c', 'manual_stop'];
+    const substringPatterns = [
+        "user_cancel",
+        "user_interrupt",
+        "ctrl_c",
+        "manual_stop",
+    ];
     // Support both snake_case and camelCase field names
-    const reason = (context.stop_reason ?? context.stopReason ?? '').toLowerCase();
-    const endTurnReason = (context.end_turn_reason ?? context.endTurnReason ?? '').toLowerCase();
-    const matchesAbort = (value) => exactPatterns.some(p => value === p) ||
-        substringPatterns.some(p => value.includes(p));
+    const reason = (context.stop_reason ??
+        context.stopReason ??
+        "").toLowerCase();
+    const endTurnReason = (context.end_turn_reason ??
+        context.endTurnReason ??
+        "").toLowerCase();
+    const matchesAbort = (value) => exactPatterns.some((p) => value === p) ||
+        substringPatterns.some((p) => value.includes(p));
     return matchesAbort(reason) || matchesAbort(endTurnReason);
 }
 /**
@@ -91,7 +100,7 @@ export function isUserAbort(context) {
 export function isExplicitCancelCommand(context) {
     if (!context)
         return false;
-    const prompt = (context.prompt ?? '').trim();
+    const prompt = (context.prompt ?? "").trim();
     if (prompt) {
         const slashCancelPattern = /^\/(?:oh-my-claudecode:)?cancel(?:\s+--force)?\s*$/i;
         const keywordCancelPattern = /^(?:cancelomc|stopomc)\s*$/i;
@@ -99,8 +108,12 @@ export function isExplicitCancelCommand(context) {
             return true;
         }
     }
-    const reason = (context.stop_reason ?? context.stopReason ?? '').toLowerCase();
-    const endTurnReason = (context.end_turn_reason ?? context.endTurnReason ?? '').toLowerCase();
+    const reason = (context.stop_reason ??
+        context.stopReason ??
+        "").toLowerCase();
+    const endTurnReason = (context.end_turn_reason ??
+        context.endTurnReason ??
+        "").toLowerCase();
     const explicitReasonPatterns = [
         /^cancel$/,
         /^cancelled$/,
@@ -112,11 +125,13 @@ export function isExplicitCancelCommand(context) {
     if (explicitReasonPatterns.some((pattern) => pattern.test(reason) || pattern.test(endTurnReason))) {
         return true;
     }
-    const toolName = String(context.tool_name ?? context.toolName ?? '').toLowerCase();
+    const toolName = String(context.tool_name ?? context.toolName ?? "").toLowerCase();
     const toolInput = (context.tool_input ?? context.toolInput);
-    if (toolName.includes('skill') && toolInput && typeof toolInput.skill === 'string') {
+    if (toolName.includes("skill") &&
+        toolInput &&
+        typeof toolInput.skill === "string") {
         const skill = toolInput.skill.toLowerCase();
-        if (skill === 'oh-my-claudecode:cancel' || skill.endsWith(':cancel')) {
+        if (skill === "oh-my-claudecode:cancel" || skill.endsWith(":cancel")) {
             return true;
         }
     }
@@ -133,13 +148,24 @@ export function isExplicitCancelCommand(context) {
 export function isContextLimitStop(context) {
     if (!context)
         return false;
-    const reason = (context.stop_reason ?? context.stopReason ?? '').toLowerCase();
-    const endTurnReason = (context.end_turn_reason ?? context.endTurnReason ?? '').toLowerCase();
+    const reason = (context.stop_reason ??
+        context.stopReason ??
+        "").toLowerCase();
+    const endTurnReason = (context.end_turn_reason ??
+        context.endTurnReason ??
+        "").toLowerCase();
     const contextPatterns = [
-        'context_limit', 'context_window', 'context_exceeded', 'context_full',
-        'max_context', 'token_limit', 'max_tokens', 'conversation_too_long', 'input_too_long'
+        "context_limit",
+        "context_window",
+        "context_exceeded",
+        "context_full",
+        "max_context",
+        "token_limit",
+        "max_tokens",
+        "conversation_too_long",
+        "input_too_long",
     ];
-    return contextPatterns.some(p => reason.includes(p) || endTurnReason.includes(p));
+    return contextPatterns.some((p) => reason.includes(p) || endTurnReason.includes(p));
 }
 /**
  * Detect if stop was triggered by rate limiting (HTTP 429 / quota exhausted).
@@ -153,18 +179,68 @@ export function isContextLimitStop(context) {
 export function isRateLimitStop(context) {
     if (!context)
         return false;
-    const reason = (context.stop_reason ?? context.stopReason ?? '').toLowerCase();
-    const endTurnReason = (context.end_turn_reason ?? context.endTurnReason ?? '').toLowerCase();
+    const reason = (context.stop_reason ??
+        context.stopReason ??
+        "").toLowerCase();
+    const endTurnReason = (context.end_turn_reason ??
+        context.endTurnReason ??
+        "").toLowerCase();
     const rateLimitPatterns = [
-        'rate_limit', 'rate_limited', 'ratelimit',
-        'too_many_requests', '429',
-        'quota_exceeded', 'quota_limit', 'quota_exhausted',
-        'request_limit', 'api_limit',
+        "rate_limit",
+        "rate_limited",
+        "ratelimit",
+        "too_many_requests",
+        "429",
+        "quota_exceeded",
+        "quota_limit",
+        "quota_exhausted",
+        "request_limit",
+        "api_limit",
         // Anthropic API returns 'overloaded_error' (529) for server overload;
         // 'capacity' covers provider-level capacity-exceeded responses
-        'overloaded', 'capacity',
+        "overloaded",
+        "capacity",
     ];
-    return rateLimitPatterns.some(p => reason.includes(p) || endTurnReason.includes(p));
+    return rateLimitPatterns.some((p) => reason.includes(p) || endTurnReason.includes(p));
+}
+/**
+ * Detect if stop was triggered by an authentication error (HTTP 401 / OAuth token expired).
+ * When the API returns an authentication error, Claude Code stops the session.
+ * Blocking these stops causes an infinite retry loop: the persistent-mode hook
+ * injects a continuation prompt, Claude immediately hits the auth error again,
+ * stops again, and the cycle repeats indefinitely.
+ *
+ * Fix for: https://github.com/Yeachan-Heo/oh-my-claudecode/issues/1308
+ */
+export function isAuthenticationError(context) {
+    if (!context)
+        return false;
+    const reason = (context.stop_reason ??
+        context.stopReason ??
+        "").toLowerCase();
+    const endTurnReason = (context.end_turn_reason ??
+        context.endTurnReason ??
+        "").toLowerCase();
+    const authPatterns = [
+        "authentication_error",
+        "authentication_failed",
+        "unauthorized",
+        "401",
+        "invalid_api_key",
+        "api_key_invalid",
+        "api_key_expired",
+        "token_expired",
+        "token_invalid",
+        "oauth_error",
+        "oauth_expired",
+        "permission_denied",
+        "access_denied",
+        "forbidden",
+        "403",
+        "credentials_expired",
+        "invalid_credentials",
+    ];
+    return authPatterns.some((p) => reason.includes(p) || endTurnReason.includes(p));
 }
 /**
  * Get possible todo file locations
@@ -174,13 +250,13 @@ function getTodoFilePaths(sessionId, directory) {
     const paths = [];
     // Session-specific todos
     if (sessionId) {
-        paths.push(join(claudeDir, 'sessions', sessionId, 'todos.json'));
-        paths.push(join(claudeDir, 'todos', `${sessionId}.json`));
+        paths.push(join(claudeDir, "sessions", sessionId, "todos.json"));
+        paths.push(join(claudeDir, "todos", `${sessionId}.json`));
     }
     // Project-specific todos
     if (directory) {
-        paths.push(join(getOmcRoot(directory), 'todos.json'));
-        paths.push(join(directory, '.claude', 'todos.json'));
+        paths.push(join(getOmcRoot(directory), "todos.json"));
+        paths.push(join(directory, ".claude", "todos.json"));
     }
     // NOTE: Global todos directory scan removed to prevent false positives.
     // Only session-specific and project-local todos are now checked.
@@ -191,27 +267,27 @@ function getTodoFilePaths(sessionId, directory) {
  */
 function parseTodoFile(filePath) {
     try {
-        const content = readFileSync(filePath, 'utf-8');
+        const content = readFileSync(filePath, "utf-8");
         const data = JSON.parse(content);
         // Handle array format
         if (Array.isArray(data)) {
-            return data.filter(item => item &&
-                typeof item.content === 'string' &&
-                typeof item.status === 'string');
+            return data.filter((item) => item &&
+                typeof item.content === "string" &&
+                typeof item.status === "string");
         }
         // Handle object format with todos array
         if (data.todos && Array.isArray(data.todos)) {
             return data.todos.filter((item) => {
                 const todo = item;
                 return (todo &&
-                    typeof todo.content === 'string' &&
-                    typeof todo.status === 'string');
+                    typeof todo.content === "string" &&
+                    typeof todo.status === "string");
             });
         }
         return [];
     }
     catch (err) {
-        debugLog('Failed to parse todo file:', filePath, err);
+        debugLog("Failed to parse todo file:", filePath, err);
         return [];
     }
 }
@@ -219,7 +295,7 @@ function parseTodoFile(filePath) {
  * Check if a todo is incomplete
  */
 function isIncomplete(todo) {
-    return todo.status !== 'completed' && todo.status !== 'cancelled';
+    return todo.status !== "completed" && todo.status !== "cancelled";
 }
 /**
  * Get the Task directory for a session
@@ -231,23 +307,25 @@ function isIncomplete(todo) {
 export function getTaskDirectory(sessionId) {
     // Security: validate sessionId before constructing path
     if (!isValidSessionId(sessionId)) {
-        return ''; // Return empty string for invalid sessions
+        return ""; // Return empty string for invalid sessions
     }
-    return join(getClaudeConfigDir(), 'tasks', sessionId);
+    return join(getClaudeConfigDir(), "tasks", sessionId);
 }
 /**
  * Validates that a parsed JSON object is a valid Task.
  * Required fields: id (string), subject (string), status (string).
  */
 export function isValidTask(data) {
-    if (data === null || typeof data !== 'object')
+    if (data === null || typeof data !== "object")
         return false;
     const obj = data;
-    return (typeof obj.id === 'string' && obj.id.length > 0 &&
-        typeof obj.subject === 'string' && obj.subject.length > 0 &&
-        typeof obj.status === 'string' &&
+    return (typeof obj.id === "string" &&
+        obj.id.length > 0 &&
+        typeof obj.subject === "string" &&
+        obj.subject.length > 0 &&
+        typeof obj.status === "string" &&
         // Accept 'deleted' as valid - matches Task interface status union type
-        ['pending', 'in_progress', 'completed', 'deleted'].includes(obj.status));
+        ["pending", "in_progress", "completed", "deleted"].includes(obj.status));
 }
 /**
  * Read all Task files from a session's task directory
@@ -264,21 +342,21 @@ export function readTaskFiles(sessionId) {
         for (const file of readdirSync(taskDir)) {
             // Skip non-JSON files and .lock file (used by Claude Code for atomic writes)
             // The .lock file prevents concurrent modifications to task files
-            if (!file.endsWith('.json') || file === '.lock')
+            if (!file.endsWith(".json") || file === ".lock")
                 continue;
             try {
-                const content = readFileSync(join(taskDir, file), 'utf-8');
+                const content = readFileSync(join(taskDir, file), "utf-8");
                 const parsed = JSON.parse(content);
                 if (isValidTask(parsed))
                     tasks.push(parsed);
             }
             catch (err) {
-                debugLog('Failed to parse task file:', file, err);
+                debugLog("Failed to parse task file:", file, err);
             }
         }
     }
     catch (err) {
-        debugLog('Failed to read task directory:', sessionId, err);
+        debugLog("Failed to read task directory:", sessionId, err);
     }
     return tasks;
 }
@@ -296,7 +374,7 @@ export function readTaskFiles(sessionId) {
  */
 export function isTaskIncomplete(task) {
     // Treat 'completed' and any unknown/deleted status as complete
-    return task.status === 'pending' || task.status === 'in_progress';
+    return task.status === "pending" || task.status === "in_progress";
 }
 /**
  * Check for incomplete tasks in the new Task system
@@ -318,7 +396,7 @@ export function checkIncompleteTasks(sessionId) {
     return {
         count: incomplete.length,
         tasks: incomplete,
-        total: tasks.length
+        total: tasks.length,
     };
 }
 /**
@@ -348,7 +426,7 @@ export function checkLegacyTodos(sessionId, directory) {
         count: incompleteTodos.length,
         todos: incompleteTodos,
         total: allTodos.length,
-        source: incompleteTodos.length > 0 ? 'todo' : 'none'
+        source: incompleteTodos.length > 0 ? "todo" : "none",
     };
 }
 /**
@@ -368,7 +446,7 @@ export function checkLegacyTodos(sessionId, directory) {
 export async function checkIncompleteTodos(sessionId, directory, stopContext) {
     // If user aborted, don't force continuation
     if (isUserAbort(stopContext)) {
-        return { count: 0, todos: [], total: 0, source: 'none' };
+        return { count: 0, todos: [], total: 0, source: "none" };
     }
     let taskResult = null;
     // Priority 1: Check new Task system (if sessionId provided)
@@ -383,13 +461,13 @@ export async function checkIncompleteTodos(sessionId, directory, stopContext) {
             count: taskResult.count,
             // taskResult.tasks only contains incomplete tasks (pending/in_progress)
             // so status is safe to cast to Todo['status'] (no 'deleted' will appear)
-            todos: taskResult.tasks.map(t => ({
+            todos: taskResult.tasks.map((t) => ({
                 content: t.subject,
                 status: t.status,
-                id: t.id
+                id: t.id,
             })),
             total: taskResult.total,
-            source: todoResult.count > 0 ? 'both' : 'task'
+            source: todoResult.count > 0 ? "both" : "task",
         };
     }
     return todoResult;
@@ -399,7 +477,7 @@ export async function checkIncompleteTodos(sessionId, directory, stopContext) {
  */
 export function createTodoContinuationHook(directory) {
     return {
-        checkIncomplete: (sessionId) => checkIncompleteTodos(sessionId, directory)
+        checkIncomplete: (sessionId) => checkIncompleteTodos(sessionId, directory),
     };
 }
 /**
@@ -416,11 +494,11 @@ export function formatTodoStatus(result) {
  */
 export function getNextPendingTodo(result) {
     // First try to find one that's in_progress
-    const inProgress = result.todos.find(t => t.status === 'in_progress');
+    const inProgress = result.todos.find((t) => t.status === "in_progress");
     if (inProgress) {
         return inProgress;
     }
     // Otherwise return first pending
-    return result.todos.find(t => t.status === 'pending') ?? null;
+    return result.todos.find((t) => t.status === "pending") ?? null;
 }
 //# sourceMappingURL=index.js.map

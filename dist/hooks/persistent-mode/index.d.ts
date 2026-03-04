@@ -9,7 +9,7 @@
  *
  * Priority order: Ralph > Ultrawork > Todo Continuation
  */
-import { StopContext } from '../todo-continuation/index.js';
+import { StopContext } from "../todo-continuation/index.js";
 export interface ToolErrorState {
     tool_name: string;
     tool_input_preview?: string;
@@ -23,7 +23,7 @@ export interface PersistentModeResult {
     /** Message to inject into context */
     message: string;
     /** Which mode triggered the block */
-    mode: 'ralph' | 'ultrawork' | 'todo-continuation' | 'autopilot' | 'none';
+    mode: "ralph" | "ultrawork" | "todo-continuation" | "autopilot" | "none";
     /** Additional metadata */
     metadata?: {
         todoCount?: number;

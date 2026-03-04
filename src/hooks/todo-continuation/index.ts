@@ -20,15 +20,15 @@
  */
 function debugLog(message: string, ...args: unknown[]): void {
   const debug = process.env.OMC_DEBUG;
-  if (debug === '1' || debug === 'todo-continuation' || debug === 'true') {
-    console.error('[todo-continuation]', message, ...args);
+  if (debug === "1" || debug === "todo-continuation" || debug === "true") {
+    console.error("[todo-continuation]", message, ...args);
   }
 }
 
-import { existsSync, readFileSync, readdirSync } from 'fs';
-import { join } from 'path';
-import { getOmcRoot } from '../../lib/worktree-paths.js';
-import { getClaudeConfigDir } from '../../utils/paths.js';
+import { existsSync, readFileSync, readdirSync } from "fs";
+import { join } from "path";
+import { getOmcRoot } from "../../lib/worktree-paths.js";
+import { getClaudeConfigDir } from "../../utils/paths.js";
 
 /**
  * Validates that a session ID is safe to use in file paths.
@@ -39,7 +39,7 @@ import { getClaudeConfigDir } from '../../utils/paths.js';
  * @returns true if the session ID is safe, false otherwise
  */
 export function isValidSessionId(sessionId: string): boolean {
-  if (!sessionId || typeof sessionId !== 'string') {
+  if (!sessionId || typeof sessionId !== "string") {
     return false;
   }
   // Allow alphanumeric, hyphens, and underscores only
@@ -51,7 +51,7 @@ export function isValidSessionId(sessionId: string): boolean {
 
 export interface Todo {
   content: string;
-  status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
+  status: "pending" | "in_progress" | "completed" | "cancelled";
   priority?: string;
   id?: string;
 }
@@ -73,23 +73,23 @@ export interface Task {
   subject: string;
   description?: string;
   activeForm?: string;
-  status: 'pending' | 'in_progress' | 'completed' | 'deleted';
+  status: "pending" | "in_progress" | "completed" | "deleted";
   blocks?: string[];
   blockedBy?: string[];
 }
 
 /** Internal result for Task checking */
 export interface TaskCheckResult {
-  count: number;          // Incomplete tasks
-  tasks: Task[];          // The incomplete tasks
-  total: number;          // Total tasks found
+  count: number; // Incomplete tasks
+  tasks: Task[]; // The incomplete tasks
+  total: number; // Total tasks found
 }
 
 export interface IncompleteTodosResult {
   count: number;
   todos: Todo[];
   total: number;
-  source: 'task' | 'todo' | 'both' | 'none';
+  source: "task" | "todo" | "both" | "none";
 }
 
 /**
@@ -158,17 +158,30 @@ export function isUserAbort(context?: StopContext): boolean {
 
   // Check stop_reason patterns indicating user abort
   // Exact-match patterns: short generic words that cause false positives with .includes()
-  const exactPatterns = ['aborted', 'abort', 'cancel', 'interrupt'];
+  const exactPatterns = ["aborted", "abort", "cancel", "interrupt"];
   // Substring patterns: compound words safe for .includes() matching
-  const substringPatterns = ['user_cancel', 'user_interrupt', 'ctrl_c', 'manual_stop'];
+  const substringPatterns = [
+    "user_cancel",
+    "user_interrupt",
+    "ctrl_c",
+    "manual_stop",
+  ];
 
   // Support both snake_case and camelCase field names
-  const reason = (context.stop_reason ?? context.stopReason ?? '').toLowerCase();
-  const endTurnReason = (context.end_turn_reason ?? context.endTurnReason ?? '').toLowerCase();
+  const reason = (
+    context.stop_reason ??
+    context.stopReason ??
+    ""
+  ).toLowerCase();
+  const endTurnReason = (
+    context.end_turn_reason ??
+    context.endTurnReason ??
+    ""
+  ).toLowerCase();
 
   const matchesAbort = (value: string): boolean =>
-    exactPatterns.some(p => value === p) ||
-    substringPatterns.some(p => value.includes(p));
+    exactPatterns.some((p) => value === p) ||
+    substringPatterns.some((p) => value.includes(p));
 
   return matchesAbort(reason) || matchesAbort(endTurnReason);
 }
@@ -182,17 +195,26 @@ export function isUserAbort(context?: StopContext): boolean {
 export function isExplicitCancelCommand(context?: StopContext): boolean {
   if (!context) return false;
 
-  const prompt = (context.prompt ?? '').trim();
+  const prompt = (context.prompt ?? "").trim();
   if (prompt) {
-    const slashCancelPattern = /^\/(?:oh-my-claudecode:)?cancel(?:\s+--force)?\s*$/i;
+    const slashCancelPattern =
+      /^\/(?:oh-my-claudecode:)?cancel(?:\s+--force)?\s*$/i;
     const keywordCancelPattern = /^(?:cancelomc|stopomc)\s*$/i;
     if (slashCancelPattern.test(prompt) || keywordCancelPattern.test(prompt)) {
       return true;
     }
   }
 
-  const reason = (context.stop_reason ?? context.stopReason ?? '').toLowerCase();
-  const endTurnReason = (context.end_turn_reason ?? context.endTurnReason ?? '').toLowerCase();
+  const reason = (
+    context.stop_reason ??
+    context.stopReason ??
+    ""
+  ).toLowerCase();
+  const endTurnReason = (
+    context.end_turn_reason ??
+    context.endTurnReason ??
+    ""
+  ).toLowerCase();
   const explicitReasonPatterns = [
     /^cancel$/,
     /^cancelled$/,
@@ -201,15 +223,27 @@ export function isExplicitCancelCommand(context?: StopContext): boolean {
     /^cancel_force$/,
     /^force_cancel$/,
   ];
-  if (explicitReasonPatterns.some((pattern) => pattern.test(reason) || pattern.test(endTurnReason))) {
+  if (
+    explicitReasonPatterns.some(
+      (pattern) => pattern.test(reason) || pattern.test(endTurnReason),
+    )
+  ) {
     return true;
   }
 
-  const toolName = String(context.tool_name ?? context.toolName ?? '').toLowerCase();
-  const toolInput = (context.tool_input ?? context.toolInput) as Record<string, unknown> | undefined;
-  if (toolName.includes('skill') && toolInput && typeof toolInput.skill === 'string') {
+  const toolName = String(
+    context.tool_name ?? context.toolName ?? "",
+  ).toLowerCase();
+  const toolInput = (context.tool_input ?? context.toolInput) as
+    | Record<string, unknown>
+    | undefined;
+  if (
+    toolName.includes("skill") &&
+    toolInput &&
+    typeof toolInput.skill === "string"
+  ) {
     const skill = toolInput.skill.toLowerCase();
-    if (skill === 'oh-my-claudecode:cancel' || skill.endsWith(':cancel')) {
+    if (skill === "oh-my-claudecode:cancel" || skill.endsWith(":cancel")) {
       return true;
     }
   }
@@ -228,15 +262,32 @@ export function isExplicitCancelCommand(context?: StopContext): boolean {
 export function isContextLimitStop(context?: StopContext): boolean {
   if (!context) return false;
 
-  const reason = (context.stop_reason ?? context.stopReason ?? '').toLowerCase();
-  const endTurnReason = (context.end_turn_reason ?? context.endTurnReason ?? '').toLowerCase();
+  const reason = (
+    context.stop_reason ??
+    context.stopReason ??
+    ""
+  ).toLowerCase();
+  const endTurnReason = (
+    context.end_turn_reason ??
+    context.endTurnReason ??
+    ""
+  ).toLowerCase();
 
   const contextPatterns = [
-    'context_limit', 'context_window', 'context_exceeded', 'context_full',
-    'max_context', 'token_limit', 'max_tokens', 'conversation_too_long', 'input_too_long'
+    "context_limit",
+    "context_window",
+    "context_exceeded",
+    "context_full",
+    "max_context",
+    "token_limit",
+    "max_tokens",
+    "conversation_too_long",
+    "input_too_long",
   ];
 
-  return contextPatterns.some(p => reason.includes(p) || endTurnReason.includes(p));
+  return contextPatterns.some(
+    (p) => reason.includes(p) || endTurnReason.includes(p),
+  );
 }
 
 /**
@@ -251,20 +302,85 @@ export function isContextLimitStop(context?: StopContext): boolean {
 export function isRateLimitStop(context?: StopContext): boolean {
   if (!context) return false;
 
-  const reason = (context.stop_reason ?? context.stopReason ?? '').toLowerCase();
-  const endTurnReason = (context.end_turn_reason ?? context.endTurnReason ?? '').toLowerCase();
+  const reason = (
+    context.stop_reason ??
+    context.stopReason ??
+    ""
+  ).toLowerCase();
+  const endTurnReason = (
+    context.end_turn_reason ??
+    context.endTurnReason ??
+    ""
+  ).toLowerCase();
 
   const rateLimitPatterns = [
-    'rate_limit', 'rate_limited', 'ratelimit',
-    'too_many_requests', '429',
-    'quota_exceeded', 'quota_limit', 'quota_exhausted',
-    'request_limit', 'api_limit',
+    "rate_limit",
+    "rate_limited",
+    "ratelimit",
+    "too_many_requests",
+    "429",
+    "quota_exceeded",
+    "quota_limit",
+    "quota_exhausted",
+    "request_limit",
+    "api_limit",
     // Anthropic API returns 'overloaded_error' (529) for server overload;
     // 'capacity' covers provider-level capacity-exceeded responses
-    'overloaded', 'capacity',
+    "overloaded",
+    "capacity",
   ];
 
-  return rateLimitPatterns.some(p => reason.includes(p) || endTurnReason.includes(p));
+  return rateLimitPatterns.some(
+    (p) => reason.includes(p) || endTurnReason.includes(p),
+  );
+}
+
+/**
+ * Detect if stop was triggered by an authentication error (HTTP 401 / OAuth token expired).
+ * When the API returns an authentication error, Claude Code stops the session.
+ * Blocking these stops causes an infinite retry loop: the persistent-mode hook
+ * injects a continuation prompt, Claude immediately hits the auth error again,
+ * stops again, and the cycle repeats indefinitely.
+ *
+ * Fix for: https://github.com/Yeachan-Heo/oh-my-claudecode/issues/1308
+ */
+export function isAuthenticationError(context?: StopContext): boolean {
+  if (!context) return false;
+
+  const reason = (
+    context.stop_reason ??
+    context.stopReason ??
+    ""
+  ).toLowerCase();
+  const endTurnReason = (
+    context.end_turn_reason ??
+    context.endTurnReason ??
+    ""
+  ).toLowerCase();
+
+  const authPatterns = [
+    "authentication_error",
+    "authentication_failed",
+    "unauthorized",
+    "401",
+    "invalid_api_key",
+    "api_key_invalid",
+    "api_key_expired",
+    "token_expired",
+    "token_invalid",
+    "oauth_error",
+    "oauth_expired",
+    "permission_denied",
+    "access_denied",
+    "forbidden",
+    "403",
+    "credentials_expired",
+    "invalid_credentials",
+  ];
+
+  return authPatterns.some(
+    (p) => reason.includes(p) || endTurnReason.includes(p),
+  );
 }
 
 /**
@@ -276,14 +392,14 @@ function getTodoFilePaths(sessionId?: string, directory?: string): string[] {
 
   // Session-specific todos
   if (sessionId) {
-    paths.push(join(claudeDir, 'sessions', sessionId, 'todos.json'));
-    paths.push(join(claudeDir, 'todos', `${sessionId}.json`));
+    paths.push(join(claudeDir, "sessions", sessionId, "todos.json"));
+    paths.push(join(claudeDir, "todos", `${sessionId}.json`));
   }
 
   // Project-specific todos
   if (directory) {
-    paths.push(join(getOmcRoot(directory), 'todos.json'));
-    paths.push(join(directory, '.claude', 'todos.json'));
+    paths.push(join(getOmcRoot(directory), "todos.json"));
+    paths.push(join(directory, ".claude", "todos.json"));
   }
 
   // NOTE: Global todos directory scan removed to prevent false positives.
@@ -297,15 +413,16 @@ function getTodoFilePaths(sessionId?: string, directory?: string): string[] {
  */
 function parseTodoFile(filePath: string): Todo[] {
   try {
-    const content = readFileSync(filePath, 'utf-8');
+    const content = readFileSync(filePath, "utf-8");
     const data = JSON.parse(content);
 
     // Handle array format
     if (Array.isArray(data)) {
-      return data.filter(item =>
-        item &&
-        typeof item.content === 'string' &&
-        typeof item.status === 'string'
+      return data.filter(
+        (item) =>
+          item &&
+          typeof item.content === "string" &&
+          typeof item.status === "string",
       );
     }
 
@@ -315,15 +432,15 @@ function parseTodoFile(filePath: string): Todo[] {
         const todo = item as Record<string, unknown>;
         return (
           todo &&
-          typeof todo.content === 'string' &&
-          typeof todo.status === 'string'
+          typeof todo.content === "string" &&
+          typeof todo.status === "string"
         );
       }) as Todo[];
     }
 
     return [];
   } catch (err) {
-    debugLog('Failed to parse todo file:', filePath, err);
+    debugLog("Failed to parse todo file:", filePath, err);
     return [];
   }
 }
@@ -332,7 +449,7 @@ function parseTodoFile(filePath: string): Todo[] {
  * Check if a todo is incomplete
  */
 function isIncomplete(todo: Todo): boolean {
-  return todo.status !== 'completed' && todo.status !== 'cancelled';
+  return todo.status !== "completed" && todo.status !== "cancelled";
 }
 
 /**
@@ -345,9 +462,9 @@ function isIncomplete(todo: Todo): boolean {
 export function getTaskDirectory(sessionId: string): string {
   // Security: validate sessionId before constructing path
   if (!isValidSessionId(sessionId)) {
-    return ''; // Return empty string for invalid sessions
+    return ""; // Return empty string for invalid sessions
   }
-  return join(getClaudeConfigDir(), 'tasks', sessionId);
+  return join(getClaudeConfigDir(), "tasks", sessionId);
 }
 
 /**
@@ -355,14 +472,16 @@ export function getTaskDirectory(sessionId: string): string {
  * Required fields: id (string), subject (string), status (string).
  */
 export function isValidTask(data: unknown): data is Task {
-  if (data === null || typeof data !== 'object') return false;
+  if (data === null || typeof data !== "object") return false;
   const obj = data as Record<string, unknown>;
   return (
-    typeof obj.id === 'string' && obj.id.length > 0 &&
-    typeof obj.subject === 'string' && obj.subject.length > 0 &&
-    typeof obj.status === 'string' &&
+    typeof obj.id === "string" &&
+    obj.id.length > 0 &&
+    typeof obj.subject === "string" &&
+    obj.subject.length > 0 &&
+    typeof obj.status === "string" &&
     // Accept 'deleted' as valid - matches Task interface status union type
-    ['pending', 'in_progress', 'completed', 'deleted'].includes(obj.status)
+    ["pending", "in_progress", "completed", "deleted"].includes(obj.status)
   );
 }
 
@@ -381,17 +500,17 @@ export function readTaskFiles(sessionId: string): Task[] {
     for (const file of readdirSync(taskDir)) {
       // Skip non-JSON files and .lock file (used by Claude Code for atomic writes)
       // The .lock file prevents concurrent modifications to task files
-      if (!file.endsWith('.json') || file === '.lock') continue;
+      if (!file.endsWith(".json") || file === ".lock") continue;
       try {
-        const content = readFileSync(join(taskDir, file), 'utf-8');
+        const content = readFileSync(join(taskDir, file), "utf-8");
         const parsed = JSON.parse(content);
         if (isValidTask(parsed)) tasks.push(parsed);
       } catch (err) {
-        debugLog('Failed to parse task file:', file, err);
+        debugLog("Failed to parse task file:", file, err);
       }
     }
   } catch (err) {
-    debugLog('Failed to read task directory:', sessionId, err);
+    debugLog("Failed to read task directory:", sessionId, err);
   }
   return tasks;
 }
@@ -410,7 +529,7 @@ export function readTaskFiles(sessionId: string): Task[] {
  */
 export function isTaskIncomplete(task: Task): boolean {
   // Treat 'completed' and any unknown/deleted status as complete
-  return task.status === 'pending' || task.status === 'in_progress';
+  return task.status === "pending" || task.status === "in_progress";
 }
 
 /**
@@ -433,14 +552,17 @@ export function checkIncompleteTasks(sessionId: string): TaskCheckResult {
   return {
     count: incomplete.length,
     tasks: incomplete,
-    total: tasks.length
+    total: tasks.length,
   };
 }
 
 /**
  * Check for incomplete todos in the legacy system
  */
-export function checkLegacyTodos(sessionId?: string, directory?: string): IncompleteTodosResult {
+export function checkLegacyTodos(
+  sessionId?: string,
+  directory?: string,
+): IncompleteTodosResult {
   const paths = getTodoFilePaths(sessionId, directory);
   const seenContents = new Set<string>();
   const allTodos: Todo[] = [];
@@ -465,7 +587,7 @@ export function checkLegacyTodos(sessionId?: string, directory?: string): Incomp
     count: incompleteTodos.length,
     todos: incompleteTodos,
     total: allTodos.length,
-    source: incompleteTodos.length > 0 ? 'todo' : 'none'
+    source: incompleteTodos.length > 0 ? "todo" : "none",
   };
 }
 
@@ -486,11 +608,11 @@ export function checkLegacyTodos(sessionId?: string, directory?: string): Incomp
 export async function checkIncompleteTodos(
   sessionId?: string,
   directory?: string,
-  stopContext?: StopContext
+  stopContext?: StopContext,
 ): Promise<IncompleteTodosResult> {
   // If user aborted, don't force continuation
   if (isUserAbort(stopContext)) {
-    return { count: 0, todos: [], total: 0, source: 'none' };
+    return { count: 0, todos: [], total: 0, source: "none" };
   }
 
   let taskResult: TaskCheckResult | null = null;
@@ -509,13 +631,13 @@ export async function checkIncompleteTodos(
       count: taskResult.count,
       // taskResult.tasks only contains incomplete tasks (pending/in_progress)
       // so status is safe to cast to Todo['status'] (no 'deleted' will appear)
-      todos: taskResult.tasks.map(t => ({
+      todos: taskResult.tasks.map((t) => ({
         content: t.subject,
-        status: t.status as Todo['status'],
-        id: t.id
+        status: t.status as Todo["status"],
+        id: t.id,
       })),
       total: taskResult.total,
-      source: todoResult.count > 0 ? 'both' : 'task'
+      source: todoResult.count > 0 ? "both" : "task",
     };
   }
 
@@ -525,10 +647,12 @@ export async function checkIncompleteTodos(
 /**
  * Create a Todo Continuation hook instance
  */
-export function createTodoContinuationHook(directory: string): TodoContinuationHook {
+export function createTodoContinuationHook(
+  directory: string,
+): TodoContinuationHook {
   return {
     checkIncomplete: (sessionId?: string) =>
-      checkIncompleteTodos(sessionId, directory)
+      checkIncompleteTodos(sessionId, directory),
   };
 }
 
@@ -548,11 +672,11 @@ export function formatTodoStatus(result: IncompleteTodosResult): string {
  */
 export function getNextPendingTodo(result: IncompleteTodosResult): Todo | null {
   // First try to find one that's in_progress
-  const inProgress = result.todos.find(t => t.status === 'in_progress');
+  const inProgress = result.todos.find((t) => t.status === "in_progress");
   if (inProgress) {
     return inProgress;
   }
 
   // Otherwise return first pending
-  return result.todos.find(t => t.status === 'pending') ?? null;
+  return result.todos.find((t) => t.status === "pending") ?? null;
 }

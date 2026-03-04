@@ -23,12 +23,37 @@ async function readStdin(timeoutMs = 2000) {
     const chunks = [];
     let settled = false;
     const timeout = setTimeout(() => {
-      if (!settled) { settled = true; process.stdin.removeAllListeners(); process.stdin.destroy(); resolve(Buffer.concat(chunks).toString("utf-8")); }
+      if (!settled) {
+        settled = true;
+        process.stdin.removeAllListeners();
+        process.stdin.destroy();
+        resolve(Buffer.concat(chunks).toString("utf-8"));
+      }
     }, timeoutMs);
-    process.stdin.on("data", (chunk) => { chunks.push(chunk); });
-    process.stdin.on("end", () => { if (!settled) { settled = true; clearTimeout(timeout); resolve(Buffer.concat(chunks).toString("utf-8")); } });
-    process.stdin.on("error", () => { if (!settled) { settled = true; clearTimeout(timeout); resolve(""); } });
-    if (process.stdin.readableEnded) { if (!settled) { settled = true; clearTimeout(timeout); resolve(Buffer.concat(chunks).toString("utf-8")); } }
+    process.stdin.on("data", (chunk) => {
+      chunks.push(chunk);
+    });
+    process.stdin.on("end", () => {
+      if (!settled) {
+        settled = true;
+        clearTimeout(timeout);
+        resolve(Buffer.concat(chunks).toString("utf-8"));
+      }
+    });
+    process.stdin.on("error", () => {
+      if (!settled) {
+        settled = true;
+        clearTimeout(timeout);
+        resolve("");
+      }
+    });
+    if (process.stdin.readableEnded) {
+      if (!settled) {
+        settled = true;
+        clearTimeout(timeout);
+        resolve(Buffer.concat(chunks).toString("utf-8"));
+      }
+    }
   });
 }
 
@@ -60,10 +85,10 @@ function writeJsonFile(path, data) {
  * Default: 60. 0 = disabled.
  */
 function getIdleCooldownSeconds() {
-  const configPath = join(homedir(), '.omc', 'config.json');
+  const configPath = join(homedir(), ".omc", "config.json");
   const config = readJsonFile(configPath);
   const val = config?.notificationCooldown?.sessionIdleSeconds;
-  if (typeof val === 'number') return val;
+  if (typeof val === "number") return val;
   return 60;
 }
 
@@ -75,7 +100,7 @@ function shouldSendIdleNotification(stateDir) {
   const cooldownSecs = getIdleCooldownSeconds();
   if (cooldownSecs === 0) return true; // cooldown disabled
 
-  const cooldownPath = join(stateDir, 'idle-notif-cooldown.json');
+  const cooldownPath = join(stateDir, "idle-notif-cooldown.json");
   const data = readJsonFile(cooldownPath);
   if (data?.lastSentAt) {
     const elapsed = (Date.now() - new Date(data.lastSentAt).getTime()) / 1000;
@@ -88,7 +113,7 @@ function shouldSendIdleNotification(stateDir) {
  * Record that the session-idle notification was sent.
  */
 function recordIdleNotificationSent(stateDir) {
-  const cooldownPath = join(stateDir, 'idle-notif-cooldown.json');
+  const cooldownPath = join(stateDir, "idle-notif-cooldown.json");
   writeJsonFile(cooldownPath, { lastSentAt: new Date().toISOString() });
 }
 
@@ -104,15 +129,18 @@ async function sendStopNotification(modeName, stateData, sessionId, directory) {
     const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT;
     if (!pluginRoot) return;
 
-    const { pathToFileURL } = require('url');
-    const { notify } = await import(pathToFileURL(join(pluginRoot, 'dist', 'notifications', 'index.js')).href);
+    const { pathToFileURL } = require("url");
+    const { notify } = await import(
+      pathToFileURL(join(pluginRoot, "dist", "notifications", "index.js")).href
+    );
 
-    await notify('session-stop', {
+    await notify("session-stop", {
       sessionId: sessionId,
       projectPath: directory,
       activeMode: modeName,
       iteration: stateData.iteration || stateData.reinforcement_count || 1,
-      maxIterations: stateData.max_iterations || stateData.max_reinforcements || 100,
+      maxIterations:
+        stateData.max_iterations || stateData.max_reinforcements || 100,
       incompleteTasks: undefined, // Caller can override
     }).catch(() => {});
 
@@ -162,7 +190,12 @@ function isSessionCancelInProgress(stateDir, sessionId) {
 
   // Try session-scoped path first
   if (sessionId) {
-    const sessionSignalPath = join(stateDir, 'sessions', sessionId, 'cancel-signal-state.json');
+    const sessionSignalPath = join(
+      stateDir,
+      "sessions",
+      sessionId,
+      "cancel-signal-state.json",
+    );
     const signal = readJsonFile(sessionSignalPath);
     if (signal && signal.expires_at) {
       const expiresAt = new Date(signal.expires_at).getTime();
@@ -173,7 +206,7 @@ function isSessionCancelInProgress(stateDir, sessionId) {
   }
 
   // Fall back to legacy path
-  const legacySignalPath = join(stateDir, 'cancel-signal-state.json');
+  const legacySignalPath = join(stateDir, "cancel-signal-state.json");
   const signal = readJsonFile(legacySignalPath);
   if (signal && signal.expires_at) {
     const expiresAt = new Date(signal.expires_at).getTime();
@@ -249,7 +282,7 @@ function readStateFile(stateDir, filename) {
 function readStateFileWithSession(stateDir, filename, sessionId) {
   // Try session-scoped path first (and ONLY) when sessionId is available
   if (sessionId && /^[a-zA-Z0-9][a-zA-Z0-9_-]{0,255}$/.test(sessionId)) {
-    const sessionsDir = join(stateDir, 'sessions', sessionId);
+    const sessionsDir = join(stateDir, "sessions", sessionId);
     const sessionPath = join(sessionsDir, filename);
     const state = readJsonFile(sessionPath);
     if (state) {
@@ -386,6 +419,45 @@ function isContextLimitStop(data) {
 }
 
 /**
+ * Detect if stop was triggered by an authentication error (HTTP 401 / OAuth token expired).
+ * When the API returns an authentication error, Claude Code stops the session.
+ * Blocking these stops causes an infinite retry loop.
+ * Fix for: https://github.com/Yeachan-Heo/oh-my-claudecode/issues/1308
+ */
+function isAuthenticationError(data) {
+  const reason = (data.stop_reason || data.stopReason || "").toLowerCase();
+  const endTurnReason = (
+    data.end_turn_reason ||
+    data.endTurnReason ||
+    ""
+  ).toLowerCase();
+
+  const authPatterns = [
+    "authentication_error",
+    "authentication_failed",
+    "unauthorized",
+    "401",
+    "invalid_api_key",
+    "api_key_invalid",
+    "api_key_expired",
+    "token_expired",
+    "token_invalid",
+    "oauth_error",
+    "oauth_expired",
+    "permission_denied",
+    "access_denied",
+    "forbidden",
+    "403",
+    "credentials_expired",
+    "invalid_credentials",
+  ];
+
+  return authPatterns.some(
+    (p) => reason.includes(p) || endTurnReason.includes(p),
+  );
+}
+
+/**
  * Detect if stop was triggered by user abort (Ctrl+C, cancel button, etc.)
  */
 function isUserAbort(data) {
@@ -434,15 +506,54 @@ async function main() {
       return;
     }
 
+    // CRITICAL: Never block authentication error stops (401 / OAuth token expired).
+    // Blocking these causes an infinite retry loop (issue #1308).
+    if (isAuthenticationError(data)) {
+      console.log(JSON.stringify({ continue: true, suppressOutput: true }));
+      return;
+    }
+
     // Read all mode states (session-scoped with legacy fallback)
-    const ralph = readStateFileWithSession(stateDir, "ralph-state.json", sessionId);
-    const autopilot = readStateFileWithSession(stateDir, "autopilot-state.json", sessionId);
-    const ultrapilot = readStateFileWithSession(stateDir, "ultrapilot-state.json", sessionId);
-    const ultrawork = readStateFileWithSession(stateDir, "ultrawork-state.json", sessionId);
-    const ultraqa = readStateFileWithSession(stateDir, "ultraqa-state.json", sessionId);
-    const pipeline = readStateFileWithSession(stateDir, "pipeline-state.json", sessionId);
-    const team = readStateFileWithSession(stateDir, "team-state.json", sessionId);
-    const omcTeams = readStateFileWithSession(stateDir, "omc-teams-state.json", sessionId);
+    const ralph = readStateFileWithSession(
+      stateDir,
+      "ralph-state.json",
+      sessionId,
+    );
+    const autopilot = readStateFileWithSession(
+      stateDir,
+      "autopilot-state.json",
+      sessionId,
+    );
+    const ultrapilot = readStateFileWithSession(
+      stateDir,
+      "ultrapilot-state.json",
+      sessionId,
+    );
+    const ultrawork = readStateFileWithSession(
+      stateDir,
+      "ultrawork-state.json",
+      sessionId,
+    );
+    const ultraqa = readStateFileWithSession(
+      stateDir,
+      "ultraqa-state.json",
+      sessionId,
+    );
+    const pipeline = readStateFileWithSession(
+      stateDir,
+      "pipeline-state.json",
+      sessionId,
+    );
+    const team = readStateFileWithSession(
+      stateDir,
+      "team-state.json",
+      sessionId,
+    );
+    const omcTeams = readStateFileWithSession(
+      stateDir,
+      "omc-teams-state.json",
+      sessionId,
+    );
 
     // Swarm uses swarm-summary.json (not swarm-state.json) + marker file
     const swarmMarker = existsSync(join(stateDir, "swarm-active.marker"));
@@ -461,7 +572,11 @@ async function main() {
 
     // Priority 1: Ralph Loop (explicit persistence mode)
     // Skip if state is stale (older than 2 hours) - prevents blocking new sessions
-    if (ralph.state?.active && !isStaleState(ralph.state) && isSessionMatch(ralph.state, sessionId)) {
+    if (
+      ralph.state?.active &&
+      !isStaleState(ralph.state) &&
+      isSessionMatch(ralph.state, sessionId)
+    ) {
       const iteration = ralph.state.iteration || 1;
       const maxIter = ralph.state.max_iterations || 100;
 
@@ -471,7 +586,9 @@ async function main() {
         writeJsonFile(ralph.path, ralph.state);
 
         // Fire-and-forget notification
-        sendStopNotification('ralph', ralph.state, sessionId, directory).catch(() => {});
+        sendStopNotification("ralph", ralph.state, sessionId, directory).catch(
+          () => {},
+        );
 
         console.log(
           JSON.stringify({
@@ -484,7 +601,11 @@ async function main() {
     }
 
     // Priority 2: Autopilot (high-level orchestration)
-    if (autopilot.state?.active && !isStaleState(autopilot.state) && isSessionMatch(autopilot.state, sessionId)) {
+    if (
+      autopilot.state?.active &&
+      !isStaleState(autopilot.state) &&
+      isSessionMatch(autopilot.state, sessionId)
+    ) {
       const phase = autopilot.state.phase || "unknown";
       if (phase !== "complete") {
         const newCount = (autopilot.state.reinforcement_count || 0) + 1;
@@ -494,7 +615,12 @@ async function main() {
           writeJsonFile(autopilot.path, autopilot.state);
 
           // Fire-and-forget notification
-          sendStopNotification('autopilot', autopilot.state, sessionId, directory).catch(() => {});
+          sendStopNotification(
+            "autopilot",
+            autopilot.state,
+            sessionId,
+            directory,
+          ).catch(() => {});
 
           console.log(
             JSON.stringify({
@@ -508,7 +634,11 @@ async function main() {
     }
 
     // Priority 3: Ultrapilot (parallel autopilot)
-    if (ultrapilot.state?.active && !isStaleState(ultrapilot.state) && isSessionMatch(ultrapilot.state, sessionId)) {
+    if (
+      ultrapilot.state?.active &&
+      !isStaleState(ultrapilot.state) &&
+      isSessionMatch(ultrapilot.state, sessionId)
+    ) {
       const workers = ultrapilot.state.workers || [];
       const incomplete = workers.filter(
         (w) => w.status !== "complete" && w.status !== "failed",
@@ -521,7 +651,12 @@ async function main() {
           writeJsonFile(ultrapilot.path, ultrapilot.state);
 
           // Fire-and-forget notification
-          sendStopNotification('ultrapilot', ultrapilot.state, sessionId, directory).catch(() => {});
+          sendStopNotification(
+            "ultrapilot",
+            ultrapilot.state,
+            sessionId,
+            directory,
+          ).catch(() => {});
 
           console.log(
             JSON.stringify({
@@ -546,7 +681,12 @@ async function main() {
           writeJsonFile(join(stateDir, "swarm-summary.json"), swarmSummary);
 
           // Fire-and-forget notification
-          sendStopNotification('swarm', swarmSummary, sessionId, directory).catch(() => {});
+          sendStopNotification(
+            "swarm",
+            swarmSummary,
+            sessionId,
+            directory,
+          ).catch(() => {});
 
           console.log(
             JSON.stringify({
@@ -560,7 +700,11 @@ async function main() {
     }
 
     // Priority 5: Pipeline (sequential stages)
-    if (pipeline.state?.active && !isStaleState(pipeline.state) && isSessionMatch(pipeline.state, sessionId)) {
+    if (
+      pipeline.state?.active &&
+      !isStaleState(pipeline.state) &&
+      isSessionMatch(pipeline.state, sessionId)
+    ) {
       const currentStage = pipeline.state.current_stage || 0;
       const totalStages = pipeline.state.stages?.length || 0;
       if (currentStage < totalStages) {
@@ -571,7 +715,12 @@ async function main() {
           writeJsonFile(pipeline.path, pipeline.state);
 
           // Fire-and-forget notification
-          sendStopNotification('pipeline', pipeline.state, sessionId, directory).catch(() => {});
+          sendStopNotification(
+            "pipeline",
+            pipeline.state,
+            sessionId,
+            directory,
+          ).catch(() => {});
 
           console.log(
             JSON.stringify({
@@ -585,7 +734,11 @@ async function main() {
     }
 
     // Priority 6: Team (native Claude Code teams)
-    if (team.state?.active && !isStaleState(team.state) && isSessionMatch(team.state, sessionId)) {
+    if (
+      team.state?.active &&
+      !isStaleState(team.state) &&
+      isSessionMatch(team.state, sessionId)
+    ) {
       const phase = team.state.current_phase || "executing";
       const terminalPhases = ["completed", "complete", "failed", "cancelled"];
       if (!terminalPhases.includes(phase)) {
@@ -596,7 +749,9 @@ async function main() {
           writeJsonFile(team.path, team.state);
 
           // Fire-and-forget notification
-          sendStopNotification('team', team.state, sessionId, directory).catch(() => {});
+          sendStopNotification("team", team.state, sessionId, directory).catch(
+            () => {},
+          );
 
           console.log(
             JSON.stringify({
@@ -610,7 +765,11 @@ async function main() {
     }
 
     // Priority 6.5: OMC Teams (tmux CLI workers — independent of native team state)
-    if (omcTeams.state?.active && !isStaleState(omcTeams.state) && isSessionMatch(omcTeams.state, sessionId)) {
+    if (
+      omcTeams.state?.active &&
+      !isStaleState(omcTeams.state) &&
+      isSessionMatch(omcTeams.state, sessionId)
+    ) {
       const phase = omcTeams.state.current_phase || "executing";
       const terminalPhases = ["completed", "complete", "failed", "cancelled"];
       if (!terminalPhases.includes(phase)) {
@@ -621,7 +780,12 @@ async function main() {
           writeJsonFile(omcTeams.path, omcTeams.state);
 
           // Fire-and-forget notification
-          sendStopNotification('omc-teams', omcTeams.state, sessionId, directory).catch(() => {});
+          sendStopNotification(
+            "omc-teams",
+            omcTeams.state,
+            sessionId,
+            directory,
+          ).catch(() => {});
 
           console.log(
             JSON.stringify({
@@ -635,7 +799,11 @@ async function main() {
     }
 
     // Priority 7: UltraQA (QA cycling)
-    if (ultraqa.state?.active && !isStaleState(ultraqa.state) && isSessionMatch(ultraqa.state, sessionId)) {
+    if (
+      ultraqa.state?.active &&
+      !isStaleState(ultraqa.state) &&
+      isSessionMatch(ultraqa.state, sessionId)
+    ) {
       const cycle = ultraqa.state.cycle || 1;
       const maxCycles = ultraqa.state.max_cycles || 10;
       if (cycle < maxCycles && !ultraqa.state.all_passing) {
@@ -644,7 +812,12 @@ async function main() {
         writeJsonFile(ultraqa.path, ultraqa.state);
 
         // Fire-and-forget notification
-        sendStopNotification('ultraqa', ultraqa.state, sessionId, directory).catch(() => {});
+        sendStopNotification(
+          "ultraqa",
+          ultraqa.state,
+          sessionId,
+          directory,
+        ).catch(() => {});
 
         console.log(
           JSON.stringify({
@@ -680,7 +853,12 @@ async function main() {
       writeJsonFile(ultrawork.path, ultrawork.state);
 
       // Fire-and-forget notification
-      sendStopNotification('ultrawork', ultrawork.state, sessionId, directory).catch(() => {});
+      sendStopNotification(
+        "ultrawork",
+        ultrawork.state,
+        sessionId,
+        directory,
+      ).catch(() => {});
 
       let reason = `[ULTRAWORK #${newCount}/${maxReinforcements}] Mode active.`;
 
@@ -711,13 +889,16 @@ async function main() {
       try {
         const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT;
         if (pluginRoot) {
-          const { pathToFileURL } = require('url');
-          import(pathToFileURL(join(pluginRoot, 'dist', 'notifications', 'index.js')).href)
+          const { pathToFileURL } = require("url");
+          import(
+            pathToFileURL(join(pluginRoot, "dist", "notifications", "index.js"))
+              .href
+          )
             .then(({ notify }) =>
-              notify('session-idle', {
+              notify("session-idle", {
                 sessionId,
                 projectPath: directory,
-              }).catch(() => {})
+              }).catch(() => {}),
             )
             .catch(() => {});
           recordIdleNotificationSent(stateDir);

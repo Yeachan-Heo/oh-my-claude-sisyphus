@@ -8870,6 +8870,7 @@ __export(todo_continuation_exports, {
   formatTodoStatus: () => formatTodoStatus,
   getNextPendingTodo: () => getNextPendingTodo,
   getTaskDirectory: () => getTaskDirectory,
+  isAuthenticationError: () => isAuthenticationError,
   isContextLimitStop: () => isContextLimitStop,
   isExplicitCancelCommand: () => isExplicitCancelCommand,
   isRateLimitStop: () => isRateLimitStop,
@@ -8896,7 +8897,12 @@ function isUserAbort(context) {
   if (!context) return false;
   if (context.user_requested || context.userRequested) return true;
   const exactPatterns = ["aborted", "abort", "cancel", "interrupt"];
-  const substringPatterns = ["user_cancel", "user_interrupt", "ctrl_c", "manual_stop"];
+  const substringPatterns = [
+    "user_cancel",
+    "user_interrupt",
+    "ctrl_c",
+    "manual_stop"
+  ];
   const reason = (context.stop_reason ?? context.stopReason ?? "").toLowerCase();
   const endTurnReason = (context.end_turn_reason ?? context.endTurnReason ?? "").toLowerCase();
   const matchesAbort = (value) => exactPatterns.some((p) => value === p) || substringPatterns.some((p) => value.includes(p));
@@ -8922,10 +8928,14 @@ function isExplicitCancelCommand(context) {
     /^cancel_force$/,
     /^force_cancel$/
   ];
-  if (explicitReasonPatterns.some((pattern) => pattern.test(reason) || pattern.test(endTurnReason))) {
+  if (explicitReasonPatterns.some(
+    (pattern) => pattern.test(reason) || pattern.test(endTurnReason)
+  )) {
     return true;
   }
-  const toolName = String(context.tool_name ?? context.toolName ?? "").toLowerCase();
+  const toolName = String(
+    context.tool_name ?? context.toolName ?? ""
+  ).toLowerCase();
   const toolInput = context.tool_input ?? context.toolInput;
   if (toolName.includes("skill") && toolInput && typeof toolInput.skill === "string") {
     const skill = toolInput.skill.toLowerCase();
@@ -8950,7 +8960,9 @@ function isContextLimitStop(context) {
     "conversation_too_long",
     "input_too_long"
   ];
-  return contextPatterns.some((p) => reason.includes(p) || endTurnReason.includes(p));
+  return contextPatterns.some(
+    (p) => reason.includes(p) || endTurnReason.includes(p)
+  );
 }
 function isRateLimitStop(context) {
   if (!context) return false;
@@ -8972,7 +8984,36 @@ function isRateLimitStop(context) {
     "overloaded",
     "capacity"
   ];
-  return rateLimitPatterns.some((p) => reason.includes(p) || endTurnReason.includes(p));
+  return rateLimitPatterns.some(
+    (p) => reason.includes(p) || endTurnReason.includes(p)
+  );
+}
+function isAuthenticationError(context) {
+  if (!context) return false;
+  const reason = (context.stop_reason ?? context.stopReason ?? "").toLowerCase();
+  const endTurnReason = (context.end_turn_reason ?? context.endTurnReason ?? "").toLowerCase();
+  const authPatterns = [
+    "authentication_error",
+    "authentication_failed",
+    "unauthorized",
+    "401",
+    "invalid_api_key",
+    "api_key_invalid",
+    "api_key_expired",
+    "token_expired",
+    "token_invalid",
+    "oauth_error",
+    "oauth_expired",
+    "permission_denied",
+    "access_denied",
+    "forbidden",
+    "403",
+    "credentials_expired",
+    "invalid_credentials"
+  ];
+  return authPatterns.some(
+    (p) => reason.includes(p) || endTurnReason.includes(p)
+  );
 }
 function getTodoFilePaths(sessionId, directory) {
   const claudeDir = getClaudeConfigDir();
@@ -12850,7 +12891,11 @@ function isSessionCancelInProgress(directory, sessionId) {
   if (!sessionId) return false;
   let cancelSignalPath;
   try {
-    cancelSignalPath = resolveSessionStatePath("cancel-signal", sessionId, directory);
+    cancelSignalPath = resolveSessionStatePath(
+      "cancel-signal",
+      sessionId,
+      directory
+    );
   } catch {
     return false;
   }
@@ -12952,7 +12997,8 @@ function getIdleNotificationCooldownSeconds() {
     const config2 = JSON.parse((0, import_fs45.readFileSync)(configPath, "utf-8"));
     const cooldown = config2?.notificationCooldown;
     const val = cooldown?.sessionIdleSeconds;
-    if (typeof val === "number" && Number.isFinite(val)) return Math.max(0, val);
+    if (typeof val === "number" && Number.isFinite(val))
+      return Math.max(0, val);
   } catch {
   }
   return 60;
@@ -13136,8 +13182,16 @@ async function checkRalphLoop(sessionId, directory, cancelInProgress) {
       }
       const rejection = checkArchitectRejectionInTranscript(sessionId);
       if (rejection.rejected) {
-        recordArchitectFeedback(workingDir, false, rejection.feedback, sessionId);
-        const updatedVerification = readVerificationState(workingDir, sessionId);
+        recordArchitectFeedback(
+          workingDir,
+          false,
+          rejection.feedback,
+          sessionId
+        );
+        const updatedVerification = readVerificationState(
+          workingDir,
+          sessionId
+        );
         if (updatedVerification) {
           const continuationPrompt2 = getArchitectRejectionContinuationPrompt(updatedVerification);
           return {
@@ -13154,7 +13208,10 @@ async function checkRalphLoop(sessionId, directory, cancelInProgress) {
     }
     const prdInfo = getPrdCompletionStatus(workingDir);
     const currentStory = prdInfo.nextStory ?? void 0;
-    const verificationPrompt = getArchitectVerificationPrompt(verificationState, currentStory);
+    const verificationPrompt = getArchitectVerificationPrompt(
+      verificationState,
+      currentStory
+    );
     return {
       shouldBlock: true,
       message: verificationPrompt,
@@ -13276,9 +13333,24 @@ async function checkPersistentModes(sessionId, directory, stopContext) {
       mode: "none"
     };
   }
-  const todoResult = await checkIncompleteTodos(sessionId, workingDir, stopContext);
+  if (isAuthenticationError(stopContext)) {
+    return {
+      shouldBlock: false,
+      message: "[AUTH ERROR] Authentication failed. OAuth token may have expired. Please run /login to re-authenticate, then resume your task.",
+      mode: "none"
+    };
+  }
+  const todoResult = await checkIncompleteTodos(
+    sessionId,
+    workingDir,
+    stopContext
+  );
   const hasIncompleteTodos = todoResult.count > 0;
-  const ralphResult = await checkRalphLoop(sessionId, workingDir, cancelInProgress);
+  const ralphResult = await checkRalphLoop(
+    sessionId,
+    workingDir,
+    cancelInProgress
+  );
   if (ralphResult) {
     return ralphResult;
   }
@@ -13300,7 +13372,12 @@ async function checkPersistentModes(sessionId, directory, stopContext) {
       };
     }
   }
-  const ultraworkResult = await checkUltrawork(sessionId, workingDir, hasIncompleteTodos, cancelInProgress);
+  const ultraworkResult = await checkUltrawork(
+    sessionId,
+    workingDir,
+    hasIncompleteTodos,
+    cancelInProgress
+  );
   if (ultraworkResult?.shouldBlock) {
     return ultraworkResult;
   }
@@ -55210,7 +55287,9 @@ function readTeamStagedState(directory, sessionId) {
       continue;
     }
     try {
-      const parsed = JSON.parse((0, import_fs57.readFileSync)(statePath, "utf-8"));
+      const parsed = JSON.parse(
+        (0, import_fs57.readFileSync)(statePath, "utf-8")
+      );
       if (typeof parsed !== "object" || parsed === null) {
         continue;
       }
@@ -55320,7 +55399,10 @@ async function processKeywordDetector(input) {
     largeWordLimit: taskSizeConfig.largeWordLimit ?? 200,
     suppressHeavyModesForSmallTasks: taskSizeConfig.suppressHeavyModesForSmallTasks !== false
   });
-  const fullKeywords = [...sizeCheckResult.keywords, ...sizeCheckResult.suppressedKeywords];
+  const fullKeywords = [
+    ...sizeCheckResult.keywords,
+    ...sizeCheckResult.suppressedKeywords
+  ];
   const gateResult = applyRalplanGate(fullKeywords, cleanedText);
   let keywords;
   if (gateResult.gateApplied) {
@@ -55366,7 +55448,14 @@ Running directly without heavy agent stacking. Prefix with \`quick:\`, \`simple:
   for (const keywordType of keywords) {
     switch (keywordType) {
       case "ralph": {
-        const { createRalphLoopHook: createRalphLoopHook2, findPrdPath: findPrd, initPrd: initPrdFn, initProgress: initProgressFn, detectNoPrdFlag: detectNoPrd, stripNoPrdFlag: stripNoPrd } = await Promise.resolve().then(() => (init_ralph(), ralph_exports));
+        const {
+          createRalphLoopHook: createRalphLoopHook2,
+          findPrdPath: findPrd,
+          initPrd: initPrdFn,
+          initProgress: initProgressFn,
+          detectNoPrdFlag: detectNoPrd,
+          stripNoPrdFlag: stripNoPrd
+        } = await Promise.resolve().then(() => (init_ralph(), ralph_exports));
         const noPrd = detectNoPrd(promptText);
         const cleanPrompt = noPrd ? stripNoPrd(promptText) : promptText;
         const existingPrd = findPrd(directory);
@@ -55376,7 +55465,11 @@ Running directly without heavy agent stacking. Prefix with \`quick:\`, \`simple:
           const projectName = basename15(directory);
           let branchName = "ralph/task";
           try {
-            branchName = execSync16("git rev-parse --abbrev-ref HEAD", { cwd: directory, encoding: "utf-8", timeout: 5e3 }).trim();
+            branchName = execSync16("git rev-parse --abbrev-ref HEAD", {
+              cwd: directory,
+              encoding: "utf-8",
+              timeout: 5e3
+            }).trim();
           } catch {
           }
           initPrdFn(directory, projectName, branchName, cleanPrompt);
@@ -55442,7 +55535,12 @@ async function processPersistentMode(input) {
   const rawSessionId = input.session_id;
   const sessionId = input.sessionId ?? rawSessionId;
   const directory = resolveToWorktreeRoot(input.directory);
-  const { checkPersistentModes: checkPersistentModes2, createHookOutput: createHookOutput2, shouldSendIdleNotification: shouldSendIdleNotification2, recordIdleNotificationSent: recordIdleNotificationSent2 } = await Promise.resolve().then(() => (init_persistent_mode(), persistent_mode_exports));
+  const {
+    checkPersistentModes: checkPersistentModes2,
+    createHookOutput: createHookOutput2,
+    shouldSendIdleNotification: shouldSendIdleNotification2,
+    recordIdleNotificationSent: recordIdleNotificationSent2
+  } = await Promise.resolve().then(() => (init_persistent_mode(), persistent_mode_exports));
   const { isExplicitCancelCommand: isExplicitCancelCommand2 } = await Promise.resolve().then(() => (init_todo_continuation(), todo_continuation_exports));
   const stopContext = {
     stop_reason: input.stop_reason,
@@ -55484,6 +55582,10 @@ async function processPersistentMode(input) {
     return output;
   }
   if (isExplicitCancelCommand2(stopContext)) {
+    return output;
+  }
+  const { isAuthenticationError: isAuthenticationError2 } = await Promise.resolve().then(() => (init_todo_continuation(), todo_continuation_exports));
+  if (isAuthenticationError2(stopContext)) {
     return output;
   }
   const stage = getTeamStage(teamState);
@@ -55539,7 +55641,11 @@ async function processSessionStart(input) {
     ]).then(
       ([
         { startReplyListener: startReplyListener2 },
-        { getReplyConfig: getReplyConfig2, getNotificationConfig: getNotificationConfig2, getReplyListenerPlatformConfig: getReplyListenerPlatformConfig2 }
+        {
+          getReplyConfig: getReplyConfig2,
+          getNotificationConfig: getNotificationConfig2,
+          getReplyListenerPlatformConfig: getReplyListenerPlatformConfig2
+        }
       ]) => {
         const replyConfig = getReplyConfig2();
         if (!replyConfig) return;
@@ -55640,7 +55746,10 @@ Resume from this stage and continue the staged Team workflow.
         if (agentsContent.length > MAX_AGENTS_CHARS) {
           agentsContent = agentsContent.slice(0, MAX_AGENTS_CHARS);
         }
-        const wrappedContent = wrapUntrustedFileContent(agentsMdPath, agentsContent);
+        const wrappedContent = wrapUntrustedFileContent(
+          agentsMdPath,
+          agentsContent
+        );
         messages.push(`<session-restore>
 
 [ROOT AGENTS.md LOADED]
@@ -55702,10 +55811,8 @@ var _notify = {
 var _openclaw = {
   wake: (event, context) => {
     if (process.env.OMC_OPENCLAW !== "1") return;
-    Promise.resolve().then(() => (init_openclaw(), openclaw_exports)).then(
-      ({ wakeOpenClaw: wakeOpenClaw2 }) => wakeOpenClaw2(event, context).catch(() => {
-      })
-    ).catch(() => {
+    Promise.resolve().then(() => (init_openclaw(), openclaw_exports)).then(({ wakeOpenClaw: wakeOpenClaw2 }) => wakeOpenClaw2(event, context).catch(() => {
+    })).catch(() => {
     });
   }
 };
@@ -55869,7 +55976,14 @@ async function processPostToolUse(input) {
   if (toolName === "skill") {
     const skillName = getInvokedSkillName(input.toolInput);
     if (skillName === "ralph") {
-      const { createRalphLoopHook: createRalphLoopHook2, findPrdPath: findPrd, initPrd: initPrdFn, initProgress: initProgressFn, detectNoPrdFlag: detectNoPrd, stripNoPrdFlag: stripNoPrd } = await Promise.resolve().then(() => (init_ralph(), ralph_exports));
+      const {
+        createRalphLoopHook: createRalphLoopHook2,
+        findPrdPath: findPrd,
+        initPrd: initPrdFn,
+        initProgress: initProgressFn,
+        detectNoPrdFlag: detectNoPrd,
+        stripNoPrdFlag: stripNoPrd
+      } = await Promise.resolve().then(() => (init_ralph(), ralph_exports));
       const rawPrompt = typeof input.prompt === "string" && input.prompt.trim().length > 0 ? input.prompt : "Ralph loop activated via Skill tool";
       const noPrd = detectNoPrd(rawPrompt);
       const cleanPrompt = noPrd ? stripNoPrd(rawPrompt) : rawPrompt;
@@ -55880,7 +55994,11 @@ async function processPostToolUse(input) {
         const projectName = basename15(directory);
         let branchName = "ralph/task";
         try {
-          branchName = execSync16("git rev-parse --abbrev-ref HEAD", { cwd: directory, encoding: "utf-8", timeout: 5e3 }).trim();
+          branchName = execSync16("git rev-parse --abbrev-ref HEAD", {
+            cwd: directory,
+            encoding: "utf-8",
+            timeout: 5e3
+          }).trim();
         } catch {
         }
         initPrdFn(directory, projectName, branchName, cleanPrompt);
@@ -55982,7 +56100,11 @@ async function processHook(hookType, rawInput) {
         return await processAutopilot(input);
       // Lazy-loaded async hook types
       case "session-end": {
-        if (!validateHookInput(input, requiredKeysForHook("session-end"), "session-end")) {
+        if (!validateHookInput(
+          input,
+          requiredKeysForHook("session-end"),
+          "session-end"
+        )) {
           return { continue: true };
         }
         const { handleSessionEnd: handleSessionEnd2 } = await Promise.resolve().then(() => (init_session_end(), session_end_exports));
@@ -55998,7 +56120,11 @@ async function processHook(hookType, rawInput) {
         return await handleSessionEnd2(sessionEndInput);
       }
       case "subagent-start": {
-        if (!validateHookInput(input, requiredKeysForHook("subagent-start"), "subagent-start")) {
+        if (!validateHookInput(
+          input,
+          requiredKeysForHook("subagent-start"),
+          "subagent-start"
+        )) {
           return { continue: true };
         }
         const { processSubagentStart: processSubagentStart2 } = await Promise.resolve().then(() => (init_subagent_tracker(), subagent_tracker_exports));
@@ -56017,7 +56143,11 @@ async function processHook(hookType, rawInput) {
         return processSubagentStart2(startInput);
       }
       case "subagent-stop": {
-        if (!validateHookInput(input, requiredKeysForHook("subagent-stop"), "subagent-stop")) {
+        if (!validateHookInput(
+          input,
+          requiredKeysForHook("subagent-stop"),
+          "subagent-stop"
+        )) {
           return { continue: true };
         }
         const { processSubagentStop: processSubagentStop2 } = await Promise.resolve().then(() => (init_subagent_tracker(), subagent_tracker_exports));
@@ -56036,7 +56166,11 @@ async function processHook(hookType, rawInput) {
         return processSubagentStop2(stopInput);
       }
       case "pre-compact": {
-        if (!validateHookInput(input, requiredKeysForHook("pre-compact"), "pre-compact")) {
+        if (!validateHookInput(
+          input,
+          requiredKeysForHook("pre-compact"),
+          "pre-compact"
+        )) {
           return { continue: true };
         }
         const { processPreCompact: processPreCompact3 } = await Promise.resolve().then(() => (init_pre_compact(), pre_compact_exports));
@@ -56054,7 +56188,11 @@ async function processHook(hookType, rawInput) {
       }
       case "setup-init":
       case "setup-maintenance": {
-        if (!validateHookInput(input, requiredKeysForHook(hookType), hookType)) {
+        if (!validateHookInput(
+          input,
+          requiredKeysForHook(hookType),
+          hookType
+        )) {
           return { continue: true };
         }
         const { processSetup: processSetup2 } = await Promise.resolve().then(() => (init_setup(), setup_exports));
@@ -56070,7 +56208,11 @@ async function processHook(hookType, rawInput) {
         return await processSetup2(setupInput);
       }
       case "permission-request": {
-        if (!validateHookInput(input, requiredKeysForHook("permission-request"), "permission-request")) {
+        if (!validateHookInput(
+          input,
+          requiredKeysForHook("permission-request"),
+          "permission-request"
+        )) {
           return { continue: true };
         }
         const { handlePermissionRequest: handlePermissionRequest2 } = await Promise.resolve().then(() => (init_permission_handler(), permission_handler_exports));
@@ -56089,7 +56231,11 @@ async function processHook(hookType, rawInput) {
       }
       case "code-simplifier": {
         const directory = input.directory ?? process.cwd();
-        const stateDir = (0, import_path64.join)(resolveToWorktreeRoot(directory), ".omc", "state");
+        const stateDir = (0, import_path64.join)(
+          resolveToWorktreeRoot(directory),
+          ".omc",
+          "state"
+        );
         const { processCodeSimplifier: processCodeSimplifier2 } = await Promise.resolve().then(() => (init_code_simplifier(), code_simplifier_exports));
         const result = processCodeSimplifier2(directory, stateDir);
         if (result.shouldBlock) {
