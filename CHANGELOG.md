@@ -1,3 +1,15 @@
+# oh-my-claudecode v4.6.2: CLI Shebang Hotfix
+
+## Release Notes
+
+Hotfix release to resolve duplicate shebang issue in published v4.6.1 package.
+
+### Bug Fixes
+
+- **CLI Shebang Fix** (#1309): Removed duplicate shebang from `bridge/cli.cjs` build output.
+
+---
+
 # oh-my-claudecode v4.6.1: Security Hardening, Team Reliability & HUD Improvements
 
 ## Release Notes
