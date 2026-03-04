@@ -200,9 +200,9 @@ async function checkNpmUpdate(currentVersion) {
 // Check if HUD is properly installed (with retry for race conditions)
 async function checkHudInstallation(retryCount = 0) {
   const hudDir = join(configDir, 'hud');
-  // Support both legacy (omc-hud.mjs) and current (omc-hud.mjs) naming
+  // Support current and legacy script names
   const hudScriptOmc = join(hudDir, 'omc-hud.mjs');
-  const hudScriptLegacy = join(hudDir, 'omc-hud.mjs');
+  const hudScriptLegacy = join(hudDir, 'omc-hud.js');
   const settingsFile = join(configDir, 'settings.json');
 
   const MAX_RETRIES = 2;
@@ -235,6 +235,35 @@ async function checkHudInstallation(retryCount = 0) {
           return checkHudInstallation(retryCount + 1);
         }
         return { installed: false, reason: 'statusLine not configured' };
+      }
+
+      const statusLineCommand = typeof settings.statusLine === 'string'
+        ? settings.statusLine
+        : (typeof settings.statusLine === 'object' && settings.statusLine && typeof settings.statusLine.command === 'string'
+          ? settings.statusLine.command
+          : null);
+
+      // If OMC HUD wrapper is configured, ensure at least one plugin cache version is built.
+      if (statusLineCommand?.includes('omc-hud')) {
+        const pluginCacheBase = join(configDir, 'plugins', 'cache', 'omc', 'oh-my-claudecode');
+        if (existsSync(pluginCacheBase)) {
+          const versions = readdirSync(pluginCacheBase)
+            .filter(version => !version.startsWith('.'))
+            .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
+            .reverse();
+          if (versions.length > 0) {
+            const hasBuiltHud = versions.some(version =>
+              existsSync(join(pluginCacheBase, version, 'dist', 'hud', 'index.js'))
+            );
+            if (!hasBuiltHud) {
+              const latestVersionDir = join(pluginCacheBase, versions[0]);
+              return {
+                installed: false,
+                reason: `HUD plugin cache is not built. Run: cd "${latestVersionDir}" && npm install && npm run build`,
+              };
+            }
+          }
+        }
       }
     } else {
       return { installed: false, reason: 'settings.json missing' };
