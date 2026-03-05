@@ -15,6 +15,7 @@ vi.mock("../persistent-mode/index.js", () => ({
 
 vi.mock("../todo-continuation/index.js", () => ({
   isExplicitCancelCommand: vi.fn().mockReturnValue(false),
+  isAuthenticationError: vi.fn().mockReturnValue(false),
 }));
 
 import { _openclaw, processHook, resetSkipHooksCache, type HookInput } from "../bridge.js";
