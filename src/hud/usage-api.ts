@@ -23,7 +23,7 @@ import type { RateLimits, UsageResult } from './types.js';
 
 // Cache configuration
 const CACHE_TTL_SUCCESS_MS = 30 * 1000; // 30 seconds for successful responses
-const CACHE_TTL_FAILURE_MS = 15 * 1000; // 15 seconds for failures
+const CACHE_TTL_FAILURE_MS = 5 * 60 * 1000; // 5 minutes for failures (avoid rate limit loops)
 const API_TIMEOUT_MS = 10000;
 const TOKEN_REFRESH_URL_HOSTNAME = 'platform.claude.com';
 const TOKEN_REFRESH_URL_PATH = '/v1/oauth/token';
