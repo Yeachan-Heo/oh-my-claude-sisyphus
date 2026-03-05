@@ -202,6 +202,7 @@ omc ask claude --agent-prompt executor --prompt "create an implementation plan"
 - Artifacts: `.omc/artifacts/ask/{provider}-{slug}-{timestamp}.md`
 - Canonical env vars: `OMC_ASK_ADVISOR_SCRIPT`, `OMC_ASK_ORIGINAL_TASK`
 - Phase-1 aliases (deprecated warning): `OMX_ASK_ADVISOR_SCRIPT`, `OMX_ASK_ORIGINAL_TASK`
+- Skill shortcuts: `/oh-my-claudecode:ask-codex` and `/oh-my-claudecode:ask-gemini` route to this command
 
 ### `omc team` (MVP runtime surface)
 
@@ -347,6 +348,8 @@ Always use `oh-my-claudecode:` prefix when calling via Task tool.
 | `omc-setup` | One-time setup wizard | `/oh-my-claudecode:omc-setup` |
 | `omc-doctor` | Diagnose and fix installation issues | `/oh-my-claudecode:omc-doctor` |
 | `omc-help` | Show OMC usage guide | `/oh-my-claudecode:omc-help` |
+| `ask-codex` | Ask Codex via `omc ask codex` and store an ask artifact | `/oh-my-claudecode:ask-codex` |
+| `ask-gemini` | Ask Gemini via `omc ask gemini` and store an ask artifact | `/oh-my-claudecode:ask-gemini` |
 | `hud` | Configure HUD statusline | `/oh-my-claudecode:hud` |
 | `release` | Automated release workflow | `/oh-my-claudecode:release` |
 | `mcp-setup` | Configure MCP servers | `/oh-my-claudecode:mcp-setup` |

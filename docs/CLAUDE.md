@@ -64,6 +64,7 @@ External AI (tmux CLI workers):
 - Claude agents: `/team N:executor "task"` via `TeamCreate`/`Task`
 - Codex/Gemini workers: `omc team start --agent codex|gemini --count N --task "..."`
 - Provider advisor CLI: `omc ask <claude|gemini> ...` (writes artifacts to `.omc/artifacts/ask/`)
+- Ask shortcuts: `/oh-my-claudecode:ask-codex` and `/oh-my-claudecode:ask-gemini` route to the same `omc ask` flow
 - Legacy MCP runtime tools (`omc_run_team_*`) are deprecated with `deprecated_cli_only` and should not be used for execution.
 
 OMC State: `state_read`, `state_write`, `state_clear`, `state_list_active`, `state_get_status`
@@ -107,7 +108,7 @@ Agent Shortcuts (thin wrappers):
 - `review` -> `omc-plan --review`: "review plan", "critique plan"
 
 Notifications: `configure-notifications` ("configure discord", "setup telegram", "configure slack")
-Utilities: `cancel`, `note`, `learner`, `omc-setup`, `mcp-setup`, `hud`, `omc-doctor`, `omc-help`, `trace`, `release`, `project-session-manager`, `skill`, `writer-memory`, `ralph-init`, `learn-about-omc`
+Utilities: `ask-codex`, `ask-gemini`, `cancel`, `note`, `learner`, `omc-setup`, `mcp-setup`, `hud`, `omc-doctor`, `omc-help`, `trace`, `release`, `project-session-manager`, `skill`, `writer-memory`, `ralph-init`, `learn-about-omc`
 
 Disambiguation: bare "codex"/"gemini" -> omc-teams (legacy alias to `omc team`); "claude codex gemini" -> ccg. Ralph includes ultrawork.
 </skills>

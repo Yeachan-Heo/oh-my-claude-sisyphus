@@ -12,6 +12,8 @@ const REPO_ROOT = join(__dirname, '..', '..', '..');
 const CLI_ENTRY = join(REPO_ROOT, 'src', 'cli', 'index.ts');
 const TSX_LOADER = join(REPO_ROOT, 'node_modules', 'tsx', 'dist', 'loader.mjs');
 const ADVISOR_SCRIPT = join(REPO_ROOT, 'scripts', 'run-provider-advisor.js');
+const ASK_CODEX_WRAPPER = join(REPO_ROOT, 'scripts', 'ask-codex.sh');
+const ASK_GEMINI_WRAPPER = join(REPO_ROOT, 'scripts', 'ask-gemini.sh');
 
 interface CliRunResult {
   status: number | null;
@@ -25,10 +27,11 @@ function runCli(
   cwd: string,
   envOverrides: Record<string, string> = {},
 ): CliRunResult {
+  const { CLAUDECODE: _cc, ...cleanEnv } = process.env;
   const result = spawnSync(process.execPath, ['--import', TSX_LOADER, CLI_ENTRY, ...args], {
     cwd,
     encoding: 'utf-8',
-    env: { ...process.env, ...envOverrides },
+    env: { ...cleanEnv, ...envOverrides },
   });
 
   return {
@@ -44,10 +47,32 @@ function runAdvisorScript(
   cwd: string,
   envOverrides: Record<string, string> = {},
 ): CliRunResult {
+  const { CLAUDECODE: _cc2, ...cleanEnv2 } = process.env;
   const result = spawnSync(process.execPath, [ADVISOR_SCRIPT, ...args], {
     cwd,
     encoding: 'utf-8',
-    env: { ...process.env, ...envOverrides },
+    env: { ...cleanEnv2, ...envOverrides },
+  });
+
+  return {
+    status: result.status,
+    stdout: result.stdout || '',
+    stderr: result.stderr || '',
+    error: result.error?.message,
+  };
+}
+
+function runWrapperScript(
+  wrapperPath: string,
+  args: string[],
+  cwd: string,
+  envOverrides: Record<string, string> = {},
+): CliRunResult {
+  const { CLAUDECODE: _cc3, ...cleanEnv3 } = process.env;
+  const result = spawnSync(wrapperPath, args, {
+    cwd,
+    encoding: 'utf-8',
+    env: { ...cleanEnv3, ...envOverrides },
   });
 
   return {
@@ -68,6 +93,7 @@ function writeAdvisorStub(dir: string): string {
       '  provider: process.argv[2],',
       '  prompt: process.argv[3],',
       '  originalTask: process.env.OMC_ASK_ORIGINAL_TASK ?? null,',
+      '  passthrough: process.env.ASK_WRAPPER_TOKEN ?? null,',
       '};',
       'process.stdout.write(JSON.stringify(payload));',
       'if (process.env.ASK_STUB_STDERR) process.stderr.write(process.env.ASK_STUB_STDERR);',
@@ -93,12 +119,26 @@ function writeFakeProviderBinary(dir: string, provider: 'claude' | 'gemini'): st
   return binDir;
 }
 
+function writeFakeOmcBinary(dir: string): string {
+  const binDir = join(dir, 'bin');
+  mkdirSync(binDir, { recursive: true });
+  const omcPath = join(binDir, 'omc');
+  writeFileSync(
+    omcPath,
+    '#!/bin/sh\necho "PATH_OMC_SHOULD_NOT_BE_CALLED" 1>&2\nexit 79\n',
+    'utf8',
+  );
+  chmodSync(omcPath, 0o755);
+  return binDir;
+}
+
 describe('parseAskArgs', () => {
   it('supports positional and print/prompt flag forms', () => {
     expect(parseAskArgs(['claude', 'review', 'this'])).toEqual({ provider: 'claude', prompt: 'review this' });
     expect(parseAskArgs(['gemini', '-p', 'brainstorm'])).toEqual({ provider: 'gemini', prompt: 'brainstorm' });
     expect(parseAskArgs(['claude', '--print', 'draft', 'summary'])).toEqual({ provider: 'claude', prompt: 'draft summary' });
     expect(parseAskArgs(['gemini', '--prompt=ship safely'])).toEqual({ provider: 'gemini', prompt: 'ship safely' });
+    expect(parseAskArgs(['codex', 'review', 'this'])).toEqual({ provider: 'codex', prompt: 'review this' });
   });
 
   it('supports --agent-prompt flag and equals syntax', () => {
@@ -116,7 +156,7 @@ describe('parseAskArgs', () => {
   });
 
   it('rejects unsupported provider matrix', () => {
-    expect(() => parseAskArgs(['codex', 'hi'])).toThrow(/Invalid provider/i);
+    expect(() => parseAskArgs(['openai', 'hi'])).toThrow(/Invalid provider/i);
   });
 });
 
@@ -140,6 +180,7 @@ describe('omc ask command', () => {
         provider: 'claude',
         prompt: 'hello world',
         originalTask: 'hello world',
+        passthrough: null,
       });
     } finally {
       rmSync(wd, { recursive: true, force: true });
@@ -257,5 +298,83 @@ describe('resolveAskAdvisorScriptPath', () => {
       .toBe('/tmp/pkg-root/scripts/custom.js');
     expect(resolveAskAdvisorScriptPath(packageRoot, { OMC_ASK_ADVISOR_SCRIPT: '/opt/custom.js' } as NodeJS.ProcessEnv))
       .toBe('/opt/custom.js');
+  });
+});
+
+describe('ask wrapper scripts contract', () => {
+  it('ask-codex wrapper dispatches provider, forwards prompt, and ignores PATH omc shadow', () => {
+    const wd = mkdtempSync(join(tmpdir(), 'omc-ask-wrapper-codex-'));
+    try {
+      const stubPath = writeAdvisorStub(wd);
+      const fakePathBin = writeFakeOmcBinary(wd);
+      const result = runWrapperScript(
+        ASK_CODEX_WRAPPER,
+        ['--print', 'wrapper prompt'],
+        wd,
+        {
+          OMC_ASK_ADVISOR_SCRIPT: stubPath,
+          ASK_WRAPPER_TOKEN: 'wrapper-token',
+          PATH: `${fakePathBin}:${process.env.PATH || ''}`,
+        },
+      );
+
+      expect(result.error).toBeUndefined();
+      expect(result.status).toBe(0);
+      expect(result.stderr).not.toContain('PATH_OMC_SHOULD_NOT_BE_CALLED');
+
+      const payload = JSON.parse(result.stdout);
+      expect(payload).toEqual({
+        provider: 'codex',
+        prompt: 'wrapper prompt',
+        originalTask: 'wrapper prompt',
+        passthrough: 'wrapper-token',
+      });
+    } finally {
+      rmSync(wd, { recursive: true, force: true });
+    }
+  });
+
+  it('ask-gemini wrapper dispatches provider and forwards positional prompt text', () => {
+    const wd = mkdtempSync(join(tmpdir(), 'omc-ask-wrapper-gemini-'));
+    try {
+      const stubPath = writeAdvisorStub(wd);
+      const result = runWrapperScript(
+        ASK_GEMINI_WRAPPER,
+        ['ship', 'this', 'feature'],
+        wd,
+        { OMC_ASK_ADVISOR_SCRIPT: stubPath },
+      );
+
+      expect(result.error).toBeUndefined();
+      expect(result.status).toBe(0);
+
+      const payload = JSON.parse(result.stdout);
+      expect(payload.provider).toBe('gemini');
+      expect(payload.prompt).toBe('ship this feature');
+      expect(payload.originalTask).toBe('ship this feature');
+    } finally {
+      rmSync(wd, { recursive: true, force: true });
+    }
+  });
+
+  it('wrapper propagates non-zero advisor exit code', () => {
+    const wd = mkdtempSync(join(tmpdir(), 'omc-ask-wrapper-exit-'));
+    try {
+      const stubPath = writeAdvisorStub(wd);
+      const result = runWrapperScript(
+        ASK_CODEX_WRAPPER,
+        ['--prompt', 'should fail'],
+        wd,
+        {
+          OMC_ASK_ADVISOR_SCRIPT: stubPath,
+          ASK_STUB_EXIT_CODE: '23',
+        },
+      );
+
+      expect(result.error).toBeUndefined();
+      expect(result.status).toBe(23);
+    } finally {
+      rmSync(wd, { recursive: true, force: true });
+    }
   });
 });

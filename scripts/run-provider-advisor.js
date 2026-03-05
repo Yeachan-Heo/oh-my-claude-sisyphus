@@ -6,15 +6,32 @@ import process from 'process';
 
 const PROVIDER_BINARIES = {
   claude: 'claude',
+  codex: 'codex',
   gemini: 'gemini',
 };
+
+/**
+ * Build CLI args for a given provider.
+ * - claude: `claude -p <prompt>`
+ * - codex: `codex exec --dangerously-bypass-approvals-and-sandbox <prompt>`
+ * - gemini: `gemini -p <prompt> --yolo`
+ */
+function buildProviderArgs(provider, prompt) {
+  if (provider === 'codex') {
+    return ['exec', '--dangerously-bypass-approvals-and-sandbox', prompt];
+  }
+  if (provider === 'gemini') {
+    return ['-p', prompt, '--yolo'];
+  }
+  return ['-p', prompt];
+}
 
 const ASK_ORIGINAL_TASK_ENV = 'OMC_ASK_ORIGINAL_TASK';
 const ASK_ORIGINAL_TASK_ENV_ALIAS = 'OMX_ASK_ORIGINAL_TASK';
 
 function usage() {
-  console.error('Usage: omc ask <claude|gemini> "<prompt>"');
-  console.error('Legacy direct usage: node scripts/run-provider-advisor.js <claude|gemini> <prompt...>');
+  console.error('Usage: omc ask <claude|codex|gemini> "<prompt>"');
+  console.error('Legacy direct usage: node scripts/run-provider-advisor.js <claude|codex|gemini> <prompt...>');
   console.error('                 or: node scripts/run-provider-advisor.js claude --print "<prompt>"');
   console.error('                 or: node scripts/run-provider-advisor.js gemini --prompt "<prompt>"');
 }
@@ -167,7 +184,8 @@ async function main() {
 
   ensureBinary(binary);
 
-  const run = spawnSync(binary, ['-p', prompt], {
+  const providerArgs = buildProviderArgs(provider, prompt);
+  const run = spawnSync(binary, providerArgs, {
     encoding: 'utf8',
     maxBuffer: 10 * 1024 * 1024,
   });
