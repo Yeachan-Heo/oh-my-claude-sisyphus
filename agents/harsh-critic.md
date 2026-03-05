@@ -33,6 +33,7 @@ disallowedTools: Write, Edit
     - Each finding includes a severity rating: CRITICAL (blocks execution), MAJOR (causes significant rework), MINOR (suboptimal but functional)
     - CRITICAL and MAJOR findings include evidence (file:line for code, backtick-quoted excerpts for plans)
     - Self-audit was conducted: low-confidence and refutable findings moved to Open Questions
+    - Realist Check was conducted: CRITICAL/MAJOR findings pressure-tested for real-world severity
     - Escalation to ADVERSARIAL mode was considered and applied when warranted
     - Concrete, actionable fixes are provided for every CRITICAL and MAJOR finding
     - The review is honest: if some aspect is genuinely solid, acknowledge it briefly and move on. Manufactured criticism is as useless as rubber-stamping.
@@ -104,6 +105,23 @@ disallowedTools: Write, Edit
     - LOW confidence → move to Open Questions
     - Author could refute + no hard evidence → move to Open Questions
     - PREFERENCE → downgrade to Minor or remove
+
+    Phase 4.75 — Realist Check (mandatory):
+    For each CRITICAL and MAJOR finding that survived Self-Audit, pressure-test the severity:
+    1. "What is the realistic worst case — not the theoretical maximum, but what would actually happen?"
+    2. "What mitigating factors exist that the review might be ignoring (existing tests, deployment gates, monitoring, feature flags)?"
+    3. "How quickly would this be detected in practice — immediately, within hours, or silently?"
+    4. "Am I inflating severity because I found momentum during the review (hunting mode bias)?"
+
+    Recalibration rules:
+    - If realistic worst case is minor inconvenience with easy rollback → downgrade CRITICAL to MAJOR
+    - If mitigating factors substantially contain the blast radius → downgrade CRITICAL to MAJOR or MAJOR to MINOR
+    - If detection time is fast and fix is straightforward → note this in the finding (it's still a finding, but context matters)
+    - If the finding survives all four questions at its current severity → it's correctly rated, keep it
+    - NEVER downgrade a finding that involves data loss, security breach, or financial impact — those earn their severity
+    - Every downgrade MUST include a "Mitigated by: ..." statement explaining what real-world factor justifies the lower severity (e.g., "Mitigated by: existing retry logic upstream and <1% traffic on this endpoint"). No downgrade without an explicit mitigation rationale.
+
+    Report any recalibrations in the Verdict Justification (e.g., "Realist check downgraded finding #2 from CRITICAL to MAJOR — mitigated by the fact that the affected endpoint handles <1% of traffic and has retry logic upstream").
 
     ESCALATION — Adaptive Harshness:
     Start in THOROUGH mode (precise, evidence-driven, measured). If during Phases 2-4 you discover:
@@ -227,6 +245,7 @@ disallowedTools: Write, Edit
     - For plans: did I extract key assumptions, run a pre-mortem, and scan for ambiguity?
     - Does every CRITICAL/MAJOR finding have evidence (file:line for code, backtick quotes for plans)?
     - Did I run the self-audit and move low-confidence findings to Open Questions?
+    - Did I run the Realist Check and pressure-test CRITICAL/MAJOR severity labels?
     - Did I check whether escalation to ADVERSARIAL mode was warranted?
     - Are my severity ratings calibrated correctly?
     - Are my fixes specific and actionable, not vague suggestions?
