@@ -8995,6 +8995,7 @@ var init_ralph = __esm({
 // src/hooks/todo-continuation/index.ts
 var todo_continuation_exports = {};
 __export(todo_continuation_exports, {
+  AUTHENTICATION_ERROR_PATTERNS: () => AUTHENTICATION_ERROR_PATTERNS,
   checkIncompleteTasks: () => checkIncompleteTasks,
   checkIncompleteTodos: () => checkIncompleteTodos,
   checkLegacyTodos: () => checkLegacyTodos,
@@ -9002,6 +9003,7 @@ __export(todo_continuation_exports, {
   formatTodoStatus: () => formatTodoStatus,
   getNextPendingTodo: () => getNextPendingTodo,
   getTaskDirectory: () => getTaskDirectory,
+  isAuthenticationError: () => isAuthenticationError,
   isContextLimitStop: () => isContextLimitStop,
   isExplicitCancelCommand: () => isExplicitCancelCommand,
   isRateLimitStop: () => isRateLimitStop,
@@ -9105,6 +9107,12 @@ function isRateLimitStop(context) {
     "capacity"
   ];
   return rateLimitPatterns.some((p) => reason.includes(p) || endTurnReason.includes(p));
+}
+function isAuthenticationError(context) {
+  if (!context) return false;
+  const reason = (context.stop_reason ?? context.stopReason ?? "").toLowerCase();
+  const endTurnReason = (context.end_turn_reason ?? context.endTurnReason ?? "").toLowerCase();
+  return AUTHENTICATION_ERROR_PATTERNS.some((pattern) => reason.includes(pattern) || endTurnReason.includes(pattern));
 }
 function getTodoFilePaths(sessionId, directory) {
   const claudeDir = getClaudeConfigDir();
@@ -9261,7 +9269,7 @@ function getNextPendingTodo(result) {
   }
   return result.todos.find((t) => t.status === "pending") ?? null;
 }
-var import_fs37, import_path42;
+var import_fs37, import_path42, AUTHENTICATION_ERROR_PATTERNS;
 var init_todo_continuation = __esm({
   "src/hooks/todo-continuation/index.ts"() {
     "use strict";
@@ -9269,6 +9277,24 @@ var init_todo_continuation = __esm({
     import_path42 = require("path");
     init_worktree_paths();
     init_paths();
+    AUTHENTICATION_ERROR_PATTERNS = [
+      "authentication_error",
+      "authentication_failed",
+      "auth_error",
+      "unauthorized",
+      "unauthorised",
+      "401",
+      "403",
+      "forbidden",
+      "invalid_token",
+      "token_invalid",
+      "token_expired",
+      "expired_token",
+      "oauth_expired",
+      "oauth_token_expired",
+      "invalid_grant",
+      "insufficient_scope"
+    ];
   }
 });
 
@@ -13487,6 +13513,13 @@ async function checkPersistentModes(sessionId, directory, stopContext) {
     return {
       shouldBlock: false,
       message: "[RALPH PAUSED - RATE LIMITED] API rate limit detected. Ralph loop paused until the rate limit resets. Resume manually once the limit clears.",
+      mode: "none"
+    };
+  }
+  if (isAuthenticationError(stopContext)) {
+    return {
+      shouldBlock: false,
+      message: "[PERSISTENT MODE PAUSED - AUTHENTICATION ERROR] Authentication failure detected (for example 401/403 or expired OAuth token). Re-authenticate, then resume manually.",
       mode: "none"
     };
   }
@@ -58935,7 +58968,7 @@ async function processPersistentMode(input) {
   const sessionId = input.sessionId ?? rawSessionId;
   const directory = resolveToWorktreeRoot(input.directory);
   const { checkPersistentModes: checkPersistentModes2, createHookOutput: createHookOutput2, shouldSendIdleNotification: shouldSendIdleNotification2, recordIdleNotificationSent: recordIdleNotificationSent2 } = await Promise.resolve().then(() => (init_persistent_mode(), persistent_mode_exports));
-  const { isExplicitCancelCommand: isExplicitCancelCommand2 } = await Promise.resolve().then(() => (init_todo_continuation(), todo_continuation_exports));
+  const { isExplicitCancelCommand: isExplicitCancelCommand2, isAuthenticationError: isAuthenticationError2 } = await Promise.resolve().then(() => (init_todo_continuation(), todo_continuation_exports));
   const stopContext = {
     stop_reason: input.stop_reason,
     stopReason: input.stopReason,
@@ -58976,6 +59009,9 @@ async function processPersistentMode(input) {
     return output;
   }
   if (isExplicitCancelCommand2(stopContext)) {
+    return output;
+  }
+  if (isAuthenticationError2(stopContext)) {
     return output;
   }
   const stage = getTeamStage(teamState);
@@ -64392,14 +64428,14 @@ var import_os22 = require("os");
 var import_path98 = require("path");
 var import_url14 = require("url");
 var ASK_USAGE = [
-  "Usage: omc ask <claude|gemini> <question or task>",
-  '   or: omc ask <claude|gemini> -p "<prompt>"',
-  '   or: omc ask <claude|gemini> --print "<prompt>"',
-  '   or: omc ask <claude|gemini> --prompt "<prompt>"',
-  '   or: omc ask <claude|gemini> --agent-prompt <role> "<prompt>"',
-  '   or: omc ask <claude|gemini> --agent-prompt=<role> --prompt "<prompt>"'
+  "Usage: omc ask <claude|codex|gemini> <question or task>",
+  '   or: omc ask <claude|codex|gemini> -p "<prompt>"',
+  '   or: omc ask <claude|codex|gemini> --print "<prompt>"',
+  '   or: omc ask <claude|codex|gemini> --prompt "<prompt>"',
+  '   or: omc ask <claude|codex|gemini> --agent-prompt <role> "<prompt>"',
+  '   or: omc ask <claude|codex|gemini> --agent-prompt=<role> --prompt "<prompt>"'
 ].join("\n");
-var ASK_PROVIDERS = ["claude", "gemini"];
+var ASK_PROVIDERS = ["claude", "codex", "gemini"];
 var ASK_PROVIDER_SET = new Set(ASK_PROVIDERS);
 var ASK_AGENT_PROMPT_FLAG = "--agent-prompt";
 var SAFE_ROLE_PATTERN = /^[a-z][a-z0-9-]*$/;
