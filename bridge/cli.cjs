@@ -13952,6 +13952,7 @@ __export(config_exports, {
   getNotificationConfig: () => getNotificationConfig,
   getReplyConfig: () => getReplyConfig,
   getReplyListenerPlatformConfig: () => getReplyListenerPlatformConfig,
+  getTmuxTailLines: () => getTmuxTailLines,
   getVerbosity: () => getVerbosity,
   hasCustomIntegrationsEnabled: () => hasCustomIntegrationsEnabled,
   isEventAllowedByVerbosity: () => isEventAllowedByVerbosity,
@@ -14207,6 +14208,17 @@ function getVerbosity(config2) {
     return config2.verbosity;
   }
   return "session";
+}
+function getTmuxTailLines(config2) {
+  const envValue = Number.parseInt(process.env.OMC_NOTIFY_TMUX_TAIL_LINES ?? "", 10);
+  if (Number.isInteger(envValue) && envValue >= 1) {
+    return envValue;
+  }
+  const configValue = config2.tmuxTailLines;
+  if (typeof configValue === "number" && Number.isInteger(configValue) && configValue >= 1) {
+    return configValue;
+  }
+  return DEFAULT_TMUX_TAIL_LINES;
 }
 function isEventAllowedByVerbosity(verbosity, event) {
   switch (verbosity) {
@@ -14483,7 +14495,7 @@ function hasCustomIntegrationsEnabled(event) {
     (i) => i.enabled && i.events.includes(event)
   );
 }
-var import_fs47, import_path51, CONFIG_FILE2, VALID_VERBOSITY_LEVELS, SESSION_EVENTS, REPLY_PLATFORM_EVENTS, LEGACY_OPENCLAW_CONFIG;
+var import_fs47, import_path51, CONFIG_FILE2, DEFAULT_TMUX_TAIL_LINES, VALID_VERBOSITY_LEVELS, SESSION_EVENTS, REPLY_PLATFORM_EVENTS, LEGACY_OPENCLAW_CONFIG;
 var init_config = __esm({
   "src/notifications/config.ts"() {
     "use strict";
@@ -14493,6 +14505,7 @@ var init_config = __esm({
     init_hook_config();
     init_validation2();
     CONFIG_FILE2 = (0, import_path51.join)(getClaudeConfigDir(), ".omc-config.json");
+    DEFAULT_TMUX_TAIL_LINES = 15;
     VALID_VERBOSITY_LEVELS = /* @__PURE__ */ new Set([
       "verbose",
       "agent",
@@ -16818,6 +16831,7 @@ __export(notifications_exports, {
   getPreset: () => getPreset,
   getPresetList: () => getPresetList,
   getTeamTmuxSessions: () => getTeamTmuxSessions,
+  getTmuxTailLines: () => getTmuxTailLines,
   getVariableDocumentation: () => getVariableDocumentation,
   getVariablesForEvent: () => getVariablesForEvent,
   getVerbosity: () => getVerbosity,
@@ -16893,7 +16907,7 @@ async function notify(event, data) {
     if (shouldIncludeTmuxTail(verbosity) && payload.tmuxPaneId && (event === "session-idle" || event === "session-end" || event === "session-stop")) {
       try {
         const { capturePaneContent: capturePaneContent2 } = await Promise.resolve().then(() => (init_tmux_detector(), tmux_detector_exports));
-        const tail = capturePaneContent2(payload.tmuxPaneId, 15);
+        const tail = capturePaneContent2(payload.tmuxPaneId, getTmuxTailLines(config2));
         if (tail) {
           payload.tmuxTail = tail;
         }
