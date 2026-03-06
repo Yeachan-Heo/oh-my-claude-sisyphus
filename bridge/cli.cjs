@@ -21874,13 +21874,20 @@ function buildWorkerArgv(agentType, config2) {
   const args = buildLaunchArgs(agentType, config2);
   return [binary, ...args];
 }
-function getWorkerEnv(teamName, workerName2, agentType) {
+function getWorkerEnv(teamName, workerName2, agentType, env2 = process.env) {
   validateTeamName(teamName);
-  return {
+  const workerEnv = {
     OMC_TEAM_WORKER: `${teamName}/${workerName2}`,
     OMC_TEAM_NAME: teamName,
     OMC_WORKER_AGENT_TYPE: agentType
   };
+  for (const key of WORKER_MODEL_ENV_ALLOWLIST) {
+    const value = env2[key];
+    if (typeof value === "string" && value.length > 0) {
+      workerEnv[key] = value;
+    }
+  }
+  return workerEnv;
 }
 function isPromptModeAgent(agentType) {
   const contract = getContract(agentType);
@@ -21896,7 +21903,7 @@ function getPromptModeArgs(agentType, instruction) {
   }
   return [instruction];
 }
-var import_child_process25, import_path90, resolvedPathCache, UNTRUSTED_PATH_PATTERNS, CONTRACTS;
+var import_child_process25, import_path90, resolvedPathCache, UNTRUSTED_PATH_PATTERNS, CONTRACTS, WORKER_MODEL_ENV_ALLOWLIST;
 var init_model_contract = __esm({
   "src/team/model-contract.ts"() {
     "use strict";
@@ -21968,6 +21975,17 @@ var init_model_contract = __esm({
         }
       }
     };
+    WORKER_MODEL_ENV_ALLOWLIST = [
+      "ANTHROPIC_MODEL",
+      "CLAUDE_MODEL",
+      "ANTHROPIC_BASE_URL",
+      "CLAUDE_CODE_USE_BEDROCK",
+      "CLAUDE_CODE_USE_VERTEX",
+      "OMC_EXTERNAL_MODELS_DEFAULT_CODEX_MODEL",
+      "OMC_CODEX_DEFAULT_MODEL",
+      "OMC_EXTERNAL_MODELS_DEFAULT_GEMINI_MODEL",
+      "OMC_GEMINI_DEFAULT_MODEL"
+    ];
   }
 });
 
