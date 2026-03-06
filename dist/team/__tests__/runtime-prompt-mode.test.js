@@ -71,6 +71,7 @@ function makeRuntime(cwd, agentType) {
         teamName: 'test-team',
         sessionName: 'test-session:0',
         leaderPaneId: '%0',
+        ownsWindow: false,
         config: {
             teamName: 'test-team',
             workerCount: 1,

@@ -25,6 +25,7 @@ function makeRuntime(cwd: string, teamName: string): TeamRuntime {
     teamName,
     sessionName: 'test-session:0',
     leaderPaneId: '%0',
+    ownsWindow: false,
     config: {
       teamName,
       workerCount: 1,
@@ -46,6 +47,7 @@ function makeRuntimeWithTask(cwd: string, teamName: string, taskId: string): Tea
     teamName,
     sessionName: 'test-session:0',
     leaderPaneId: '%0',
+    ownsWindow: false,
     config: {
       teamName,
       workerCount: 1,
@@ -295,6 +297,7 @@ describe('watchdogCliWorkers dead-pane retry behavior', { timeout: 15000 }, () =
       teamName,
       sessionName: 'test-session:0',
       leaderPaneId: '%0',
+      ownsWindow: false,
       config: {
         teamName,
         workerCount: 1,

@@ -51,6 +51,12 @@ describe('killTeamSession safeguards', () => {
             .map((args) => args[2]);
         expect(killPaneTargets).toEqual(['%11']);
         expect(mocked.execFileCalls.some((args) => args[0] === 'kill-session')).toBe(false);
+        expect(mocked.execFileCalls.some((args) => args[0] === 'kill-window')).toBe(false);
+    });
+    it('kills an owned team window when session owns that window', async () => {
+        await killTeamSession('leader-session:3', ['%10', '%11'], '%10', { sessionMode: 'dedicated-window' });
+        expect(mocked.execFileCalls.some((args) => args[0] === 'kill-window' && args.includes('leader-session:3'))).toBe(true);
+        expect(mocked.execFileCalls.some((args) => args[0] === 'kill-pane')).toBe(false);
     });
 });
 //# sourceMappingURL=tmux-session.kill-team-session.test.js.map

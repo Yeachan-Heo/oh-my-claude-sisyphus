@@ -21,6 +21,7 @@ interface CliInput {
   agentTypes: string[];
   tasks: Array<{ subject: string; description: string }>;
   cwd: string;
+  newWindow?: boolean;
   pollIntervalMs?: number;
   sentinelGateTimeoutMs?: number;
   sentinelGatePollIntervalMs?: number;
@@ -128,7 +129,9 @@ export async function writeResultArtifact(
 async function writePanesFile(
   jobId: string | undefined,
   paneIds: string[],
-  leaderPaneId: string
+  leaderPaneId: string,
+  sessionName: string,
+  ownsWindow: boolean,
 ): Promise<void> {
   const omcJobsDir = process.env.OMC_JOBS_DIR;
   if (!jobId || !omcJobsDir) return;
@@ -136,7 +139,7 @@ async function writePanesFile(
   const panesPath = join(omcJobsDir, `${jobId}-panes.json`);
   await writeFile(
     panesPath + '.tmp',
-    JSON.stringify({ paneIds: [...paneIds], leaderPaneId }),
+    JSON.stringify({ paneIds: [...paneIds], leaderPaneId, sessionName, ownsWindow }),
   );
   await rename(panesPath + '.tmp', panesPath);
 }
@@ -197,6 +200,7 @@ async function main(): Promise<void> {
     agentTypes,
     tasks,
     cwd,
+    newWindow = false,
     pollIntervalMs = 5000,
     sentinelGateTimeoutMs = 30_000,
     sentinelGatePollIntervalMs = 250,
@@ -211,6 +215,7 @@ async function main(): Promise<void> {
     agentTypes: agentTypes as TeamConfig['agentTypes'],
     tasks,
     cwd,
+    newWindow,
   };
 
   const useV2 = isRuntimeV2Enabled();
@@ -247,6 +252,7 @@ async function main(): Promise<void> {
             2_000,
             runtime.workerPaneIds,
             runtime.leaderPaneId,
+            runtime.ownsWindow,
           );
         }
       } catch (err) {
@@ -296,6 +302,7 @@ async function main(): Promise<void> {
         agentTypes,
         tasks,
         cwd,
+        newWindow,
       });
       const v2PaneIds = v2Runtime.config.workers
         .map(w => w.pane_id)
@@ -304,6 +311,7 @@ async function main(): Promise<void> {
         teamName: v2Runtime.teamName,
         sessionName: v2Runtime.sessionName,
         leaderPaneId: v2Runtime.config.leader_pane_id || '',
+        ownsWindow: v2Runtime.ownsWindow,
         config,
         workerNames: v2Runtime.config.workers.map(w => w.name),
         workerPaneIds: v2PaneIds,
@@ -323,7 +331,7 @@ async function main(): Promise<void> {
   const expectedTaskCount = tasks.length;
   let mismatchStreak = 0;
   try {
-    await writePanesFile(jobId, runtime.workerPaneIds, runtime.leaderPaneId);
+    await writePanesFile(jobId, runtime.workerPaneIds, runtime.leaderPaneId, runtime.sessionName, Boolean(runtime.ownsWindow));
   } catch (err) {
     process.stderr.write(`[runtime-cli] Failed to persist pane IDs: ${err}\n`);
   }
@@ -351,7 +359,7 @@ async function main(): Promise<void> {
       }
 
       try {
-        await writePanesFile(jobId, runtime.workerPaneIds, runtime.leaderPaneId);
+        await writePanesFile(jobId, runtime.workerPaneIds, runtime.leaderPaneId, runtime.sessionName, Boolean(runtime.ownsWindow));
       } catch { /* best-effort panes file write */ }
 
       process.stderr.write(
@@ -434,7 +442,7 @@ async function main(): Promise<void> {
     }
 
     try {
-      await writePanesFile(jobId, runtime.workerPaneIds, runtime.leaderPaneId);
+      await writePanesFile(jobId, runtime.workerPaneIds, runtime.leaderPaneId, runtime.sessionName, Boolean(runtime.ownsWindow));
     } catch (err) {
       process.stderr.write(`[runtime-cli] Failed to persist pane IDs: ${err}\n`);
     }

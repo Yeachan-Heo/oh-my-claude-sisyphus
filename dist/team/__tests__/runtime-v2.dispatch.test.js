@@ -40,6 +40,7 @@ describe('runtime v2 startup inbox dispatch', () => {
             sessionName: 'dispatch-session',
             leaderPaneId: '%1',
             workerPaneIds: [],
+            sessionMode: 'split-pane',
         });
         mocks.spawnWorkerInPane.mockResolvedValue(undefined);
         mocks.waitForPaneReady.mockResolvedValue(true);
@@ -73,6 +74,7 @@ describe('runtime v2 startup inbox dispatch', () => {
             cwd,
         });
         expect(runtime.teamName).toBe('dispatch-team');
+        expect(mocks.createTeamSession).toHaveBeenCalledWith('dispatch-team', 0, cwd, { newWindow: false });
         const requests = await listDispatchRequests('dispatch-team', cwd, { kind: 'inbox' });
         expect(requests).toHaveLength(1);
         expect(requests[0]?.to_worker).toBe('worker-1');
@@ -90,6 +92,19 @@ describe('runtime v2 startup inbox dispatch', () => {
                 OMC_TEAM_LEADER_CWD: cwd,
             }),
         }));
+    });
+    it('passes through dedicated-window startup requests', async () => {
+        cwd = await mkdtemp(join(tmpdir(), 'omc-runtime-v2-new-window-'));
+        const { startTeamV2 } = await import('../runtime-v2.js');
+        await startTeamV2({
+            teamName: 'dispatch-team',
+            workerCount: 1,
+            agentTypes: ['claude'],
+            tasks: [{ subject: 'Dispatch test', description: 'Verify new-window startup wiring' }],
+            cwd,
+            newWindow: true,
+        });
+        expect(mocks.createTeamSession).toHaveBeenCalledWith('dispatch-team', 0, cwd, { newWindow: true });
     });
     it('does not auto-kill a worker pane when startup readiness fails', async () => {
         cwd = await mkdtemp(join(tmpdir(), 'omc-runtime-v2-no-autokill-ready-'));

@@ -5,7 +5,7 @@ import { homedir } from 'os';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import { executeTeamApiOperation as executeCanonicalTeamApiOperation, resolveTeamApiOperation } from '../team/api-interop.js';
-import { killWorkerPanes } from '../team/tmux-session.js';
+import { killWorkerPanes, killTeamSession } from '../team/tmux-session.js';
 import { validateTeamName } from '../team/team-name.js';
 import { monitorTeam, resumeTeam, shutdownTeam } from '../team/runtime.js';
 import { readTeamConfig } from '../team/monitor.js';
@@ -63,6 +63,7 @@ interface TeamLegacyStartArgs {
   ralph: boolean;
   json: boolean;
   cwd: string;
+  newWindow?: boolean;
 }
 
 export interface TeamTaskInput {
@@ -75,6 +76,7 @@ export interface TeamStartInput {
   agentTypes: string[];
   tasks: TeamTaskInput[];
   cwd: string;
+  newWindow?: boolean;
   workerCount?: number;
   pollIntervalMs?: number;
   sentinelGateTimeoutMs?: number;
@@ -123,6 +125,8 @@ interface TeamJobRecord {
 interface TeamPanesFile {
   paneIds: string[];
   leaderPaneId: string;
+  sessionName?: string;
+  ownsWindow?: boolean;
 }
 
 function getTeamWorkerIdentityFromEnv(env: NodeJS.ProcessEnv = process.env): string | null {
@@ -373,6 +377,7 @@ export async function startTeamJob(input: TeamStartInput): Promise<TeamStartResu
     agentTypes: input.agentTypes,
     tasks: input.tasks,
     cwd: input.cwd,
+    newWindow: input.newWindow,
     pollIntervalMs: input.pollIntervalMs,
     sentinelGateTimeoutMs: input.sentinelGateTimeoutMs,
     sentinelGatePollIntervalMs: input.sentinelGatePollIntervalMs,
@@ -447,7 +452,17 @@ export async function cleanupTeamJob(jobId: string, graceMs = 10_000): Promise<T
     .then((content) => parseJsonSafe<TeamPanesFile>(content))
     .catch(() => null);
 
-  if (paneArtifact?.paneIds?.length) {
+  if (paneArtifact?.sessionName && (paneArtifact.ownsWindow === true || !paneArtifact.sessionName.includes(':'))) {
+    const sessionMode = paneArtifact.ownsWindow === true
+      ? (paneArtifact.sessionName.includes(':') ? 'dedicated-window' : 'detached-session')
+      : 'detached-session';
+    await killTeamSession(
+      paneArtifact.sessionName,
+      paneArtifact.paneIds,
+      paneArtifact.leaderPaneId,
+      { sessionMode },
+    );
+  } else if (paneArtifact?.paneIds?.length) {
     await killWorkerPanes({
       paneIds: paneArtifact.paneIds,
       leaderPaneId: paneArtifact.leaderPaneId,
@@ -469,9 +484,11 @@ export async function cleanupTeamJob(jobId: string, graceMs = 10_000): Promise<T
 
   return {
     jobId,
-    message: paneArtifact?.paneIds?.length
-      ? `Cleaned up ${paneArtifact.paneIds.length} worker pane(s)`
-      : 'No worker pane ids found for this job',
+    message: paneArtifact?.ownsWindow
+      ? 'Cleaned up team tmux window'
+      : paneArtifact?.paneIds?.length
+        ? `Cleaned up ${paneArtifact.paneIds.length} worker pane(s)`
+        : 'No worker pane ids found for this job',
   };
 }
 
@@ -580,6 +597,7 @@ export async function teamShutdownByName(teamName: string, options: { cwd?: stri
     options.force ? 0 : 30_000,
     runtime.workerPaneIds,
     runtime.leaderPaneId,
+    runtime.ownsWindow,
   );
 
   return {
@@ -667,17 +685,17 @@ export async function teamCleanupCommand(
 
 export const TEAM_USAGE = `
 Usage:
-  omc team start --agent <claude|codex|gemini>[,<agent>...] --task "<task>" [--count N] [--name TEAM] [--cwd DIR] [--json]
+  omc team start --agent <claude|codex|gemini>[,<agent>...] --task "<task>" [--count N] [--name TEAM] [--cwd DIR] [--new-window] [--json]
   omc team status <job_id|team_name> [--json] [--cwd DIR]
   omc team wait <job_id> [--timeout-ms MS] [--json]
   omc team cleanup <job_id> [--grace-ms MS] [--json]
   omc team resume <team_name> [--json] [--cwd DIR]
   omc team shutdown <team_name> [--force] [--json] [--cwd DIR]
   omc team api <operation> [--input '<json>'] [--json] [--cwd DIR]
-  omc team [ralph] <N:agent-type[:role]> "task" [--json] [--cwd DIR]
+  omc team [ralph] <N:agent-type[:role]> "task" [--json] [--cwd DIR] [--new-window]
 
 Examples:
-  omc team start --agent codex --count 2 --task "review auth flow"
+  omc team start --agent codex --count 2 --task "review auth flow" --new-window
   omc team status omc-abc123
   omc team status auth-review
   omc team resume auth-review
@@ -698,6 +716,7 @@ function parseStartArgs(args: string[]): StartArgsParsed {
   let cwd = process.cwd();
   let count = 1;
   let json = false;
+  let newWindow = false;
   let subjectPrefix = 'Task';
   let pollIntervalMs: number | undefined;
   let sentinelGateTimeoutMs: number | undefined;
@@ -709,6 +728,10 @@ function parseStartArgs(args: string[]): StartArgsParsed {
 
     if (token === '--json') {
       json = true;
+      continue;
+    }
+    if (token === '--new-window') {
+      newWindow = true;
       continue;
     }
 
@@ -846,6 +869,7 @@ function parseStartArgs(args: string[]): StartArgsParsed {
       agentTypes,
       tasks,
       cwd,
+      ...(newWindow ? { newWindow: true } : {}),
       ...(pollIntervalMs != null ? { pollIntervalMs } : {}),
       ...(sentinelGateTimeoutMs != null ? { sentinelGateTimeoutMs } : {}),
       ...(sentinelGatePollIntervalMs != null ? { sentinelGatePollIntervalMs } : {}),
@@ -1079,6 +1103,7 @@ function parseLegacyStartAlias(args: string[]): TeamLegacyStartArgs | null {
 
   let json = false;
   let cwd = process.cwd();
+  let newWindow = false;
   const taskParts: string[] = [];
   for (let i = index; i < args.length; i += 1) {
     const token = args[i];
@@ -1086,6 +1111,10 @@ function parseLegacyStartAlias(args: string[]): TeamLegacyStartArgs | null {
 
     if (token === '--json') {
       json = true;
+      continue;
+    }
+    if (token === '--new-window') {
+      newWindow = true;
       continue;
     }
     if (token === '--cwd') {
@@ -1114,6 +1143,7 @@ function parseLegacyStartAlias(args: string[]): TeamLegacyStartArgs | null {
     ralph,
     json,
     cwd,
+    ...(newWindow ? { newWindow: true } : {}),
   };
 }
 
@@ -1202,6 +1232,7 @@ export async function teamCommand(argv: string[]): Promise<void> {
         agentTypes: Array.from({ length: legacy.workerCount }, () => legacy.agentType),
         tasks,
         cwd: legacy.cwd,
+        ...(legacy.newWindow ? { newWindow: true } : {}),
       });
 
       output(result, legacy.json);

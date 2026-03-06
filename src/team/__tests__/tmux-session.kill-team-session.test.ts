@@ -59,7 +59,7 @@ describe('killTeamSession safeguards', () => {
     await killTeamSession('worker-detached-session');
 
     expect(mocked.execFileCalls.some((args) =>
-      args[0] === 'kill-session' && args.includes('worker-detached-session')
+      args[0] === 'kill-session' && args.includes('worker-detached-session'),
     )).toBe(true);
   });
 
@@ -72,5 +72,15 @@ describe('killTeamSession safeguards', () => {
 
     expect(killPaneTargets).toEqual(['%11']);
     expect(mocked.execFileCalls.some((args) => args[0] === 'kill-session')).toBe(false);
+    expect(mocked.execFileCalls.some((args) => args[0] === 'kill-window')).toBe(false);
+  });
+
+  it('kills an owned team window when session owns that window', async () => {
+    await killTeamSession('leader-session:3', ['%10', '%11'], '%10', { sessionMode: 'dedicated-window' });
+
+    expect(mocked.execFileCalls.some((args) =>
+      args[0] === 'kill-window' && args.includes('leader-session:3'),
+    )).toBe(true);
+    expect(mocked.execFileCalls.some((args) => args[0] === 'kill-pane')).toBe(false);
   });
 });

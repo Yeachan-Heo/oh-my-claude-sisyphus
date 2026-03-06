@@ -822,15 +822,17 @@ function spawnBridgeInSession(tmuxSession, bridgeScriptPath, configFilePath) {
   const cmd = `node "${bridgeScriptPath}" --config "${configFilePath}"`;
   execFileSync("tmux", ["send-keys", "-t", tmuxSession, cmd, "Enter"], { stdio: "pipe", timeout: 5e3 });
 }
-async function createTeamSession(teamName, workerCount, cwd) {
+async function createTeamSession(teamName, workerCount, cwd, options = {}) {
   const { execFile: execFile2 } = await import("child_process");
   const { promisify: promisify2 } = await import("util");
   const execFileAsync = promisify2(execFile2);
   const inTmux = Boolean(process.env.TMUX);
+  const useDedicatedWindow = Boolean(options.newWindow && inTmux);
   const envPaneIdRaw = (process.env.TMUX_PANE ?? "").trim();
   const envPaneId = /^%\d+$/.test(envPaneIdRaw) ? envPaneIdRaw : "";
   let sessionAndWindow = "";
   let leaderPaneId = envPaneId;
+  let sessionMode = inTmux ? "split-pane" : "detached-session";
   if (!inTmux) {
     const detachedSessionName = `${TMUX_SESSION_PREFIX}-${sanitizeName(teamName)}-${Date.now().toString(36)}`;
     const detachedResult = await execFileAsync("tmux", [
@@ -881,6 +883,31 @@ async function createTeamSession(teamName, workerCount, cwd) {
     sessionAndWindow = contextMatch[1];
     leaderPaneId = contextMatch[2];
   }
+  if (useDedicatedWindow) {
+    const targetSession = sessionAndWindow.split(":")[0] ?? sessionAndWindow;
+    const windowName = `omc-${sanitizeName(teamName)}`.slice(0, 32);
+    const newWindowResult = await execFileAsync("tmux", [
+      "new-window",
+      "-d",
+      "-P",
+      "-F",
+      "#S:#I #{pane_id}",
+      "-t",
+      targetSession,
+      "-n",
+      windowName,
+      "-c",
+      cwd
+    ]);
+    const newWindowLine = newWindowResult.stdout.trim();
+    const newWindowMatch = newWindowLine.match(/^(\S+)\s+(%\d+)$/);
+    if (!newWindowMatch) {
+      throw new Error(`Failed to create team tmux window: "${newWindowLine}"`);
+    }
+    sessionAndWindow = newWindowMatch[1];
+    leaderPaneId = newWindowMatch[2];
+    sessionMode = "dedicated-window";
+  }
   const teamTarget = sessionAndWindow;
   const resolvedSessionName = teamTarget.split(":")[0];
   const workerPaneIds = [];
@@ -889,12 +916,14 @@ async function createTeamSession(teamName, workerCount, cwd) {
       await execFileAsync("tmux", ["set-option", "-t", resolvedSessionName, "mouse", "on"]);
     } catch {
     }
-    try {
-      await execFileAsync("tmux", ["select-pane", "-t", leaderPaneId]);
-    } catch {
+    if (sessionMode !== "dedicated-window") {
+      try {
+        await execFileAsync("tmux", ["select-pane", "-t", leaderPaneId]);
+      } catch {
+      }
     }
     await new Promise((r) => setTimeout(r, 300));
-    return { sessionName: teamTarget, leaderPaneId, workerPaneIds };
+    return { sessionName: teamTarget, leaderPaneId, workerPaneIds, sessionMode };
   }
   for (let i = 0; i < workerCount; i++) {
     const splitTarget = i === 0 ? leaderPaneId : workerPaneIds[i - 1];
@@ -940,12 +969,14 @@ async function createTeamSession(teamName, workerCount, cwd) {
     await execFileAsync("tmux", ["set-option", "-t", resolvedSessionName, "mouse", "on"]);
   } catch {
   }
-  try {
-    await execFileAsync("tmux", ["select-pane", "-t", leaderPaneId]);
-  } catch {
+  if (sessionMode !== "dedicated-window") {
+    try {
+      await execFileAsync("tmux", ["select-pane", "-t", leaderPaneId]);
+    } catch {
+    }
   }
   await new Promise((r) => setTimeout(r, 300));
-  return { sessionName: teamTarget, leaderPaneId, workerPaneIds };
+  return { sessionName: teamTarget, leaderPaneId, workerPaneIds, sessionMode };
 }
 async function spawnWorkerInPane(sessionName2, paneId, config) {
   const { execFile: execFile2 } = await import("child_process");
@@ -1177,11 +1208,12 @@ async function killWorkerPanes(opts) {
     }
   }
 }
-async function killTeamSession(sessionName2, workerPaneIds, leaderPaneId) {
+async function killTeamSession(sessionName2, workerPaneIds, leaderPaneId, options = {}) {
   const { execFile: execFile2 } = await import("child_process");
   const { promisify: promisify2 } = await import("util");
   const execFileAsync = promisify2(execFile2);
-  if (sessionName2.includes(":")) {
+  const sessionMode = options.sessionMode ?? (sessionName2.includes(":") ? "split-pane" : "detached-session");
+  if (sessionMode === "split-pane") {
     if (!workerPaneIds?.length) return;
     for (const id of workerPaneIds) {
       if (id === leaderPaneId) continue;
@@ -1192,18 +1224,26 @@ async function killTeamSession(sessionName2, workerPaneIds, leaderPaneId) {
     }
     return;
   }
+  if (sessionMode === "dedicated-window") {
+    try {
+      await execFileAsync("tmux", ["kill-window", "-t", sessionName2]);
+    } catch {
+    }
+    return;
+  }
+  const sessionTarget = sessionName2.split(":")[0] ?? sessionName2;
   if (process.env.OMC_TEAM_ALLOW_KILL_CURRENT_SESSION !== "1" && process.env.TMUX) {
     try {
       const current = await tmuxAsync(["display-message", "-p", "#S"]);
       const currentSessionName = current.stdout.trim();
-      if (currentSessionName && currentSessionName === sessionName2) {
+      if (currentSessionName && currentSessionName === sessionTarget) {
         return;
       }
     } catch {
     }
   }
   try {
-    await execFileAsync("tmux", ["kill-session", "-t", sessionName2]);
+    await execFileAsync("tmux", ["kill-session", "-t", sessionTarget]);
   } catch {
   }
 }
@@ -2166,9 +2206,12 @@ async function startTeamV2(config) {
       ...config.rolePrompt ? { bootstrapInstructions: config.rolePrompt } : {}
     });
   }
-  const session = await createTeamSession(sanitized, 0, leaderCwd);
+  const session = await createTeamSession(sanitized, 0, leaderCwd, {
+    newWindow: Boolean(config.newWindow)
+  });
   const sessionName2 = session.sessionName;
   const leaderPaneId = session.leaderPaneId;
+  const ownsWindow = session.sessionMode !== "split-pane";
   const workerPaneIds = [];
   const workersInfo = workerNames.map((wName, i) => ({
     name: wName,
@@ -2187,13 +2230,15 @@ async function startTeamV2(config) {
     workers: workersInfo,
     created_at: (/* @__PURE__ */ new Date()).toISOString(),
     tmux_session: sessionName2,
+    tmux_window_owned: ownsWindow,
     next_task_id: config.tasks.length + 1,
     leader_cwd: leaderCwd,
     team_state_root: teamStateRoot(leaderCwd, sanitized),
     leader_pane_id: leaderPaneId,
     hud_pane_id: null,
     resize_hook_name: null,
-    resize_hook_target: null
+    resize_hook_target: null,
+    ...ownsWindow ? { workspace_mode: "single" } : {}
   };
   await saveTeamConfig(teamConfig, leaderCwd);
   const maxConcurrent = Math.min(agentTypes.length, config.tasks.length);
@@ -2243,7 +2288,8 @@ async function startTeamV2(config) {
     sanitizedName: sanitized,
     sessionName: sessionName2,
     config: teamConfig,
-    cwd: leaderCwd
+    cwd: leaderCwd,
+    ownsWindow
   };
 }
 async function writeWatchdogFailedMarker(teamName, cwd, reason) {
@@ -2518,14 +2564,21 @@ Then exit your session.
   try {
     const { killWorkerPanes: killWorkerPanes2, killTeamSession: killTeamSession2 } = await Promise.resolve().then(() => (init_tmux_session(), tmux_session_exports));
     const workerPaneIds = config.workers.map((w) => w.pane_id).filter((p) => typeof p === "string" && p.trim().length > 0);
+    const ownsWindow = config.tmux_window_owned === true;
     await killWorkerPanes2({
       paneIds: workerPaneIds,
       leaderPaneId: config.leader_pane_id ?? void 0,
       teamName: sanitized,
       cwd
     });
-    if (config.tmux_session && !config.tmux_session.includes(":")) {
-      await killTeamSession2(config.tmux_session, [], void 0);
+    if (config.tmux_session && (ownsWindow || !config.tmux_session.includes(":"))) {
+      const sessionMode = ownsWindow ? config.tmux_session.includes(":") ? "dedicated-window" : "detached-session" : "detached-session";
+      await killTeamSession2(
+        config.tmux_session,
+        workerPaneIds,
+        config.leader_pane_id ?? void 0,
+        { sessionMode }
+      );
     }
   } catch (err) {
     process.stderr.write(`[team/runtime-v2] tmux cleanup: ${err}
@@ -2559,6 +2612,7 @@ async function resumeTeamV2(teamName, cwd) {
       teamName: sanitized,
       sanitizedName: sanitized,
       sessionName: sessionName2,
+      ownsWindow: config.tmux_window_owned === true,
       config,
       cwd
     };
@@ -4059,7 +4113,7 @@ async function monitorTeam(teamName, cwd, workerPaneIds) {
     }
   };
 }
-async function shutdownTeam(teamName, sessionName2, cwd, timeoutMs = 3e4, workerPaneIds, leaderPaneId) {
+async function shutdownTeam(teamName, sessionName2, cwd, timeoutMs = 3e4, workerPaneIds, leaderPaneId, ownsWindow) {
   const root = stateRoot(cwd, teamName);
   await writeJson(join12(root, "shutdown.json"), {
     requestedAt: (/* @__PURE__ */ new Date()).toISOString(),
@@ -4085,7 +4139,8 @@ async function shutdownTeam(teamName, sessionName2, cwd, timeoutMs = 3e4, worker
       }
     }
   }
-  await killTeamSession(sessionName2, workerPaneIds, leaderPaneId);
+  const sessionMode = ownsWindow ?? Boolean(configData?.tmuxOwnsWindow) ? sessionName2.includes(":") ? "dedicated-window" : "detached-session" : "split-pane";
+  await killTeamSession(sessionName2, workerPaneIds, leaderPaneId, { sessionMode });
   try {
     await rm3(root, { recursive: true, force: true });
   } catch {
@@ -4098,16 +4153,17 @@ async function resumeTeam(teamName, cwd) {
   const { execFile: execFile2 } = await import("child_process");
   const { promisify: promisify2 } = await import("util");
   const execFileAsync = promisify2(execFile2);
-  const sName = `omc-team-${teamName}`;
+  const sName = configData.tmuxSession || `omc-team-${teamName}`;
   try {
-    await execFileAsync("tmux", ["has-session", "-t", sName]);
+    await execFileAsync("tmux", ["has-session", "-t", sName.split(":")[0]]);
   } catch {
     return null;
   }
+  const paneTarget = sName.includes(":") ? sName : sName.split(":")[0];
   const panesResult = await execFileAsync("tmux", [
     "list-panes",
     "-t",
-    sName,
+    paneTarget,
     "-F",
     "#{pane_id}"
   ]);
@@ -4133,12 +4189,13 @@ async function resumeTeam(teamName, cwd) {
   return {
     teamName,
     sessionName: sName,
-    leaderPaneId: allPanes[0] ?? "",
+    leaderPaneId: configData.leaderPaneId ?? allPanes[0] ?? "",
     config: configData,
     workerNames,
     workerPaneIds,
     activeWorkers,
-    cwd
+    cwd,
+    ownsWindow: Boolean(configData.tmuxOwnsWindow)
   };
 }
 
@@ -4343,6 +4400,7 @@ async function startTeamJob(input) {
     agentTypes: input.agentTypes,
     tasks: input.tasks,
     cwd: input.cwd,
+    newWindow: input.newWindow,
     pollIntervalMs: input.pollIntervalMs,
     sentinelGateTimeoutMs: input.sentinelGateTimeoutMs,
     sentinelGatePollIntervalMs: input.sentinelGatePollIntervalMs
@@ -4400,7 +4458,15 @@ async function cleanupTeamJob(jobId, graceMs = 1e4) {
     throw new Error(`No job found: ${jobId}`);
   }
   const paneArtifact = await readFile7(panesArtifactPath(jobsDir, jobId), "utf-8").then((content) => parseJsonSafe(content)).catch(() => null);
-  if (paneArtifact?.paneIds?.length) {
+  if (paneArtifact?.sessionName && (paneArtifact.ownsWindow === true || !paneArtifact.sessionName.includes(":"))) {
+    const sessionMode = paneArtifact.ownsWindow === true ? paneArtifact.sessionName.includes(":") ? "dedicated-window" : "detached-session" : "detached-session";
+    await killTeamSession(
+      paneArtifact.sessionName,
+      paneArtifact.paneIds,
+      paneArtifact.leaderPaneId,
+      { sessionMode }
+    );
+  } else if (paneArtifact?.paneIds?.length) {
     await killWorkerPanes({
       paneIds: paneArtifact.paneIds,
       leaderPaneId: paneArtifact.leaderPaneId,
@@ -4419,7 +4485,7 @@ async function cleanupTeamJob(jobId, graceMs = 1e4) {
   }, jobsDir);
   return {
     jobId,
-    message: paneArtifact?.paneIds?.length ? `Cleaned up ${paneArtifact.paneIds.length} worker pane(s)` : "No worker pane ids found for this job"
+    message: paneArtifact?.ownsWindow ? "Cleaned up team tmux window" : paneArtifact?.paneIds?.length ? `Cleaned up ${paneArtifact.paneIds.length} worker pane(s)` : "No worker pane ids found for this job"
   };
 }
 async function teamStatusByTeamName(teamName, cwd = process.cwd()) {
@@ -4514,7 +4580,8 @@ async function teamShutdownByName(teamName, options = {}) {
     runtime.cwd,
     options.force ? 0 : 3e4,
     runtime.workerPaneIds,
-    runtime.leaderPaneId
+    runtime.leaderPaneId,
+    runtime.ownsWindow
   );
   return {
     teamName,
@@ -4569,17 +4636,17 @@ async function teamCleanupCommand(jobId, cleanupOptions = {}, options = {}) {
 }
 var TEAM_USAGE = `
 Usage:
-  omc team start --agent <claude|codex|gemini>[,<agent>...] --task "<task>" [--count N] [--name TEAM] [--cwd DIR] [--json]
+  omc team start --agent <claude|codex|gemini>[,<agent>...] --task "<task>" [--count N] [--name TEAM] [--cwd DIR] [--new-window] [--json]
   omc team status <job_id|team_name> [--json] [--cwd DIR]
   omc team wait <job_id> [--timeout-ms MS] [--json]
   omc team cleanup <job_id> [--grace-ms MS] [--json]
   omc team resume <team_name> [--json] [--cwd DIR]
   omc team shutdown <team_name> [--force] [--json] [--cwd DIR]
   omc team api <operation> [--input '<json>'] [--json] [--cwd DIR]
-  omc team [ralph] <N:agent-type[:role]> "task" [--json] [--cwd DIR]
+  omc team [ralph] <N:agent-type[:role]> "task" [--json] [--cwd DIR] [--new-window]
 
 Examples:
-  omc team start --agent codex --count 2 --task "review auth flow"
+  omc team start --agent codex --count 2 --task "review auth flow" --new-window
   omc team status omc-abc123
   omc team status auth-review
   omc team resume auth-review
@@ -4594,6 +4661,7 @@ function parseStartArgs(args) {
   let cwd = process.cwd();
   let count = 1;
   let json = false;
+  let newWindow = false;
   let subjectPrefix = "Task";
   let pollIntervalMs;
   let sentinelGateTimeoutMs;
@@ -4603,6 +4671,10 @@ function parseStartArgs(args) {
     const next = args[i + 1];
     if (token === "--json") {
       json = true;
+      continue;
+    }
+    if (token === "--new-window") {
+      newWindow = true;
       continue;
     }
     if (token === "--agent") {
@@ -4719,6 +4791,7 @@ function parseStartArgs(args) {
       agentTypes,
       tasks,
       cwd,
+      ...newWindow ? { newWindow: true } : {},
       ...pollIntervalMs != null ? { pollIntervalMs } : {},
       ...sentinelGateTimeoutMs != null ? { sentinelGateTimeoutMs } : {},
       ...sentinelGatePollIntervalMs != null ? { sentinelGatePollIntervalMs } : {}
@@ -4911,12 +4984,17 @@ function parseLegacyStartAlias(args) {
   index += 1;
   let json = false;
   let cwd = process.cwd();
+  let newWindow = false;
   const taskParts = [];
   for (let i = index; i < args.length; i += 1) {
     const token = args[i];
     const next = args[i + 1];
     if (token === "--json") {
       json = true;
+      continue;
+    }
+    if (token === "--new-window") {
+      newWindow = true;
       continue;
     }
     if (token === "--cwd") {
@@ -4941,7 +5019,8 @@ function parseLegacyStartAlias(args) {
     teamName: autoTeamName(task),
     ralph,
     json,
-    cwd
+    cwd,
+    ...newWindow ? { newWindow: true } : {}
   };
 }
 async function teamCommand(argv) {
@@ -5016,7 +5095,8 @@ async function teamCommand(argv) {
         workerCount: legacy.workerCount,
         agentTypes: Array.from({ length: legacy.workerCount }, () => legacy.agentType),
         tasks,
-        cwd: legacy.cwd
+        cwd: legacy.cwd,
+        ...legacy.newWindow ? { newWindow: true } : {}
       });
       output(result, legacy.json);
       return;

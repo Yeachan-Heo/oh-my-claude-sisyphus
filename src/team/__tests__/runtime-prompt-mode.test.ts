@@ -75,6 +75,7 @@ function makeRuntime(cwd: string, agentType: 'gemini' | 'codex' | 'claude'): Tea
     teamName: 'test-team',
     sessionName: 'test-session:0',
     leaderPaneId: '%0',
+    ownsWindow: false,
     config: {
       teamName: 'test-team',
       workerCount: 1,

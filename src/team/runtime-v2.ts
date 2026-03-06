@@ -92,6 +92,7 @@ export interface TeamRuntimeV2 {
   sessionName: string;
   config: TeamConfig;
   cwd: string;
+  ownsWindow: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -182,6 +183,7 @@ export interface StartTeamV2Config {
   agentTypes: string[];
   tasks: Array<{ subject: string; description: string; owner?: string; blocked_by?: string[] }>;
   cwd: string;
+  newWindow?: boolean;
   roleName?: string;
   rolePrompt?: string;
 }
@@ -489,9 +491,12 @@ export async function startTeamV2(config: StartTeamV2Config): Promise<TeamRuntim
   }
 
   // Create tmux session (leader only — workers spawned below)
-  const session = await createTeamSession(sanitized, 0, leaderCwd);
+  const session = await createTeamSession(sanitized, 0, leaderCwd, {
+    newWindow: Boolean(config.newWindow),
+  });
   const sessionName = session.sessionName;
   const leaderPaneId = session.leaderPaneId;
+  const ownsWindow = session.sessionMode !== 'split-pane';
   const workerPaneIds: string[] = [];
 
   // Build workers info for config
@@ -514,6 +519,7 @@ export async function startTeamV2(config: StartTeamV2Config): Promise<TeamRuntim
     workers: workersInfo,
     created_at: new Date().toISOString(),
     tmux_session: sessionName,
+    tmux_window_owned: ownsWindow,
     next_task_id: config.tasks.length + 1,
     leader_cwd: leaderCwd,
     team_state_root: teamStateRoot(leaderCwd, sanitized),
@@ -521,6 +527,7 @@ export async function startTeamV2(config: StartTeamV2Config): Promise<TeamRuntim
     hud_pane_id: null,
     resize_hook_name: null,
     resize_hook_target: null,
+    ...(ownsWindow ? { workspace_mode: 'single' as const } : {}),
   };
   await saveTeamConfig(teamConfig, leaderCwd);
 
@@ -581,6 +588,7 @@ export async function startTeamV2(config: StartTeamV2Config): Promise<TeamRuntim
     sessionName,
     config: teamConfig,
     cwd: leaderCwd,
+    ownsWindow: ownsWindow,
   };
 }
 
@@ -991,15 +999,23 @@ export async function shutdownTeamV2(
     const workerPaneIds = config.workers
       .map((w) => w.pane_id)
       .filter((p): p is string => typeof p === 'string' && p.trim().length > 0);
+    const ownsWindow = config.tmux_window_owned === true;
     await killWorkerPanes({
       paneIds: workerPaneIds,
       leaderPaneId: config.leader_pane_id ?? undefined,
       teamName: sanitized,
       cwd,
     });
-    // Destroy tmux session if it's a standalone session
-    if (config.tmux_session && !config.tmux_session.includes(':')) {
-      await killTeamSession(config.tmux_session, [], undefined);
+    if (config.tmux_session && (ownsWindow || !config.tmux_session.includes(':'))) {
+      const sessionMode = ownsWindow
+        ? (config.tmux_session.includes(':') ? 'dedicated-window' : 'detached-session')
+        : 'detached-session';
+      await killTeamSession(
+        config.tmux_session,
+        workerPaneIds,
+        config.leader_pane_id ?? undefined,
+        { sessionMode },
+      );
     }
   } catch (err) {
     process.stderr.write(`[team/runtime-v2] tmux cleanup: ${err}\n`);
@@ -1046,6 +1062,7 @@ export async function resumeTeamV2(
       teamName: sanitized,
       sanitizedName: sanitized,
       sessionName,
+      ownsWindow: config.tmux_window_owned === true,
       config,
       cwd,
     };

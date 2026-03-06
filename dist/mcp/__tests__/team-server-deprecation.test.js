@@ -27,6 +27,7 @@ describe('team-server MCP deprecation envelope CLI argument mapping', () => {
             agentTypes: ['codex', 'codex'],
             tasks: [{ subject: 'S1', description: 'review auth flow' }],
             cwd: '/tmp/project',
+            newWindow: true,
         });
         const payload = JSON.parse(envelope.content[0].text);
         expect(payload.cli_replacement).toContain('omc team start');
@@ -35,6 +36,7 @@ describe('team-server MCP deprecation envelope CLI argument mapping', () => {
         expect(payload.cli_replacement).toContain('--agent "codex"');
         expect(payload.cli_replacement).toContain('--count 2');
         expect(payload.cli_replacement).toContain('--task "review auth flow"');
+        expect(payload.cli_replacement).toContain('--new-window');
     });
     it('maps wait/cleanup tool args to timeout/grace flags', () => {
         const waitEnvelope = createDeprecatedCliOnlyEnvelopeWithArgs('omc_run_team_wait', {

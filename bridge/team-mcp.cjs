@@ -17963,6 +17963,45 @@ async function killWorkerPanes(opts) {
     }
   }
 }
+async function killTeamSession(sessionName, workerPaneIds, leaderPaneId, options = {}) {
+  const { execFile: execFile3 } = await import("child_process");
+  const { promisify: promisify2 } = await import("util");
+  const execFileAsync = promisify2(execFile3);
+  const sessionMode = options.sessionMode ?? (sessionName.includes(":") ? "split-pane" : "detached-session");
+  if (sessionMode === "split-pane") {
+    if (!workerPaneIds?.length) return;
+    for (const id of workerPaneIds) {
+      if (id === leaderPaneId) continue;
+      try {
+        await execFileAsync("tmux", ["kill-pane", "-t", id]);
+      } catch {
+      }
+    }
+    return;
+  }
+  if (sessionMode === "dedicated-window") {
+    try {
+      await execFileAsync("tmux", ["kill-window", "-t", sessionName]);
+    } catch {
+    }
+    return;
+  }
+  const sessionTarget = sessionName.split(":")[0] ?? sessionName;
+  if (process.env.OMC_TEAM_ALLOW_KILL_CURRENT_SESSION !== "1" && process.env.TMUX) {
+    try {
+      const current = await tmuxAsync(["display-message", "-p", "#S"]);
+      const currentSessionName = current.stdout.trim();
+      if (currentSessionName && currentSessionName === sessionTarget) {
+        return;
+      }
+    } catch {
+    }
+  }
+  try {
+    await execFileAsync("tmux", ["kill-session", "-t", sessionTarget]);
+  } catch {
+  }
+}
 
 // src/team/idle-nudge.ts
 var import_child_process2 = require("child_process");
@@ -18171,6 +18210,7 @@ function buildCliReplacement(toolName, args) {
   if (toolName === "omc_run_team_start") {
     const teamName = typeof parsed.teamName === "string" ? parsed.teamName.trim() : "";
     const cwd = typeof parsed.cwd === "string" ? parsed.cwd.trim() : "";
+    const newWindow = parsed.newWindow === true;
     const agentTypes = Array.isArray(parsed.agentTypes) ? parsed.agentTypes.filter((item) => typeof item === "string" && item.trim().length > 0) : [];
     const tasks = Array.isArray(parsed.tasks) ? parsed.tasks.map(
       (task) => typeof task === "object" && task !== null && typeof task.description === "string" ? task.description.trim() : ""
@@ -18178,6 +18218,7 @@ function buildCliReplacement(toolName, args) {
     const flags = ["omc", "team", "start"];
     if (teamName) flags.push("--name", quoteCliValue(teamName));
     if (cwd) flags.push("--cwd", quoteCliValue(cwd));
+    if (newWindow) flags.push("--new-window");
     if (agentTypes.length > 0) {
       const uniqueAgentTypes = new Set(agentTypes);
       if (uniqueAgentTypes.size === 1) {
@@ -18278,7 +18319,8 @@ var startSchema = external_exports.object({
     subject: external_exports.string().describe("Brief task title"),
     description: external_exports.string().describe("Full task description")
   })).describe("Tasks to distribute to workers"),
-  cwd: external_exports.string().describe("Working directory (absolute path)")
+  cwd: external_exports.string().describe("Working directory (absolute path)"),
+  newWindow: external_exports.boolean().optional().describe("Spawn workers in a dedicated tmux window instead of splitting the current window")
 });
 var statusSchema = external_exports.object({
   job_id: external_exports.string().describe("Job ID returned by omc_run_team_start")
@@ -18454,7 +18496,16 @@ async function handleCleanup(args) {
   if (!job) return { content: [{ type: "text", text: `Job ${job_id} not found` }] };
   const panes = await loadPaneIds(job_id);
   let paneCleanupMessage = "No pane IDs recorded for this job \u2014 pane cleanup skipped.";
-  if (panes?.paneIds?.length) {
+  if (panes?.sessionName && (panes.ownsWindow === true || !panes.sessionName.includes(":"))) {
+    const sessionMode = panes.ownsWindow === true ? panes.sessionName.includes(":") ? "dedicated-window" : "detached-session" : "detached-session";
+    await killTeamSession(
+      panes.sessionName,
+      panes.paneIds,
+      panes.leaderPaneId,
+      { sessionMode }
+    );
+    paneCleanupMessage = panes.ownsWindow ? "Cleaned up team tmux window." : `Cleaned up ${panes.paneIds.length} worker pane(s).`;
+  } else if (panes?.paneIds?.length) {
     await killWorkerPanes({
       paneIds: panes.paneIds,
       leaderPaneId: panes.leaderPaneId,
@@ -18490,7 +18541,8 @@ var TOOLS = [
           },
           description: "Tasks to distribute to workers"
         },
-        cwd: { type: "string", description: "Working directory (absolute path)" }
+        cwd: { type: "string", description: "Working directory (absolute path)" },
+        newWindow: { type: "boolean", description: "Spawn workers in a dedicated tmux window instead of splitting the current window" }
       },
       required: ["teamName", "agentTypes", "tasks", "cwd"]
     }
