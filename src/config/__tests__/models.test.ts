@@ -5,6 +5,7 @@ import {
   isNonClaudeProvider,
   resolveClaudeFamily,
 } from '../models.js';
+import { saveAndClear, restore } from './test-helpers.js';
 
 const BEDROCK_KEYS = ['CLAUDE_CODE_USE_BEDROCK', 'CLAUDE_MODEL', 'ANTHROPIC_MODEL'] as const;
 const VERTEX_KEYS = ['CLAUDE_CODE_USE_VERTEX', 'CLAUDE_MODEL', 'ANTHROPIC_MODEL'] as const;
@@ -16,25 +17,6 @@ const ALL_KEYS = [
   'ANTHROPIC_BASE_URL',
   'OMC_ROUTING_FORCE_INHERIT',
 ] as const;
-
-function saveAndClear(keys: readonly string[]): Record<string, string | undefined> {
-  const saved: Record<string, string | undefined> = {};
-  for (const key of keys) {
-    saved[key] = process.env[key];
-    delete process.env[key];
-  }
-  return saved;
-}
-
-function restore(saved: Record<string, string | undefined>): void {
-  for (const [key, value] of Object.entries(saved)) {
-    if (value === undefined) {
-      delete process.env[key];
-    } else {
-      process.env[key] = value;
-    }
-  }
-}
 
 // ---------------------------------------------------------------------------
 // isBedrock()
@@ -123,6 +105,15 @@ describe('isVertexAI()', () => {
 
   it('returns false for Bedrock or bare model IDs', () => {
     process.env.ANTHROPIC_MODEL = 'global.anthropic.claude-sonnet-4-6[1m]';
+    expect(isVertexAI()).toBe(false);
+  });
+
+  it('returns false when CLAUDE_CODE_USE_VERTEX=0', () => {
+    process.env.CLAUDE_CODE_USE_VERTEX = '0';
+    expect(isVertexAI()).toBe(false);
+  });
+
+  it('returns false when no relevant env var is set', () => {
     expect(isVertexAI()).toBe(false);
   });
 });

@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { loadConfig } from '../loader.js';
+import { saveAndClear, restore } from './test-helpers.js';
 
 const ALL_KEYS = [
   'CLAUDE_CODE_USE_BEDROCK',
@@ -12,25 +13,6 @@ const ALL_KEYS = [
   'OMC_MODEL_MEDIUM',
   'OMC_MODEL_LOW',
 ] as const;
-
-function saveAndClear(keys: readonly string[]): Record<string, string | undefined> {
-  const saved: Record<string, string | undefined> = {};
-  for (const key of keys) {
-    saved[key] = process.env[key];
-    delete process.env[key];
-  }
-  return saved;
-}
-
-function restore(saved: Record<string, string | undefined>): void {
-  for (const [key, value] of Object.entries(saved)) {
-    if (value === undefined) {
-      delete process.env[key];
-    } else {
-      process.env[key] = value;
-    }
-  }
-}
 
 // ---------------------------------------------------------------------------
 // Auto-forceInherit for Bedrock / Vertex (issues #1201, #1025)
