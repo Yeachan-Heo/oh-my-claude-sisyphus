@@ -5650,6 +5650,7 @@ var init_mode_names = __esm({
     };
     SESSION_END_MODE_STATE_FILES = [
       { file: MODE_STATE_FILE_MAP[MODE_NAMES.AUTOPILOT], mode: MODE_NAMES.AUTOPILOT },
+      { file: MODE_STATE_FILE_MAP[MODE_NAMES.TEAM], mode: MODE_NAMES.TEAM },
       { file: MODE_STATE_FILE_MAP[MODE_NAMES.RALPH], mode: MODE_NAMES.RALPH },
       { file: MODE_STATE_FILE_MAP[MODE_NAMES.ULTRAWORK], mode: MODE_NAMES.ULTRAWORK },
       { file: MODE_STATE_FILE_MAP[MODE_NAMES.ULTRAQA], mode: MODE_NAMES.ULTRAQA }
@@ -19200,30 +19201,44 @@ function cleanupModeStates(directory, sessionId) {
   }
   for (const { file, mode } of SESSION_END_MODE_STATE_FILES) {
     const localPath = path14.join(stateDir, file);
-    if (fs11.existsSync(localPath)) {
-      try {
-        if (file.endsWith(".json")) {
+    const sessionPath = sessionId ? resolveSessionStatePath(mode, sessionId, directory) : void 0;
+    try {
+      if (file.endsWith(".json")) {
+        const sessionState = sessionId ? readModeState(mode, directory, sessionId) : null;
+        let shouldCleanup = sessionState?.active === true;
+        if (!shouldCleanup && fs11.existsSync(localPath)) {
           const content = fs11.readFileSync(localPath, "utf-8");
           const state = JSON.parse(content);
           if (state.active === true) {
             const stateSessionId = state.session_id;
             if (!sessionId || !stateSessionId || stateSessionId === sessionId) {
-              fs11.unlinkSync(localPath);
-              filesRemoved++;
-              if (!modesCleaned.includes(mode)) {
-                modesCleaned.push(mode);
-              }
+              shouldCleanup = true;
             }
           }
-        } else {
-          fs11.unlinkSync(localPath);
-          filesRemoved++;
-          if (!modesCleaned.includes(mode)) {
-            modesCleaned.push(mode);
+        }
+        if (shouldCleanup) {
+          const hadLocalPath = fs11.existsSync(localPath);
+          const hadSessionPath = Boolean(sessionPath && fs11.existsSync(sessionPath));
+          if (clearModeStateFile(mode, directory, sessionId)) {
+            if (hadLocalPath && !fs11.existsSync(localPath)) {
+              filesRemoved++;
+            }
+            if (sessionPath && hadSessionPath && !fs11.existsSync(sessionPath)) {
+              filesRemoved++;
+            }
+            if (!modesCleaned.includes(mode)) {
+              modesCleaned.push(mode);
+            }
           }
         }
-      } catch {
+      } else if (fs11.existsSync(localPath)) {
+        fs11.unlinkSync(localPath);
+        filesRemoved++;
+        if (!modesCleaned.includes(mode)) {
+          modesCleaned.push(mode);
+        }
       }
+    } catch {
     }
   }
   return { filesRemoved, modesCleaned };
@@ -19302,6 +19317,7 @@ var init_session_end = __esm({
     init_bridge_manager();
     init_worktree_paths();
     init_mode_names();
+    init_mode_state_io();
     PYTHON_REPL_TOOL_NAMES = /* @__PURE__ */ new Set(["python_repl", "mcp__t__python_repl"]);
   }
 });
