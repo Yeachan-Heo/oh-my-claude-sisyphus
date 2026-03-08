@@ -229,6 +229,68 @@ Hành vi tag:
 - Slack: hỗ trợ `<@MEMBER_ID>`, `<!channel>`, `<!here>`, `<!everyone>`, `<!subteam^GROUP_ID>`
 - callbacks kiểu `file` bỏ qua các tùy chọn tag
 
+### OpenClaw — Bộ Điều Phối Webhook Có Cấu Trúc
+
+OpenClaw là một bộ điều phối webhook có cấu trúc, chuyển tiếp các sự kiện phiên Claude Code đến các endpoint HTTPS bên ngoài. Sử dụng nó để điều khiển workflow n8n, tác tử AI hoặc bất kỳ tự động hóa webhook tùy chỉnh nào.
+
+**Thiết lập nhanh (khuyến nghị):**
+
+```bash
+/oh-my-claudecode:configure-notifications
+# → Chọn "Custom Integration" → "OpenClaw Gateway"
+```
+
+**Thiết lập thủ công:** tạo `~/.claude/omc_config.openclaw.json`:
+
+```json
+{
+  "enabled": true,
+  "gateways": {
+    "my-gateway": {
+      "url": "https://your-gateway.example.com/wake",
+      "headers": { "Authorization": "Bearer YOUR_TOKEN" },
+      "method": "POST",
+      "timeout": 10000
+    }
+  },
+  "hooks": {
+    "session-start": { "gateway": "my-gateway", "instruction": "Session started for {{projectName}}", "enabled": true },
+    "stop":          { "gateway": "my-gateway", "instruction": "Session stopping for {{projectName}}", "enabled": true }
+  }
+}
+```
+
+**Biến môi trường:**
+
+| Biến | Mô tả |
+|------|-------|
+| `OMC_OPENCLAW=1` | Bật OpenClaw |
+| `OMC_OPENCLAW_DEBUG=1` | Bật ghi log gỡ lỗi |
+| `OMC_OPENCLAW_CONFIG=/path/to/config.json` | Thay đổi đường dẫn file cấu hình |
+
+**Các sự kiện hook được hỗ trợ (6 hoạt động trong bridge.ts):**
+
+| Sự kiện | Kích hoạt | Biến template chính |
+|---------|----------|-------------------|
+| `session-start` | Phiên bắt đầu | `{{sessionId}}`, `{{projectName}}`, `{{projectPath}}` |
+| `stop` | Phản hồi Claude hoàn tất | `{{sessionId}}`, `{{projectName}}` |
+| `keyword-detector` | Mỗi lần gửi prompt | `{{prompt}}`, `{{sessionId}}` |
+| `ask-user-question` | Claude yêu cầu nhập liệu từ người dùng | `{{question}}`, `{{sessionId}}` |
+| `pre-tool-use` | Trước khi gọi công cụ (tần suất cao) | `{{toolName}}`, `{{sessionId}}` |
+| `post-tool-use` | Sau khi gọi công cụ (tần suất cao) | `{{toolName}}`, `{{sessionId}}` |
+
+> **Lưu ý:** `session-end` được định nghĩa trong types nhưng hiện chưa được dispatch bởi bridge.ts ([#1456](https://github.com/Yeachan-Heo/oh-my-claudecode/issues/1456)).
+
+**Biến môi trường kênh phản hồi:**
+
+| Biến | Mô tả |
+|------|-------|
+| `OPENCLAW_REPLY_CHANNEL` | Kênh phản hồi (ví dụ: `discord`) |
+| `OPENCLAW_REPLY_TARGET` | ID kênh |
+| `OPENCLAW_REPLY_THREAD` | ID thread |
+
+Xem `scripts/openclaw-gateway-demo.mjs` để tham khảo gateway chuyển tiếp payload OpenClaw đến Discord qua ClawdBot.
+
 ---
 
 ## Tài liệu

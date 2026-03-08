@@ -191,6 +191,68 @@ omc config-stop-callback discord --clear-tags
 - Discord: поддерживает `@here`, `@everyone`, числовые ID пользователей и `role:<id>`
 - Коллбэки типа `file` игнорируют параметры тегов
 
+### OpenClaw — Структурированный диспетчер вебхуков
+
+OpenClaw — это структурированный диспетчер вебхуков, который пересылает события сессий Claude Code на внешние HTTPS-эндпоинты. Используйте его для управления workflow-процессами n8n, ИИ-агентами или любой пользовательской автоматизацией через вебхуки.
+
+**Быстрая настройка (рекомендуется):**
+
+```bash
+/oh-my-claudecode:configure-notifications
+# → Выберите "Custom Integration" → "OpenClaw Gateway"
+```
+
+**Ручная настройка:** создайте `~/.claude/omc_config.openclaw.json`:
+
+```json
+{
+  "enabled": true,
+  "gateways": {
+    "my-gateway": {
+      "url": "https://your-gateway.example.com/wake",
+      "headers": { "Authorization": "Bearer YOUR_TOKEN" },
+      "method": "POST",
+      "timeout": 10000
+    }
+  },
+  "hooks": {
+    "session-start": { "gateway": "my-gateway", "instruction": "Session started for {{projectName}}", "enabled": true },
+    "stop":          { "gateway": "my-gateway", "instruction": "Session stopping for {{projectName}}", "enabled": true }
+  }
+}
+```
+
+**Переменные окружения:**
+
+| Переменная | Описание |
+|-----------|----------|
+| `OMC_OPENCLAW=1` | Включить OpenClaw |
+| `OMC_OPENCLAW_DEBUG=1` | Включить отладочное логирование |
+| `OMC_OPENCLAW_CONFIG=/path/to/config.json` | Переопределить путь к файлу конфигурации |
+
+**Поддерживаемые события хуков (6 активных в bridge.ts):**
+
+| Событие | Триггер | Основные переменные шаблона |
+|---------|---------|----------------------------|
+| `session-start` | Начало сессии | `{{sessionId}}`, `{{projectName}}`, `{{projectPath}}` |
+| `stop` | Завершение ответа Claude | `{{sessionId}}`, `{{projectName}}` |
+| `keyword-detector` | При каждой отправке промпта | `{{prompt}}`, `{{sessionId}}` |
+| `ask-user-question` | Claude запрашивает ввод пользователя | `{{question}}`, `{{sessionId}}` |
+| `pre-tool-use` | Перед вызовом инструмента (высокая частота) | `{{toolName}}`, `{{sessionId}}` |
+| `post-tool-use` | После вызова инструмента (высокая частота) | `{{toolName}}`, `{{sessionId}}` |
+
+> **Примечание:** `session-end` определён в типах, но в настоящее время не отправляется bridge.ts ([#1456](https://github.com/Yeachan-Heo/oh-my-claudecode/issues/1456)).
+
+**Переменные окружения канала ответа:**
+
+| Переменная | Описание |
+|-----------|----------|
+| `OPENCLAW_REPLY_CHANNEL` | Канал ответа (напр. `discord`) |
+| `OPENCLAW_REPLY_TARGET` | ID канала |
+| `OPENCLAW_REPLY_THREAD` | ID потока |
+
+См. `scripts/openclaw-gateway-demo.mjs` — эталонный шлюз, который пересылает полезные данные OpenClaw в Discord через ClawdBot.
+
 ---
 
 ## Документация

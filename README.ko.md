@@ -236,6 +236,68 @@ omc config-stop-callback discord --clear-tags
 - Slack: `<@MEMBER_ID>`, `<!channel>`, `<!here>`, `<!everyone>`, `<!subteam^GROUP_ID>` 지원
 - `file` 콜백은 태그 옵션을 무시합니다
 
+### OpenClaw — 구조화된 웹훅 디스패처
+
+OpenClaw는 Claude Code 세션 이벤트를 외부 HTTPS 엔드포인트에 전달하는 구조화된 웹훅 디스패처입니다. n8n 워크플로우, AI 에이전트 또는 커스텀 웹훅 자동화를 구동하는 데 사용합니다.
+
+**빠른 설정 (권장):**
+
+```bash
+/oh-my-claudecode:configure-notifications
+# → "Custom Integration" 선택 → "OpenClaw Gateway" 선택
+```
+
+**수동 설정:** `~/.claude/omc_config.openclaw.json` 파일을 생성합니다:
+
+```json
+{
+  "enabled": true,
+  "gateways": {
+    "my-gateway": {
+      "url": "https://your-gateway.example.com/wake",
+      "headers": { "Authorization": "Bearer YOUR_TOKEN" },
+      "method": "POST",
+      "timeout": 10000
+    }
+  },
+  "hooks": {
+    "session-start": { "gateway": "my-gateway", "instruction": "Session started for {{projectName}}", "enabled": true },
+    "stop":          { "gateway": "my-gateway", "instruction": "Session stopping for {{projectName}}", "enabled": true }
+  }
+}
+```
+
+**환경 변수:**
+
+| 변수 | 설명 |
+|------|------|
+| `OMC_OPENCLAW=1` | OpenClaw 활성화 |
+| `OMC_OPENCLAW_DEBUG=1` | 디버그 로그 활성화 |
+| `OMC_OPENCLAW_CONFIG=/path/to/config.json` | 설정 파일 경로 변경 |
+
+**지원되는 훅 이벤트 (bridge.ts에서 6개 활성):**
+
+| 이벤트 | 트리거 시점 | 주요 템플릿 변수 |
+|--------|------------|-----------------|
+| `session-start` | 세션 시작 시 | `{{sessionId}}`, `{{projectName}}`, `{{projectPath}}` |
+| `stop` | Claude 응답 완료 시 | `{{sessionId}}`, `{{projectName}}` |
+| `keyword-detector` | 프롬프트 제출마다 | `{{prompt}}`, `{{sessionId}}` |
+| `ask-user-question` | Claude가 사용자 입력 요청 시 | `{{question}}`, `{{sessionId}}` |
+| `pre-tool-use` | 툴 호출 전 (빈도 높음) | `{{toolName}}`, `{{sessionId}}` |
+| `post-tool-use` | 툴 호출 후 (빈도 높음) | `{{toolName}}`, `{{sessionId}}` |
+
+> **참고:** `session-end`는 타입에 정의되어 있지만 현재 bridge.ts에서 실제로 실행되지 않습니다 ([#1456](https://github.com/Yeachan-Heo/oh-my-claudecode/issues/1456)).
+
+**Reply Channel 환경 변수:**
+
+| 변수 | 설명 |
+|------|------|
+| `OPENCLAW_REPLY_CHANNEL` | 응답 채널 (예: `discord`) |
+| `OPENCLAW_REPLY_TARGET` | 채널 ID |
+| `OPENCLAW_REPLY_THREAD` | 스레드 ID |
+
+OpenClaw 페이로드를 ClawdBot을 통해 Discord에 전달하는 레퍼런스 게이트웨이는 `scripts/openclaw-gateway-demo.mjs`를 참고하세요.
+
 ---
 
 ## 문서
