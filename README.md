@@ -89,7 +89,7 @@ omc team shutdown auth-review
 
 `/omc-teams` remains as a legacy compatibility skill and now routes to `omc team ...`.
 
-For mixed Codex + Gemini work in one command, use the **`/ccg`** skill (routes via `ask-codex` + `ask-gemini`, then Claude synthesizes):
+For mixed Codex + Gemini work in one command, use the **`/ccg`** skill (routes via `/ask codex` + `/ask gemini`, then Claude synthesizes):
 
 ```bash
 /ccg Review this PR — architecture (Codex) and UI components (Gemini)
@@ -100,7 +100,7 @@ For mixed Codex + Gemini work in one command, use the **`/ccg`** skill (routes v
 | `omc team N:codex "..."`  | N Codex CLI panes  | Code review, security analysis, architecture |
 | `omc team N:gemini "..."` | N Gemini CLI panes | UI/UX design, docs, large-context tasks      |
 | `omc team N:claude "..."` | N Claude CLI panes | General tasks via Claude CLI in tmux         |
-| `/ccg`                    | ask-codex + ask-gemini | Tri-model advisor synthesis             |
+| `/ccg`                    | /ask codex + /ask gemini | Tri-model advisor synthesis           |
 
 Workers spawn on-demand and die when their task completes — no idle resource usage. Requires `codex` / `gemini` CLIs installed and an active tmux session.
 
@@ -155,7 +155,7 @@ Multiple strategies for different use cases — from Team-backed orchestration t
 | ----------------------- | --------------------------------------------------------------------------------------- | ------------------------------------------------------ |
 | **Team (recommended)**  | Canonical staged pipeline (`team-plan → team-prd → team-exec → team-verify → team-fix`) | Coordinated Claude agents on a shared task list        |
 | **omc team (CLI)**      | tmux CLI workers — real `claude`/`codex`/`gemini` processes in split-panes              | Codex/Gemini CLI tasks; on-demand spawn, die when done |
-| **ccg**                 | Tri-model advisors via ask-codex + ask-gemini, Claude synthesizes                         | Mixed backend+UI work needing both Codex and Gemini    |
+| **ccg**                 | Tri-model advisors via `/ask codex` + `/ask gemini`, Claude synthesizes                   | Mixed backend+UI work needing both Codex and Gemini    |
 | **Autopilot**           | Autonomous execution (single lead agent)                                                | End-to-end feature work with minimal ceremony          |
 | **Ultrawork**           | Maximum parallelism (non-team)                                                          | Burst parallel fixes/refactors where Team isn't needed |
 | **Ralph**               | Persistent mode with verify/fix loops                                                   | Tasks that must complete fully (no silent partials)    |
@@ -185,7 +185,9 @@ Optional shortcuts for power users. Natural language works fine without them. Te
 
 | Keyword                | Effect                                 | Example                                        |
 | ---------------------- | -------------------------------------- | ---------------------------------------------- |
-| `ccg`                  | ask-codex + ask-gemini synthesis       | `/ccg review this PR`                          |
+| `team`                 | Canonical Team orchestration           | `/team 3:executor "fix all TypeScript errors"` |
+| `omc team`             | tmux CLI workers (codex/gemini/claude) | `omc team 2:codex "security review"`           |
+| `ccg`                  | `/ask codex` + `/ask gemini` synthesis | `/ccg review this PR`                          |
 | `autopilot`            | Full autonomous execution              | `autopilot: build a todo app`                  |
 | `ralph`                | Persistence mode                       | `ralph: refactor auth`                         |
 | `ulw`                  | Maximum parallelism                    | `ulw fix all errors`                           |
