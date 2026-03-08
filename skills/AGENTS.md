@@ -52,6 +52,7 @@ Skills are reusable workflow templates that can be invoked via `/oh-my-claudecod
 | `cancel/SKILL.md` | cancel | Cancel any active OMC mode |
 | `hud/SKILL.md` | hud | Configure HUD display |
 | `omc-doctor/SKILL.md` | omc-doctor | Diagnose installation issues |
+| `setup/SKILL.md` | setup | Unified setup entrypoint for install, diagnostics, and MCP configuration |
 | `omc-setup/SKILL.md` | omc-setup | One-time setup wizard |
 | `omc-help/SKILL.md` | omc-help | Usage guide |
 | `mcp-setup/SKILL.md` | mcp-setup | Configure MCP servers |
@@ -167,7 +168,7 @@ None - pure markdown files.
 | Cleanup | ai-slop-cleaner | "deslop", "anti-slop", cleanup/refactor + slop smells |
 | Planning | omc-plan, ralplan, deep-interview, ralph-init | "plan this", "interview me", "ouroboros" |
 | Exploration | deepinit, sciomc, external-context | "deepinit", "research" |
-| Utility | learner, note, cancel, hud, omc-doctor, omc-setup, omc-help, mcp-setup | "stop", "cancel" |
+| Utility | learner, note, cancel, hud, setup, omc-doctor, omc-setup, omc-help, mcp-setup | "stop", "cancel" |
 | Domain | psm, writer-memory, release | psm context |
 
 ## Auto-Activation

@@ -352,6 +352,7 @@ Includes **33 canonical skills + 1 deprecated alias** (`psm`).
 | `ralph-init`              | Initialize PRD for structured ralph execution                    | `/oh-my-claudecode:ralph-init`              |
 | `ralplan`                 | Consensus planning alias for `/omc-plan --consensus`             | `/oh-my-claudecode:ralplan`                 |
 | `release`                 | Automated release workflow                                       | `/oh-my-claudecode:release`                 |
+| `setup`                   | Unified setup entrypoint for install, diagnostics, and MCP configuration | `/oh-my-claudecode:setup`              |
 | `sciomc`                  | Parallel scientist orchestration                                 | `/oh-my-claudecode:sciomc`                  |
 | `skill`                   | Manage local skills (list/add/remove/search/edit)                | `/oh-my-claudecode:skill`                   |
 | `team`                    | Coordinated multi-agent workflow                                 | `/oh-my-claudecode:team`                    |
@@ -385,6 +386,7 @@ All installed skills are available as slash commands with the prefix `/oh-my-cla
 | `/oh-my-claudecode:learner`                 | Extract reusable skill from session                                                           |
 | `/oh-my-claudecode:note <content>`          | Save notes to notepad.md                                                                      |
 | `/oh-my-claudecode:cancel`                  | Unified cancellation                                                                          |
+| `/oh-my-claudecode:setup`                   | Unified setup entrypoint (`setup`, `setup doctor`, `setup mcp`)                              |
 | `/oh-my-claudecode:omc-setup`               | One-time setup wizard                                                                         |
 | `/oh-my-claudecode:omc-doctor`              | Diagnose and fix installation issues                                                          |
 | `/oh-my-claudecode:omc-help`                | Show OMC usage guide                                                                          |
