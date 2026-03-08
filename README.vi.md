@@ -237,7 +237,7 @@ OpenClaw là một bộ điều phối webhook có cấu trúc, chuyển tiếp 
 
 ```bash
 /oh-my-claudecode:configure-notifications
-# → Chọn "Custom Integration" → "OpenClaw Gateway"
+# → Nhập "openclaw" khi được hỏi → chọn "OpenClaw Gateway"
 ```
 
 **Thiết lập thủ công:** tạo `~/.claude/omc_config.openclaw.json`:

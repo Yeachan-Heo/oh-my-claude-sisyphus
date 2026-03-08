@@ -239,7 +239,7 @@ OpenClaw es un despachador de webhooks estructurado que reenvía eventos de sesi
 
 ```bash
 /oh-my-claudecode:configure-notifications
-# → Elige "Custom Integration" → "OpenClaw Gateway"
+# → Escribe "openclaw" cuando se te solicite → elige "OpenClaw Gateway"
 ```
 
 **Configuración manual:** crea `~/.claude/omc_config.openclaw.json`:

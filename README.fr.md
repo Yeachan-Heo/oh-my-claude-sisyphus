@@ -199,7 +199,7 @@ OpenClaw est un dispatcher de webhooks structuré qui transmet les événements 
 
 ```bash
 /oh-my-claudecode:configure-notifications
-# → Choisir "Custom Integration" → "OpenClaw Gateway"
+# → Tapez "openclaw" quand demandé → choisir "OpenClaw Gateway"
 ```
 
 **Configuration manuelle :** créez `~/.claude/omc_config.openclaw.json` :

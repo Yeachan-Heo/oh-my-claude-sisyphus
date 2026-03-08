@@ -199,7 +199,7 @@ OpenClaw — это структурированный диспетчер веб
 
 ```bash
 /oh-my-claudecode:configure-notifications
-# → Выберите "Custom Integration" → "OpenClaw Gateway"
+# → При запросе введите "openclaw" → выберите "OpenClaw Gateway"
 ```
 
 **Ручная настройка:** создайте `~/.claude/omc_config.openclaw.json`:

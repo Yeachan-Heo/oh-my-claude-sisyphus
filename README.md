@@ -274,7 +274,7 @@ OpenClaw is a structured webhook dispatcher that forwards Claude Code session ev
 
 ```bash
 /oh-my-claudecode:configure-notifications
-# → Choose "Custom Integration" → "OpenClaw Gateway"
+# → When prompted, type "openclaw" → choose "OpenClaw Gateway"
 ```
 
 **Manual setup:** create `~/.claude/omc_config.openclaw.json`:

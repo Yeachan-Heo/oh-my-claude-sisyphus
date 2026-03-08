@@ -199,7 +199,7 @@ OpenClaw, Claude Code oturum olaylarını harici HTTPS uç noktalarına ileten y
 
 ```bash
 /oh-my-claudecode:configure-notifications
-# → "Custom Integration" seçin → "OpenClaw Gateway" seçin
+# → İstendiğinde "openclaw" yazın → "OpenClaw Gateway" seçin
 ```
 
 **Manuel kurulum:** `~/.claude/omc_config.openclaw.json` dosyasını oluşturun:
