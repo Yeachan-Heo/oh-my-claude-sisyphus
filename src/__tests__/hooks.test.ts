@@ -604,9 +604,10 @@ describe('Team staged workflow integration', () => {
     });
 
     expect(result.continue).toBe(false);
-    expect(result.message).toContain('[TEAM MODE CONTINUATION]');
+    // checkTeamPipeline() in persistent-mode now handles team enforcement
+    expect(result.message).toContain('team-pipeline-continuation');
     expect(result.message).toContain('team-verify');
-    expect(result.message).toContain('Continue verification');
+    expect(result.message).toContain('Continue working');
   });
 
   it('enforces fix stage continuation while active and non-terminal', async () => {
@@ -626,9 +627,10 @@ describe('Team staged workflow integration', () => {
     });
 
     expect(result.continue).toBe(false);
-    expect(result.message).toContain('[TEAM MODE CONTINUATION]');
+    // checkTeamPipeline() in persistent-mode now handles team enforcement
+    expect(result.message).toContain('team-pipeline-continuation');
     expect(result.message).toContain('team-fix');
-    expect(result.message).toContain('fix loop');
+    expect(result.message).toContain('Continue working');
   });
 
   it('skips Team stage continuation on authentication stop reasons', async () => {
@@ -740,7 +742,7 @@ describe('Team staged workflow integration', () => {
       })
     );
     writeFileSync(
-      join(testDir, '.omc', 'state', 'sessions', sessionId, 'team-stop-breaker.json'),
+      join(testDir, '.omc', 'state', 'sessions', sessionId, 'team-pipeline-stop-breaker.json'),
       JSON.stringify({ count: 20, updated_at: new Date().toISOString() }, null, 2)
     );
 
