@@ -332,7 +332,7 @@ Includes **33 canonical skills + 1 deprecated alias** (`psm`).
 | `cancel`                  | Unified cancellation for active modes                            | `/oh-my-claudecode:cancel`                  |
 | `ccg`                     | Tri-model workflow via `ask-codex` + `ask-gemini`, then Claude synthesis | `/oh-my-claudecode:ccg`                     |
 | `configure-notifications` | Configure notifications (Discord/Telegram/Slack/OpenClaw)        | `/oh-my-claudecode:configure-notifications` |
-| `configure-openclaw`      | Configure OpenClaw notification bridge                           | `/oh-my-claudecode:configure-openclaw`      |
+| `configure-openclaw`      | Configure OpenClaw gateway (deprecated, use configure-notifications) | `/oh-my-claudecode:configure-openclaw`      |
 | `deep-interview`          | Socratic deep interview with ambiguity gating                    | `/oh-my-claudecode:deep-interview`          |
 | `deepinit`                | Generate hierarchical AGENTS.md docs                             | `/oh-my-claudecode:deepinit`                |
 | `external-context`        | Parallel document-specialist research                            | `/oh-my-claudecode:external-context`        |
