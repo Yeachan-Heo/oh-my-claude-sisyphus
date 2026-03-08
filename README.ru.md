@@ -193,7 +193,7 @@ omc config-stop-callback discord --clear-tags
 
 ### Интеграция с OpenClaw
 
-[OpenClaw](https://openclaw.ai/) — это платформа персонального ИИ-ассистента, работающая локально и подключающаяся к мессенджерам, таким как WhatsApp, Telegram и Discord. oh-my-claudecode может пересылать события сессий Claude Code на шлюз OpenClaw, обеспечивая автоматические ответы и рабочие процессы через вашего агента OpenClaw.
+Пересылайте события сессий Claude Code на шлюз [OpenClaw](https://openclaw.ai/), чтобы обеспечить автоматические ответы и рабочие процессы через вашего агента OpenClaw.
 
 **Быстрая настройка (рекомендуется):**
 

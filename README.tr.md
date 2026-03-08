@@ -193,7 +193,7 @@ Etiket davranışı:
 
 ### OpenClaw Entegrasyonu
 
-[OpenClaw](https://openclaw.ai/), yerel olarak çalışan ve WhatsApp, Telegram ve Discord gibi mesajlaşma uygulamalarına bağlanan kişisel bir yapay zeka asistanı platformudur. oh-my-claudecode, Claude Code oturum olaylarını bir OpenClaw ağ geçidine ileterek OpenClaw ajanınız aracılığıyla otomatik yanıtlar ve iş akışları sağlar.
+Claude Code oturum olaylarını bir [OpenClaw](https://openclaw.ai/) ağ geçidine ileterek OpenClaw ajanınız aracılığıyla otomatik yanıtlar ve iş akışları oluşturun.
 
 **Hızlı kurulum (önerilen):**
 

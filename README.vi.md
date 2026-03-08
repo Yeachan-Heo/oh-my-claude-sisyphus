@@ -231,7 +231,7 @@ Hành vi tag:
 
 ### Tích hợp OpenClaw
 
-[OpenClaw](https://openclaw.ai/) là nền tảng trợ lý AI cá nhân chạy cục bộ và kết nối với các ứng dụng nhắn tin như WhatsApp, Telegram và Discord. oh-my-claudecode có thể chuyển tiếp các sự kiện phiên Claude Code đến gateway OpenClaw, cho phép phản hồi tự động và quy trình làm việc thông qua tác nhân OpenClaw của bạn.
+Chuyển tiếp các sự kiện phiên Claude Code đến gateway [OpenClaw](https://openclaw.ai/) để kích hoạt phản hồi tự động và quy trình làm việc thông qua tác nhân OpenClaw của bạn.
 
 **Thiết lập nhanh (khuyến nghị):**
 

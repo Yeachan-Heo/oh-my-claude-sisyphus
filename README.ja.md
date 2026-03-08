@@ -233,7 +233,7 @@ omc config-stop-callback discord --clear-tags
 
 ### OpenClaw 連携
 
-[OpenClaw](https://openclaw.ai/) は、ローカルで動作し WhatsApp、Telegram、Discord などのメッセージングアプリに接続するパーソナル AI アシスタントプラットフォームです。oh-my-claudecode は Claude Code セッションイベントを OpenClaw ゲートウェイに転送し、OpenClaw エージェントを通じた自動応答とワークフローを実現します。
+Claude Code セッションイベントを [OpenClaw](https://openclaw.ai/) ゲートウェイに転送し、OpenClaw エージェントを通じた自動応答とワークフローを実現します。
 
 **クイックセットアップ（推奨）:**
 

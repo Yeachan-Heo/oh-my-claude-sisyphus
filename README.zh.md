@@ -233,7 +233,7 @@ omc config-stop-callback discord --clear-tags
 
 ### OpenClaw 集成
 
-[OpenClaw](https://openclaw.ai/) 是一个在本地运行并连接到 WhatsApp、Telegram 和 Discord 等消息应用程序的个人 AI 助手平台。oh-my-claudecode 可以将 Claude Code 会话事件转发到 OpenClaw 网关，通过您的 OpenClaw 代理实现自动化响应和工作流程。
+将 Claude Code 会话事件转发到 [OpenClaw](https://openclaw.ai/) 网关，通过您的 OpenClaw 代理实现自动化响应和工作流程。
 
 **快速设置（推荐）：**
 

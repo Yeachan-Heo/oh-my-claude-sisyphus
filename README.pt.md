@@ -231,7 +231,7 @@ Comportamento das tags:
 
 ### Integração com OpenClaw
 
-[OpenClaw](https://openclaw.ai/) é uma plataforma de assistente de IA pessoal que roda localmente e se conecta a aplicativos de mensagens como WhatsApp, Telegram e Discord. oh-my-claudecode pode encaminhar eventos de sessão do Claude Code para um gateway OpenClaw, habilitando respostas automatizadas e workflows através do seu agente OpenClaw.
+Encaminhe eventos de sessão do Claude Code para um gateway do [OpenClaw](https://openclaw.ai/) para habilitar respostas automatizadas e workflows através do seu agente OpenClaw.
 
 **Configuração rápida (recomendado):**
 

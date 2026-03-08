@@ -238,7 +238,7 @@ omc config-stop-callback discord --clear-tags
 
 ### OpenClaw 연동
 
-[OpenClaw](https://openclaw.ai/)는 로컬에서 실행되며 WhatsApp, Telegram, Discord 등 메시징 앱과 연결되는 개인용 AI 어시스턴트 플랫폼입니다. oh-my-claudecode는 Claude Code 세션 이벤트를 OpenClaw 게이트웨이로 전달하여 OpenClaw 에이전트를 통한 자동화된 응답 및 워크플로우를 활성화합니다.
+Claude Code 세션 이벤트를 [OpenClaw](https://openclaw.ai/) 게이트웨이로 전달하여 OpenClaw 에이전트를 통한 자동화된 응답 및 워크플로우를 구성할 수 있습니다.
 
 **빠른 설정 (권장):**
 
