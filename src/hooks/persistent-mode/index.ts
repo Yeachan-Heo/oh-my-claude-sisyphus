@@ -660,9 +660,19 @@ async function checkTeamPipeline(
   const workingDir = resolveToWorktreeRoot(directory);
   const teamState = readTeamPipelineState(workingDir, sessionId);
 
-  if (!teamState || !teamState.active) {
+  if (!teamState) {
     return null;
   }
+
+  if (!teamState.active) {
+    writeStopBreaker(workingDir, 'team-pipeline', 0, sessionId);
+    return {
+      shouldBlock: false,
+      message: '',
+      mode: 'team'
+    };
+  }
+
 
   // Session isolation: readTeamPipelineState already checks session_id match
   // and returns null on mismatch (team-pipeline/state.ts:81)
@@ -676,21 +686,23 @@ async function checkTeamPipeline(
     };
   }
 
-  // Read phase from `phase` (team-pipeline format) or `stage` (bridge.ts format)
-  const rawPhase = teamState.phase ?? (teamState as unknown as Record<string, unknown>).stage;
+  // Read phase from canonical team-pipeline/current_phase shape first,
+  // then fall back to bridge.ts / legacy stage fields for compatibility.
+  const rawPhase = teamState.phase
+    ?? (teamState as unknown as Record<string, unknown>).current_phase
+    ?? (teamState as unknown as Record<string, unknown>).currentStage
+    ?? (teamState as unknown as Record<string, unknown>).current_stage
+    ?? (teamState as unknown as Record<string, unknown>).stage;
 
-  // Fail-open: phase must be a string and a known active phase.
-  // Missing, malformed, or unknown phases do not block (safety principle).
-  const KNOWN_ACTIVE_PHASES = new Set(['team-plan', 'team-prd', 'team-exec', 'team-verify', 'team-fix']);
-  if (typeof rawPhase !== 'string' || !KNOWN_ACTIVE_PHASES.has(rawPhase)) {
+  if (typeof rawPhase !== 'string') {
     // Fail-open but still claim mode='team' so bridge.ts defers to this result
     // instead of running its own team enforcement (which could falsely block).
     return { shouldBlock: false, message: '', mode: 'team' };
   }
-  const phase: string = rawPhase;
+  const phase = rawPhase.trim().toLowerCase();
 
   // Terminal phases — allow stop
-  if (phase === 'complete' || phase === 'failed' || phase === 'cancelled') {
+  if (phase === 'complete' || phase === 'completed' || phase === 'failed' || phase === 'cancelled' || phase === 'canceled' || phase === 'cancel') {
     writeStopBreaker(workingDir, 'team-pipeline', 0, sessionId);
     return {
       shouldBlock: false,
@@ -699,9 +711,18 @@ async function checkTeamPipeline(
     };
   }
 
+  // Fail-open: only known active phases should block.
+  // Missing, malformed, or unknown phases do not block (safety principle).
+  const KNOWN_ACTIVE_PHASES = new Set(['team-plan', 'team-prd', 'team-exec', 'team-verify', 'team-fix']);
+  if (!KNOWN_ACTIVE_PHASES.has(phase)) {
+    // Still claim mode='team' so bridge.ts defers
+    return { shouldBlock: false, message: '', mode: 'team' };
+  }
+
   // Status-level terminal check (bridge.ts format uses `status` field)
-  const status = (teamState as unknown as Record<string, unknown>).status;
-  if (status === 'cancelled' || status === 'failed' || status === 'complete') {
+  const rawStatus = (teamState as unknown as Record<string, unknown>).status;
+  const status = typeof rawStatus === 'string' ? rawStatus.trim().toLowerCase() : null;
+  if (status === 'cancelled' || status === 'canceled' || status === 'cancel' || status === 'failed' || status === 'complete' || status === 'completed') {
     writeStopBreaker(workingDir, 'team-pipeline', 0, sessionId);
     return {
       shouldBlock: false,
@@ -799,6 +820,7 @@ async function checkRalplan(
       return { shouldBlock: false, message: '', mode: 'ralplan' };
     }
   }
+
 
   // Cancel-in-progress bypass
   if (cancelInProgress) {

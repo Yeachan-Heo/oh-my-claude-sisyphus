@@ -135,6 +135,98 @@ describe('team pipeline standalone stop enforcement', () => {
     }
   });
 
+  it('blocks stop when team pipeline uses canonical current_phase state shape', async () => {
+    const sessionId = 'session-team-current-phase-1';
+    const tempDir = makeTempProject();
+
+    try {
+      writeTeamPipelineState(tempDir, sessionId, {
+        phase: undefined,
+        current_phase: 'team-exec',
+      });
+
+      const result = await checkPersistentModes(sessionId, tempDir);
+      expect(result.shouldBlock).toBe(true);
+      expect(result.mode).toBe('team');
+      expect(result.message).toContain('team-pipeline-continuation');
+      expect(result.message).toContain('team-exec');
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  it('allows stop when team pipeline uses canonical current_phase terminal state', async () => {
+    const sessionId = 'session-team-current-phase-terminal-1';
+    const tempDir = makeTempProject();
+
+    try {
+      writeTeamPipelineState(tempDir, sessionId, {
+        phase: undefined,
+        current_phase: 'complete',
+        active: false,
+        completed_at: new Date().toISOString(),
+      });
+
+      const result = await checkPersistentModes(sessionId, tempDir);
+      expect(result.shouldBlock).toBe(false);
+      expect(result.mode).toBe('team');
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  it('resets the team stop breaker when team state becomes inactive', async () => {
+    const sessionId = 'session-team-inactive-breaker-reset-1';
+    const tempDir = makeTempProject();
+
+    try {
+      writeTeamPipelineState(tempDir, sessionId, {
+        phase: undefined,
+        current_phase: 'complete',
+        active: false,
+        completed_at: new Date().toISOString(),
+      });
+      writeStopBreaker(tempDir, sessionId, 'team-pipeline', 20);
+
+      const inactiveResult = await checkPersistentModes(sessionId, tempDir);
+      expect(inactiveResult.shouldBlock).toBe(false);
+      expect(inactiveResult.mode).toBe('team');
+
+      writeTeamPipelineState(tempDir, sessionId, {
+        current_phase: 'team-exec',
+        active: true,
+        completed_at: null,
+      });
+
+      const activeResult = await checkPersistentModes(sessionId, tempDir);
+      expect(activeResult.shouldBlock).toBe(true);
+      expect(activeResult.mode).toBe('team');
+      expect(activeResult.message).toContain('1/20');
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+
+
+  it('still blocks stop when team pipeline uses legacy stage state shape', async () => {
+    const sessionId = 'session-team-stage-1';
+    const tempDir = makeTempProject();
+
+    try {
+      writeTeamPipelineState(tempDir, sessionId, {
+        phase: undefined,
+        stage: 'team-verify',
+      });
+
+      const result = await checkPersistentModes(sessionId, tempDir);
+      expect(result.shouldBlock).toBe(true);
+      expect(result.mode).toBe('team');
+      expect(result.message).toContain('team-verify');
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+
   it('allows stop when team pipeline phase is complete', async () => {
     const sessionId = 'session-team-complete-1';
     const tempDir = makeTempProject();
