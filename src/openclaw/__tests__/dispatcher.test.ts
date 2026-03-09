@@ -16,6 +16,13 @@ const basePayload: OpenClawPayload = {
   event: "session-start",
   instruction: "Session started",
   timestamp: "2026-02-25T00:00:00.000Z",
+  signal: {
+    kind: "session",
+    name: "session",
+    phase: "started",
+    routeKey: "session.started",
+    priority: "high",
+  },
   context: {},
 };
 
@@ -407,6 +414,35 @@ describe("wakeCommandGateway", () => {
     await wakeCommandGateway("gw", config, {});
     expect(capturedCmd).toBe("sh");
     expect(capturedArgs[0]).toBe("-c");
+  });
+
+  it("exposes normalized payload and signal env vars to command gateways", async () => {
+    let capturedOpts: Record<string, unknown> = {};
+    execFileMock.mockImplementation(
+      (_cmd: string, _args: string[], opts: Record<string, unknown>, cb: (err: null, result: { stdout: string; stderr: string }) => void) => {
+        capturedOpts = opts;
+        cb(null, { stdout: "", stderr: "" });
+      },
+    );
+
+    const config: OpenClawCommandGatewayConfig = { type: "command", command: "echo hello" };
+    await wakeCommandGateway(
+      "test",
+      config,
+      {
+        payloadJson: JSON.stringify(basePayload),
+        signalRouteKey: "session.started",
+        signalPhase: "started",
+        signalKind: "session",
+      },
+      basePayload,
+    );
+
+    const env = capturedOpts.env as Record<string, string>;
+    expect(env.OPENCLAW_PAYLOAD_JSON).toContain('"routeKey":"session.started"');
+    expect(env.OPENCLAW_SIGNAL_ROUTE_KEY).toBe("session.started");
+    expect(env.OPENCLAW_SIGNAL_PHASE).toBe("started");
+    expect(env.OPENCLAW_SIGNAL_KIND).toBe("session");
   });
 
   it("uses the default timeout of 10000ms when config.timeout is not specified", async () => {

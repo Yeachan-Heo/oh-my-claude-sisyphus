@@ -1338,12 +1338,14 @@ function processPreToolUse(input: HookInput): HookOutput {
     }
   }
 
-  // Wake OpenClaw gateway for pre-tool-use (non-blocking, fires only for allowed tools)
-  if (input.sessionId) {
+  // Wake OpenClaw gateway for pre-tool-use (non-blocking, fires only for allowed tools).
+  // AskUserQuestion already has a dedicated high-signal OpenClaw event.
+  if (input.sessionId && input.toolName !== "AskUserQuestion") {
     _openclaw.wake("pre-tool-use", {
       sessionId: input.sessionId,
       projectPath: directory,
       toolName: input.toolName,
+      toolInput: input.toolInput,
     });
   }
 
@@ -1453,12 +1455,15 @@ async function processPostToolUse(input: HookInput): Promise<HookOutput> {
     }
   }
 
-  // Wake OpenClaw gateway for post-tool-use (non-blocking, fires for all tools)
-  if (input.sessionId) {
+  // Wake OpenClaw gateway for post-tool-use (non-blocking, fires for all tools).
+  // AskUserQuestion already emitted a dedicated question.requested signal.
+  if (input.sessionId && input.toolName !== "AskUserQuestion") {
     _openclaw.wake("post-tool-use", {
       sessionId: input.sessionId,
       projectPath: directory,
       toolName: input.toolName,
+      toolInput: input.toolInput,
+      toolOutput: input.toolOutput,
     });
   }
 
