@@ -14,6 +14,7 @@ const {
   writeFileSync,
   readdirSync,
   mkdirSync,
+  unlinkSync,
 } = require("fs");
 const { join, dirname, resolve, normalize } = require("path");
 const { homedir } = require("os");
@@ -777,6 +778,43 @@ async function main() {
 
       console.log(JSON.stringify({ decision: "block", reason }));
       return;
+    }
+
+    // Priority 9: Skill Active State (issue #1033)
+    // Skills like code-review, plan, ralplan, tdd, etc. write skill-active-state.json
+    // when invoked via the Skill tool. This prevents premature stops mid-skill.
+    {
+      const skillState = readStateFileWithSession(stateDir, "skill-active-state.json", sessionId);
+      if (skillState.state?.active) {
+        // Staleness check (per-skill TTL)
+        const sLastChecked = skillState.state.last_checked_at ? new Date(skillState.state.last_checked_at).getTime() : 0;
+        const sStartedAt = skillState.state.started_at ? new Date(skillState.state.started_at).getTime() : 0;
+        const sMostRecent = Math.max(sLastChecked, sStartedAt);
+        const sTtl = skillState.state.stale_ttl_ms || 5 * 60 * 1000;
+        const sAge = sMostRecent > 0 ? Date.now() - sMostRecent : Infinity;
+        const isStale = sMostRecent === 0 || sAge > sTtl;
+
+        if (!isStale && isSessionMatch(skillState.state, sessionId)) {
+          const count = skillState.state.reinforcement_count || 0;
+          const maxReinforcements = skillState.state.max_reinforcements || 3;
+
+          if (count < maxReinforcements) {
+            skillState.state.reinforcement_count = count + 1;
+            skillState.state.last_checked_at = new Date().toISOString();
+            writeJsonFile(skillState.path, skillState.state);
+
+            const skillName = skillState.state.skill_name || "unknown";
+            console.log(JSON.stringify({
+              decision: "block",
+              reason: `[SKILL ACTIVE: ${skillName}] The "${skillName}" skill is still executing (reinforcement ${count + 1}/${maxReinforcements}). Continue working on the skill's instructions. Do not stop until the skill completes its workflow.`,
+            }));
+            return;
+          } else {
+            // Reinforcement limit reached - clear state and allow stop
+            try { if (skillState.path && existsSync(skillState.path)) unlinkSync(skillState.path); } catch {}
+          }
+        }
+      }
     }
 
     // No blocking needed — Claude is truly idle.
