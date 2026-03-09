@@ -144,6 +144,25 @@ describe('readHudConfig', () => {
   });
 
   describe('merging with defaults', () => {
+    it('allows mission board to be explicitly enabled from settings', () => {
+      mockExistsSync.mockImplementation((path) => {
+        const s = String(path);
+        return /[\/]Users[\/]testuser[\/]\.claude[\/]settings\.json$/.test(s);
+      });
+      mockReadFileSync.mockReturnValue(JSON.stringify({
+        omcHud: {
+          elements: {
+            missionBoard: true,
+          }
+        }
+      }));
+
+      const config = readHudConfig();
+
+      expect(config.elements.missionBoard).toBe(true);
+      expect(config.missionBoard?.enabled).toBe(true);
+    });
+
     it('merges partial config with defaults', () => {
       mockExistsSync.mockImplementation((path) => {
         const s = String(path);
