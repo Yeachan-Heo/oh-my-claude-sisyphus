@@ -191,6 +191,8 @@ export interface UsageResult {
   rateLimits: RateLimits | null;
   /** Error reason when API call fails (undefined on success or no credentials) */
   error?: UsageErrorReason;
+  /** True when serving cached data that may be outdated (429 or lock contention) */
+  stale?: boolean;
 }
 
 // ============================================================================
