@@ -1,10 +1,10 @@
 [English](README.md) | [한국어](README.ko.md) | [中文](README.zh.md) | [日本語](README.ja.md) | [Español](README.es.md) | Tiếng Việt | [Português](README.pt.md)
 
-# oh-my-claudecode
+# oh-my-openagent
 
-[![npm version](https://img.shields.io/npm/v/oh-my-claude-sisyphus?color=cb3837)](https://www.npmjs.com/package/oh-my-claude-sisyphus)
-[![npm downloads](https://img.shields.io/npm/dm/oh-my-claude-sisyphus?color=blue)](https://www.npmjs.com/package/oh-my-claude-sisyphus)
-[![GitHub stars](https://img.shields.io/github/stars/Yeachan-Heo/oh-my-claudecode?style=flat&color=yellow)](https://github.com/Yeachan-Heo/oh-my-claudecode/stargazers)
+[![npm version](https://img.shields.io/npm/v/oh-my-openagent?color=cb3837)](https://www.npmjs.com/package/oh-my-openagent)
+[![npm downloads](https://img.shields.io/npm/dm/oh-my-openagent?color=blue)](https://www.npmjs.com/package/oh-my-openagent)
+[![GitHub stars](https://img.shields.io/github/stars/Yeachan-Heo/oh-my-openagent?style=flat&color=yellow)](https://github.com/Yeachan-Heo/oh-my-openagent/stargazers)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 [![Sponsor](https://img.shields.io/badge/Sponsor-❤️-red?style=flat&logo=github)](https://github.com/sponsors/Yeachan-Heo)
 
@@ -14,7 +14,7 @@
 
 *Đừng học Claude Code. Cứ dùng OMC.*
 
-[Bắt đầu nhanh](#bắt-đầu-nhanh) • [Tài liệu](https://yeachan-heo.github.io/oh-my-claudecode-website) • [Tham chiếu CLI](https://yeachan-heo.github.io/oh-my-claudecode-website/docs.html#cli-reference) • [Quy trình](https://yeachan-heo.github.io/oh-my-claudecode-website/docs.html#workflows) • [Hướng dẫn di chuyển](docs/MIGRATION.md)
+[Bắt đầu nhanh](#bắt-đầu-nhanh) • [Tài liệu](https://yeachan-heo.github.io/oh-my-openagent-website) • [Tham chiếu CLI](https://yeachan-heo.github.io/oh-my-openagent-website/docs.html#cli-reference) • [Quy trình](https://yeachan-heo.github.io/oh-my-openagent-website/docs.html#workflows) • [Hướng dẫn di chuyển](docs/MIGRATION.md)
 
 ---
 
@@ -22,8 +22,8 @@
 
 **Bước 1: Cài đặt**
 ```bash
-/plugin marketplace add https://github.com/Yeachan-Heo/oh-my-claudecode
-/plugin install oh-my-claudecode
+/plugin marketplace add https://github.com/Yeachan-Heo/oh-my-openagent
+/plugin install oh-my-openagent
 ```
 
 **Bước 2: Thiết lập**
@@ -97,7 +97,7 @@ Bật Claude Code native teams trong `~/.claude/settings.json`:
 
 Công nhân được tạo theo yêu cầu và tắt khi hoàn thành tác vụ — không lãng phí tài nguyên. Cần cài `codex` / `gemini` CLI và có phiên tmux đang hoạt động.
 
-> **Lưu ý: Tên package** — Dự án được xây dựng thương hiệu là **oh-my-claudecode** (repo, plugin, commands), nhưng package npm được phát hành dưới tên [`oh-my-claude-sisyphus`](https://www.npmjs.com/package/oh-my-claude-sisyphus). Nếu bạn cài công cụ CLI qua npm/bun, hãy dùng `npm install -g oh-my-claude-sisyphus`.
+> **Lưu ý: Tên package** — Dự án được xây dựng thương hiệu là **oh-my-openagent** (repo, plugin, commands), nhưng package npm được phát hành dưới tên [`oh-my-openagent`](https://www.npmjs.com/package/oh-my-openagent). Nếu bạn cài công cụ CLI qua npm/bun, hãy dùng `npm install -g oh-my-openagent`.
 
 ### Cập nhật
 
@@ -120,12 +120,12 @@ Nếu gặp sự cố sau khi cập nhật, hãy xóa cache plugin cũ:
 <h1 align="center">Your Claude Just Have been Steroided.</h1>
 
 <p align="center">
-  <img src="assets/omc-character.jpg" alt="oh-my-claudecode" width="400" />
+  <img src="assets/omc-character.jpg" alt="oh-my-openagent" width="400" />
 </p>
 
 ---
 
-## Vì sao chọn oh-my-claudecode?
+## Vì sao chọn oh-my-openagent?
 
 - **Không cần cấu hình** - Hoạt động ngay với các mặc định thông minh
 - **Điều phối ưu tiên Team** - Team là bề mặt đa tác tử chuẩn (swarm/ultrapilot là lớp tương thích)
@@ -141,7 +141,7 @@ Nếu gặp sự cố sau khi cập nhật, hãy xóa cache plugin cũ:
 ## Tính năng
 
 ### Các chế độ điều phối
-Nhiều chiến lược cho nhiều tình huống — từ điều phối dựa trên Team đến refactor tiết kiệm token. [Tìm hiểu thêm →](https://yeachan-heo.github.io/oh-my-claudecode-website/docs.html#execution-modes)
+Nhiều chiến lược cho nhiều tình huống — từ điều phối dựa trên Team đến refactor tiết kiệm token. [Tìm hiểu thêm →](https://yeachan-heo.github.io/oh-my-openagent-website/docs.html#execution-modes)
 
 | Mode | Nó là gì | Dùng cho |
 |------|------------|---------|
@@ -236,7 +236,7 @@ Chuyển tiếp các sự kiện phiên Claude Code đến gateway [OpenClaw](ht
 **Thiết lập nhanh (khuyến nghị):**
 
 ```bash
-/oh-my-claudecode:configure-notifications
+/oh-my-openagent:configure-notifications
 # → Nhập "openclaw" khi được hỏi → chọn "OpenClaw Gateway"
 ```
 
@@ -294,11 +294,11 @@ Xem `scripts/openclaw-gateway-demo.mjs` để tham khảo gateway chuyển tiế
 ## Tài liệu
 
 - **[Tham chiếu đầy đủ](docs/REFERENCE.md)** - Tài liệu đầy đủ về tính năng
-- **[Tham chiếu CLI](https://yeachan-heo.github.io/oh-my-claudecode-website/docs.html#cli-reference)** - Tất cả lệnh, cờ và công cụ `omc`
-- **[Hướng dẫn thông báo](https://yeachan-heo.github.io/oh-my-claudecode-website/docs.html#notifications)** - Thiết lập Discord, Telegram, Slack và webhook
-- **[Quy trình khuyến nghị](https://yeachan-heo.github.io/oh-my-claudecode-website/docs.html#workflows)** - Chuỗi skill đã qua thực chiến cho các tác vụ phổ biến
-- **[Ghi chú phát hành](https://yeachan-heo.github.io/oh-my-claudecode-website/docs.html#release-notes)** - Có gì mới trong mỗi phiên bản
-- **[Website](https://yeachan-heo.github.io/oh-my-claudecode-website)** - Hướng dẫn tương tác và ví dụ
+- **[Tham chiếu CLI](https://yeachan-heo.github.io/oh-my-openagent-website/docs.html#cli-reference)** - Tất cả lệnh, cờ và công cụ `omc`
+- **[Hướng dẫn thông báo](https://yeachan-heo.github.io/oh-my-openagent-website/docs.html#notifications)** - Thiết lập Discord, Telegram, Slack và webhook
+- **[Quy trình khuyến nghị](https://yeachan-heo.github.io/oh-my-openagent-website/docs.html#workflows)** - Chuỗi skill đã qua thực chiến cho các tác vụ phổ biến
+- **[Ghi chú phát hành](https://yeachan-heo.github.io/oh-my-openagent-website/docs.html#release-notes)** - Có gì mới trong mỗi phiên bản
+- **[Website](https://yeachan-heo.github.io/oh-my-openagent-website)** - Hướng dẫn tương tác và ví dụ
 - **[Hướng dẫn di chuyển](docs/MIGRATION.md)** - Nâng cấp từ v2.x
 - **[Kiến trúc](docs/ARCHITECTURE.md)** - Cách nó hoạt động phía sau
 - **[Theo dõi hiệu năng](docs/PERFORMANCE-MONITORING.md)** - Theo dõi tác tử, gỡ lỗi và tối ưu
@@ -339,7 +339,7 @@ MIT
 
 ## Lịch sử sao
 
-[![Star History Chart](https://api.star-history.com/svg?repos=Yeachan-Heo/oh-my-claudecode&type=date&legend=top-left)](https://www.star-history.com/#Yeachan-Heo/oh-my-claudecode&type=date&legend=top-left)
+[![Star History Chart](https://api.star-history.com/svg?repos=Yeachan-Heo/oh-my-openagent&type=date&legend=top-left)](https://www.star-history.com/#Yeachan-Heo/oh-my-openagent&type=date&legend=top-left)
 
 ## 💖 Ủng hộ dự án này
 

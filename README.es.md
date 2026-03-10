@@ -1,10 +1,10 @@
 [English](README.md) | [한국어](README.ko.md) | [中文](README.zh.md) | [日本語](README.ja.md) | Español | [Tiếng Việt](README.vi.md) | [Português](README.pt.md)
 
-# oh-my-claudecode
+# oh-my-openagent
 
-[![npm version](https://img.shields.io/npm/v/oh-my-claude-sisyphus?color=cb3837)](https://www.npmjs.com/package/oh-my-claude-sisyphus)
-[![npm downloads](https://img.shields.io/npm/dm/oh-my-claude-sisyphus?color=blue)](https://www.npmjs.com/package/oh-my-claude-sisyphus)
-[![GitHub stars](https://img.shields.io/github/stars/Yeachan-Heo/oh-my-claudecode?style=flat&color=yellow)](https://github.com/Yeachan-Heo/oh-my-claudecode/stargazers)
+[![npm version](https://img.shields.io/npm/v/oh-my-openagent?color=cb3837)](https://www.npmjs.com/package/oh-my-openagent)
+[![npm downloads](https://img.shields.io/npm/dm/oh-my-openagent?color=blue)](https://www.npmjs.com/package/oh-my-openagent)
+[![GitHub stars](https://img.shields.io/github/stars/Yeachan-Heo/oh-my-openagent?style=flat&color=yellow)](https://github.com/Yeachan-Heo/oh-my-openagent/stargazers)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 [![Sponsor](https://img.shields.io/badge/Sponsor-❤️-red?style=flat&logo=github)](https://github.com/sponsors/Yeachan-Heo)
 
@@ -14,7 +14,7 @@
 
 *No aprendas Claude Code. Solo usa OMC.*
 
-[Comenzar](#inicio-rápido) • [Documentación](https://yeachan-heo.github.io/oh-my-claudecode-website) • [Referencia CLI](https://yeachan-heo.github.io/oh-my-claudecode-website/docs.html#cli-reference) • [Flujos de Trabajo](https://yeachan-heo.github.io/oh-my-claudecode-website/docs.html#workflows) • [Guía de Migración](docs/MIGRATION.md)
+[Comenzar](#inicio-rápido) • [Documentación](https://yeachan-heo.github.io/oh-my-openagent-website) • [Referencia CLI](https://yeachan-heo.github.io/oh-my-openagent-website/docs.html#cli-reference) • [Flujos de Trabajo](https://yeachan-heo.github.io/oh-my-openagent-website/docs.html#workflows) • [Guía de Migración](docs/MIGRATION.md)
 
 ---
 
@@ -22,8 +22,8 @@
 
 **Paso 1: Instalar**
 ```bash
-/plugin marketplace add https://github.com/Yeachan-Heo/oh-my-claudecode
-/plugin install oh-my-claudecode
+/plugin marketplace add https://github.com/Yeachan-Heo/oh-my-openagent
+/plugin install oh-my-openagent
 ```
 
 **Paso 2: Configurar**
@@ -97,7 +97,7 @@ Para trabajo mixto de Codex + Gemini en un solo comando, usa la habilidad **`/cc
 
 Los trabajadores se inician bajo demanda y terminan cuando su tarea se completa — sin uso de recursos en espera. Requiere las CLIs `codex` / `gemini` instaladas y una sesión tmux activa.
 
-> **Nota: Nombre del paquete** — El proyecto usa la marca **oh-my-claudecode** (repositorio, plugin, comandos), pero el paquete npm se publica como [`oh-my-claude-sisyphus`](https://www.npmjs.com/package/oh-my-claude-sisyphus). Si instalas las herramientas CLI via npm/bun, usa `npm install -g oh-my-claude-sisyphus`.
+> **Nota: Nombre del paquete** — El proyecto usa la marca **oh-my-openagent** (repositorio, plugin, comandos), pero el paquete npm se publica como [`oh-my-openagent`](https://www.npmjs.com/package/oh-my-openagent). Si instalas las herramientas CLI via npm/bun, usa `npm install -g oh-my-openagent`.
 
 ### Actualizar
 
@@ -120,12 +120,12 @@ Si experimentas problemas despues de actualizar, limpia la cache antigua del plu
 <h1 align="center">Tu Claude acaba de recibir esteroides.</h1>
 
 <p align="center">
-  <img src="assets/omc-character.jpg" alt="oh-my-claudecode" width="400" />
+  <img src="assets/omc-character.jpg" alt="oh-my-openagent" width="400" />
 </p>
 
 ---
 
-## ¿Por qué oh-my-claudecode?
+## ¿Por qué oh-my-openagent?
 
 - **Cero configuración requerida** - Funciona inmediatamente con valores predeterminados inteligentes
 - **Orquestación Team-first** - Team es la superficie canónica multiagente (swarm/ultrapilot son fachadas de compatibilidad)
@@ -141,7 +141,7 @@ Si experimentas problemas despues de actualizar, limpia la cache antigua del plu
 ## Características
 
 ### Modos de Ejecución
-Múltiples estrategias para diferentes casos de uso - desde construcciones completamente autónomas hasta refactorización eficiente en tokens. [Aprende más →](https://yeachan-heo.github.io/oh-my-claudecode-website/docs.html#execution-modes)
+Múltiples estrategias para diferentes casos de uso - desde construcciones completamente autónomas hasta refactorización eficiente en tokens. [Aprende más →](https://yeachan-heo.github.io/oh-my-openagent-website/docs.html#execution-modes)
 
 | Modo | Característica | Usar Para |
 |------|---------|---------|
@@ -238,7 +238,7 @@ Reenvía eventos de sesión de Claude Code a un gateway de [OpenClaw](https://op
 **Configuración rápida (recomendado):**
 
 ```bash
-/oh-my-claudecode:configure-notifications
+/oh-my-openagent:configure-notifications
 # → Escribe "openclaw" cuando se te solicite → elige "OpenClaw Gateway"
 ```
 
@@ -296,11 +296,11 @@ Consulta `scripts/openclaw-gateway-demo.mjs` para un gateway de referencia que r
 ## Documentación
 
 - **[Referencia Completa](docs/REFERENCE.md)** - Documentación completa de características
-- **[Referencia CLI](https://yeachan-heo.github.io/oh-my-claudecode-website/docs.html#cli-reference)** - Todos los comandos, flags y herramientas de `omc`
-- **[Guía de Notificaciones](https://yeachan-heo.github.io/oh-my-claudecode-website/docs.html#notifications)** - Configuración de Discord, Telegram, Slack y webhooks
-- **[Flujos de Trabajo Recomendados](https://yeachan-heo.github.io/oh-my-claudecode-website/docs.html#workflows)** - Cadenas de habilidades probadas para tareas comunes
-- **[Notas de Versión](https://yeachan-heo.github.io/oh-my-claudecode-website/docs.html#release-notes)** - Novedades en cada versión
-- **[Sitio Web](https://yeachan-heo.github.io/oh-my-claudecode-website)** - Guías interactivas y ejemplos
+- **[Referencia CLI](https://yeachan-heo.github.io/oh-my-openagent-website/docs.html#cli-reference)** - Todos los comandos, flags y herramientas de `omc`
+- **[Guía de Notificaciones](https://yeachan-heo.github.io/oh-my-openagent-website/docs.html#notifications)** - Configuración de Discord, Telegram, Slack y webhooks
+- **[Flujos de Trabajo Recomendados](https://yeachan-heo.github.io/oh-my-openagent-website/docs.html#workflows)** - Cadenas de habilidades probadas para tareas comunes
+- **[Notas de Versión](https://yeachan-heo.github.io/oh-my-openagent-website/docs.html#release-notes)** - Novedades en cada versión
+- **[Sitio Web](https://yeachan-heo.github.io/oh-my-openagent-website)** - Guías interactivas y ejemplos
 - **[Guía de Migración](docs/MIGRATION.md)** - Actualización desde v2.x
 - **[Arquitectura](docs/ARCHITECTURE.md)** - Cómo funciona internamente
 - **[Monitoreo de Rendimiento](docs/PERFORMANCE-MONITORING.md)** - Seguimiento de agentes, depuración y optimización
@@ -341,7 +341,7 @@ MIT
 
 ## Historial de Estrellas
 
-[![Star History Chart](https://api.star-history.com/svg?repos=Yeachan-Heo/oh-my-claudecode&type=date&legend=top-left)](https://www.star-history.com/#Yeachan-Heo/oh-my-claudecode&type=date&legend=top-left)
+[![Star History Chart](https://api.star-history.com/svg?repos=Yeachan-Heo/oh-my-openagent&type=date&legend=top-left)](https://www.star-history.com/#Yeachan-Heo/oh-my-openagent&type=date&legend=top-left)
 
 ## 💖 Apoya Este Proyecto
 

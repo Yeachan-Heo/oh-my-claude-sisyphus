@@ -1,10 +1,10 @@
 [English](README.md) | [한국어](README.ko.md) | 中文 | [日本語](README.ja.md) | [Español](README.es.md) | [Tiếng Việt](README.vi.md) | [Português](README.pt.md)
 
-# oh-my-claudecode
+# oh-my-openagent
 
-[![npm version](https://img.shields.io/npm/v/oh-my-claude-sisyphus?color=cb3837)](https://www.npmjs.com/package/oh-my-claude-sisyphus)
-[![npm downloads](https://img.shields.io/npm/dm/oh-my-claude-sisyphus?color=blue)](https://www.npmjs.com/package/oh-my-claude-sisyphus)
-[![GitHub stars](https://img.shields.io/github/stars/Yeachan-Heo/oh-my-claudecode?style=flat&color=yellow)](https://github.com/Yeachan-Heo/oh-my-claudecode/stargazers)
+[![npm version](https://img.shields.io/npm/v/oh-my-openagent?color=cb3837)](https://www.npmjs.com/package/oh-my-openagent)
+[![npm downloads](https://img.shields.io/npm/dm/oh-my-openagent?color=blue)](https://www.npmjs.com/package/oh-my-openagent)
+[![GitHub stars](https://img.shields.io/github/stars/Yeachan-Heo/oh-my-openagent?style=flat&color=yellow)](https://github.com/Yeachan-Heo/oh-my-openagent/stargazers)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 [![Sponsor](https://img.shields.io/badge/Sponsor-❤️-red?style=flat&logo=github)](https://github.com/sponsors/Yeachan-Heo)
 
@@ -14,7 +14,7 @@
 
 *无需学习 Claude Code，直接使用 OMC。*
 
-[快速开始](#快速开始) • [文档](https://yeachan-heo.github.io/oh-my-claudecode-website) • [CLI 参考](https://yeachan-heo.github.io/oh-my-claudecode-website/docs.html#cli-reference) • [工作流](https://yeachan-heo.github.io/oh-my-claudecode-website/docs.html#workflows) • [迁移指南](docs/MIGRATION.md)
+[快速开始](#快速开始) • [文档](https://yeachan-heo.github.io/oh-my-openagent-website) • [CLI 参考](https://yeachan-heo.github.io/oh-my-openagent-website/docs.html#cli-reference) • [工作流](https://yeachan-heo.github.io/oh-my-openagent-website/docs.html#workflows) • [迁移指南](docs/MIGRATION.md)
 
 ---
 
@@ -22,8 +22,8 @@
 
 **第一步：安装**
 ```bash
-/plugin marketplace add https://github.com/Yeachan-Heo/oh-my-claudecode
-/plugin install oh-my-claudecode
+/plugin marketplace add https://github.com/Yeachan-Heo/oh-my-openagent
+/plugin install oh-my-openagent
 ```
 
 **第二步：配置**
@@ -97,7 +97,7 @@ Team 按阶段化流水线运行：
 
 工作者按需生成，任务完成后自动退出 — 无空闲资源浪费。需要安装 `codex` / `gemini` CLI 并有活跃的 tmux 会话。
 
-> **注意：包命名** — 项目品牌名为 **oh-my-claudecode**（仓库、插件、命令），但 npm 包以 [`oh-my-claude-sisyphus`](https://www.npmjs.com/package/oh-my-claude-sisyphus) 发布。通过 npm/bun 安装 CLI 工具时，请使用 `npm install -g oh-my-claude-sisyphus`。
+> **注意：包命名** — 项目品牌名为 **oh-my-openagent**（仓库、插件、命令），但 npm 包以 [`oh-my-openagent`](https://www.npmjs.com/package/oh-my-openagent) 发布。通过 npm/bun 安装 CLI 工具时，请使用 `npm install -g oh-my-openagent`。
 
 ### 更新
 
@@ -120,12 +120,12 @@ Team 按阶段化流水线运行：
 <h1 align="center">你的 Claude 已被注入超能力。</h1>
 
 <p align="center">
-  <img src="assets/omc-character.jpg" alt="oh-my-claudecode" width="400" />
+  <img src="assets/omc-character.jpg" alt="oh-my-openagent" width="400" />
 </p>
 
 ---
 
-## 为什么选择 oh-my-claudecode？
+## 为什么选择 oh-my-openagent？
 
 - **无需配置** - 开箱即用，智能默认设置
 - **Team 优先编排** - Team 是标准的多智能体界面（swarm/ultrapilot 是兼容性外观）
@@ -141,7 +141,7 @@ Team 按阶段化流水线运行：
 ## 功能特性
 
 ### 执行模式
-针对不同场景的多种策略 - 从全自动构建到 token 高效重构。[了解更多 →](https://yeachan-heo.github.io/oh-my-claudecode-website/docs.html#execution-modes)
+针对不同场景的多种策略 - 从全自动构建到 token 高效重构。[了解更多 →](https://yeachan-heo.github.io/oh-my-openagent-website/docs.html#execution-modes)
 
 | 模式 | 特点 | 适用场景 |
 |------|---------|---------|
@@ -238,7 +238,7 @@ omc config-stop-callback discord --clear-tags
 **快速设置（推荐）：**
 
 ```bash
-/oh-my-claudecode:configure-notifications
+/oh-my-openagent:configure-notifications
 # → 提示时输入 "openclaw" → 选择 "OpenClaw Gateway"
 ```
 
@@ -296,11 +296,11 @@ omc config-stop-callback discord --clear-tags
 ## 文档
 
 - **[完整参考](docs/REFERENCE.md)** - 完整功能文档
-- **[CLI 参考](https://yeachan-heo.github.io/oh-my-claudecode-website/docs.html#cli-reference)** - 所有 `omc` 命令、标志和工具
-- **[通知指南](https://yeachan-heo.github.io/oh-my-claudecode-website/docs.html#notifications)** - Discord、Telegram、Slack 和 webhook 设置
-- **[推荐工作流](https://yeachan-heo.github.io/oh-my-claudecode-website/docs.html#workflows)** - 常见任务的经过实战检验的技能链
-- **[发布说明](https://yeachan-heo.github.io/oh-my-claudecode-website/docs.html#release-notes)** - 每个版本的新内容
-- **[网站](https://yeachan-heo.github.io/oh-my-claudecode-website)** - 交互式指南和示例
+- **[CLI 参考](https://yeachan-heo.github.io/oh-my-openagent-website/docs.html#cli-reference)** - 所有 `omc` 命令、标志和工具
+- **[通知指南](https://yeachan-heo.github.io/oh-my-openagent-website/docs.html#notifications)** - Discord、Telegram、Slack 和 webhook 设置
+- **[推荐工作流](https://yeachan-heo.github.io/oh-my-openagent-website/docs.html#workflows)** - 常见任务的经过实战检验的技能链
+- **[发布说明](https://yeachan-heo.github.io/oh-my-openagent-website/docs.html#release-notes)** - 每个版本的新内容
+- **[网站](https://yeachan-heo.github.io/oh-my-openagent-website)** - 交互式指南和示例
 - **[迁移指南](docs/MIGRATION.md)** - 从 v2.x 升级
 - **[架构](docs/ARCHITECTURE.md)** - 底层工作原理
 - **[性能监控](docs/PERFORMANCE-MONITORING.md)** - 智能体追踪、调试和优化
@@ -341,7 +341,7 @@ MIT
 
 ## Star 历史
 
-[![Star History Chart](https://api.star-history.com/svg?repos=Yeachan-Heo/oh-my-claudecode&type=date&legend=top-left)](https://www.star-history.com/#Yeachan-Heo/oh-my-claudecode&type=date&legend=top-left)
+[![Star History Chart](https://api.star-history.com/svg?repos=Yeachan-Heo/oh-my-openagent&type=date&legend=top-left)](https://www.star-history.com/#Yeachan-Heo/oh-my-openagent&type=date&legend=top-left)
 
 ## 💖 支持本项目
 

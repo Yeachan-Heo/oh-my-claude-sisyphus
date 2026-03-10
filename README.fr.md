@@ -1,10 +1,10 @@
 [English](README.md) | [한국어](README.ko.md) | [中文](README.zh.md) | [日本語](README.ja.md) | [Español](README.es.md) | [Tiếng Việt](README.vi.md) | [Português](README.pt.md) | [Русский](README.ru.md) | [Türkçe](README.tr.md) | [Deutsch](README.de.md) | Français | [Italiano](README.it.md)
 
-# oh-my-claudecode
+# oh-my-openagent
 
-[![npm version](https://img.shields.io/npm/v/oh-my-claude-sisyphus?color=cb3837)](https://www.npmjs.com/package/oh-my-claude-sisyphus)
-[![npm downloads](https://img.shields.io/npm/dm/oh-my-claude-sisyphus?color=blue)](https://www.npmjs.com/package/oh-my-claude-sisyphus)
-[![GitHub stars](https://img.shields.io/github/stars/Yeachan-Heo/oh-my-claudecode?style=flat&color=yellow)](https://github.com/Yeachan-Heo/oh-my-claudecode/stargazers)
+[![npm version](https://img.shields.io/npm/v/oh-my-openagent?color=cb3837)](https://www.npmjs.com/package/oh-my-openagent)
+[![npm downloads](https://img.shields.io/npm/dm/oh-my-openagent?color=blue)](https://www.npmjs.com/package/oh-my-openagent)
+[![GitHub stars](https://img.shields.io/github/stars/Yeachan-Heo/oh-my-openagent?style=flat&color=yellow)](https://github.com/Yeachan-Heo/oh-my-openagent/stargazers)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 [![Sponsor](https://img.shields.io/badge/Sponsor-❤️-red?style=flat&logo=github)](https://github.com/sponsors/Yeachan-Heo)
 
@@ -12,7 +12,7 @@
 
 _N'apprenez pas Claude Code. Utilisez simplement OMC._
 
-[Démarrer](#démarrage-rapide) • [Documentation](https://yeachan-heo.github.io/oh-my-claudecode-website) • [Guide de migration](docs/MIGRATION.md)
+[Démarrer](#démarrage-rapide) • [Documentation](https://yeachan-heo.github.io/oh-my-openagent-website) • [Guide de migration](docs/MIGRATION.md)
 
 ---
 
@@ -21,14 +21,14 @@ _N'apprenez pas Claude Code. Utilisez simplement OMC._
 **Étape 1 : Installation**
 
 ```bash
-/plugin marketplace add https://github.com/Yeachan-Heo/oh-my-claudecode
-/plugin install oh-my-claudecode
+/plugin marketplace add https://github.com/Yeachan-Heo/oh-my-openagent
+/plugin install oh-my-openagent
 ```
 
 **Étape 2 : Configuration**
 
 ```bash
-/oh-my-claudecode:omc-setup
+/oh-my-openagent:omc-setup
 ```
 
 **Étape 3 : Construisez quelque chose**
@@ -44,7 +44,7 @@ C'est tout. Le reste est automatique.
 À partir de la **v4.1.7**, **Team** est la surface d'orchestration canonique dans OMC. Les anciens points d'entrée comme **swarm** et **ultrapilot** sont toujours supportés, mais **redirigent désormais vers Team en coulisses**.
 
 ```bash
-/oh-my-claudecode:team 3:executor "fix all TypeScript errors"
+/oh-my-openagent:team 3:executor "fix all TypeScript errors"
 ```
 
 Team fonctionne comme un pipeline par étapes :
@@ -63,33 +63,33 @@ Activez les teams natifs de Claude Code dans `~/.claude/settings.json` :
 
 > Si les teams sont désactivés, OMC vous avertira et basculera vers une exécution sans Team lorsque possible.
 
-> **Note : Nom du package** — Le projet utilise la marque **oh-my-claudecode** (repo, plugin, commandes), mais le package npm est publié sous le nom [`oh-my-claude-sisyphus`](https://www.npmjs.com/package/oh-my-claude-sisyphus). Si vous installez les outils CLI via npm/bun, utilisez `npm install -g oh-my-claude-sisyphus`.
+> **Note : Nom du package** — Le projet utilise la marque **oh-my-openagent** (repo, plugin, commandes), mais le package npm est publié sous le nom [`oh-my-openagent`](https://www.npmjs.com/package/oh-my-openagent). Si vous installez les outils CLI via npm/bun, utilisez `npm install -g oh-my-openagent`.
 
 ### Mise à jour
 
 ```bash
 # 1. Mettre à jour le plugin
-/plugin install oh-my-claudecode
+/plugin install oh-my-openagent
 
 # 2. Relancer le setup pour actualiser la configuration
-/oh-my-claudecode:omc-setup
+/oh-my-openagent:omc-setup
 ```
 
 Si vous rencontrez des problèmes après la mise à jour, videz l'ancien cache du plugin :
 
 ```bash
-/oh-my-claudecode:omc-doctor
+/oh-my-openagent:omc-doctor
 ```
 
 <h1 align="center">Votre Claude vient de recevoir des super-pouvoirs.</h1>
 
 <p align="center">
-  <img src="assets/omc-character.jpg" alt="oh-my-claudecode" width="400" />
+  <img src="assets/omc-character.jpg" alt="oh-my-openagent" width="400" />
 </p>
 
 ---
 
-## Pourquoi oh-my-claudecode ?
+## Pourquoi oh-my-openagent ?
 
 - **Aucune configuration requise** — Fonctionne directement avec des valeurs par défaut intelligentes
 - **Orchestration team-first** — Team est la surface multi-agents canonique (swarm/ultrapilot sont des façades de compatibilité)
@@ -106,7 +106,7 @@ Si vous rencontrez des problèmes après la mise à jour, videz l'ancien cache d
 
 ### Modes d'orchestration
 
-Plusieurs stratégies pour différents cas d'utilisation — de l'orchestration Team au refactoring économe en tokens. [En savoir plus →](https://yeachan-heo.github.io/oh-my-claudecode-website/docs.html#execution-modes)
+Plusieurs stratégies pour différents cas d'utilisation — de l'orchestration Team au refactoring économe en tokens. [En savoir plus →](https://yeachan-heo.github.io/oh-my-openagent-website/docs.html#execution-modes)
 
 | Mode                            | Description                                                                                 | Utilisation                                                                      |
 | ------------------------------- | ------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
@@ -141,7 +141,7 @@ Raccourcis optionnels pour les utilisateurs avancés. Le langage naturel fonctio
 
 | Mot-clé      | Effet                               | Exemple                                                         |
 | ------------ | ----------------------------------- | --------------------------------------------------------------- |
-| `team`       | Orchestration Team canonique        | `/oh-my-claudecode:team 3:executor "fix all TypeScript errors"` |
+| `team`       | Orchestration Team canonique        | `/oh-my-openagent:team 3:executor "fix all TypeScript errors"` |
 | `autopilot`  | Exécution entièrement autonome      | `autopilot: build a todo app`                                   |
 | `ralph`      | Mode persistant                     | `ralph: refactor auth`                                          |
 | `ulw`        | Parallélisme maximal                | `ulw fix all errors`                                            |
@@ -198,7 +198,7 @@ Transmettez les événements de session Claude Code vers une passerelle [OpenCla
 **Configuration rapide (recommandé) :**
 
 ```bash
-/oh-my-claudecode:configure-notifications
+/oh-my-openagent:configure-notifications
 # → Tapez "openclaw" quand demandé → choisir "OpenClaw Gateway"
 ```
 
@@ -257,7 +257,7 @@ Voir `scripts/openclaw-gateway-demo.mjs` pour un gateway de référence qui rela
 
 - **[Référence complète](docs/REFERENCE.md)** — Documentation complète des fonctionnalités
 - **[Monitoring de performance](docs/PERFORMANCE-MONITORING.md)** — Suivi des agents, débogage et optimisation
-- **[Site web](https://yeachan-heo.github.io/oh-my-claudecode-website)** — Guides interactifs et exemples
+- **[Site web](https://yeachan-heo.github.io/oh-my-openagent-website)** — Guides interactifs et exemples
 - **[Guide de migration](docs/MIGRATION.md)** — Mise à jour depuis v2.x
 - **[Architecture](docs/ARCHITECTURE.md)** — Comment ça fonctionne en coulisses
 
@@ -297,7 +297,7 @@ MIT
 
 ## Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=Yeachan-Heo/oh-my-claudecode&type=date&legend=top-left)](https://www.star-history.com/#Yeachan-Heo/oh-my-claudecode&type=date&legend=top-left)
+[![Star History Chart](https://api.star-history.com/svg?repos=Yeachan-Heo/oh-my-openagent&type=date&legend=top-left)](https://www.star-history.com/#Yeachan-Heo/oh-my-openagent&type=date&legend=top-left)
 
 ## 💖 Soutenir ce projet
 
