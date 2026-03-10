@@ -397,6 +397,19 @@ All installed skills are available as slash commands with the prefix `/oh-my-cla
 | `/oh-my-claudecode:trace`                   | Show orchestration trace timeline                                                             |
 | `/oh-my-claudecode:psm <arguments>`         | Deprecated alias for project session manager                                                  |
 
+### Skill Pipeline Metadata (Preview)
+
+Built-in skills and slash-loaded skills can now declare a lightweight pipeline/handoff contract in frontmatter:
+
+```yaml
+pipeline: [deep-interview, omc-plan, autopilot]
+next-skill: omc-plan
+next-skill-args: --consensus --direct
+handoff: .omc/specs/deep-interview-{slug}.md
+```
+
+When present, OMC appends a standardized **Skill Pipeline** section to the rendered skill prompt so the current stage, handoff artifact, and explicit next `Skill("oh-my-claudecode:...")` invocation are carried forward consistently.
+
 ---
 
 ## Hooks System

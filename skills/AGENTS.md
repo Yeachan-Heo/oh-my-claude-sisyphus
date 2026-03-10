@@ -80,6 +80,10 @@ triggers:
   - "keyword2"
 agent: executor  # Optional: which agent to use
 model: sonnet    # Optional: model override
+pipeline: [skill-name, follow-up-skill]  # Optional: standardized multi-skill flow
+next-skill: follow-up-skill              # Optional: explicit handoff target
+next-skill-args: --direct                # Optional: arguments for the next skill
+handoff: .omc/plans/example.md           # Optional: artifact/context handed to next skill
 ---
 
 # Skill Name
@@ -132,6 +136,8 @@ Any configurable options.
 3. Invoke `executor` for implementation
 4. Invoke `qa-tester` for verification
 ```
+
+If `pipeline` / `next-skill` metadata is present, OMC appends a standardized **Skill Pipeline** handoff block to the rendered skill prompt so downstream steps are explicit.
 
 **Conditional behavior:**
 ```markdown

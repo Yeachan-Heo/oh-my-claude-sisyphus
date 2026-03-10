@@ -117,6 +117,34 @@ describe('Builtin Skills', () => {
       expect(skill?.name).toBe('ai-slop-cleaner');
     });
 
+    it('should expose pipeline metadata for deep-interview handoff into omc-plan', () => {
+      const skill = getBuiltinSkill('deep-interview');
+      expect(skill?.pipeline).toEqual({
+        steps: ['deep-interview', 'omc-plan', 'autopilot'],
+        nextSkill: 'omc-plan',
+        nextSkillArgs: '--consensus --direct',
+        handoff: '.omc/specs/deep-interview-{slug}.md',
+      });
+      expect(skill?.template).toContain('## Skill Pipeline');
+      expect(skill?.template).toContain('Pipeline: `deep-interview → omc-plan → autopilot`');
+      expect(skill?.template).toContain('Skill("oh-my-claudecode:omc-plan")');
+      expect(skill?.template).toContain('`--consensus --direct`');
+      expect(skill?.template).toContain('`.omc/specs/deep-interview-{slug}.md`');
+    });
+
+    it('should expose pipeline metadata for omc-plan handoff into autopilot', () => {
+      const skill = getBuiltinSkill('omc-plan');
+      expect(skill?.pipeline).toEqual({
+        steps: ['deep-interview', 'omc-plan', 'autopilot'],
+        nextSkill: 'autopilot',
+        handoff: '.omc/plans/ralplan-*.md',
+      });
+      expect(skill?.template).toContain('## Skill Pipeline');
+      expect(skill?.template).toContain('Next skill: `autopilot`');
+      expect(skill?.template).toContain('Skill("oh-my-claudecode:autopilot")');
+      expect(skill?.template).toContain('`.omc/plans/ralplan-*.md`');
+    });
+
     it('should expose review mode guidance for ai-slop-cleaner', () => {
       const skill = getBuiltinSkill('ai-slop-cleaner');
       expect(skill).toBeDefined();

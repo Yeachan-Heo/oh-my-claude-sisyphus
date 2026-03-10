@@ -2,6 +2,10 @@
 name: deep-interview
 description: Socratic deep interview with mathematical ambiguity gating before autonomous execution
 argument-hint: "<idea or vague description>"
+pipeline: [deep-interview, omc-plan, autopilot]
+next-skill: omc-plan
+next-skill-args: --consensus --direct
+handoff: .omc/specs/deep-interview-{slug}.md
 ---
 
 <Purpose>

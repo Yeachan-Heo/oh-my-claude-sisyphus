@@ -70,3 +70,27 @@ export function parseFrontmatterAliases(rawAliases: string | undefined): string[
   const singleAlias = stripOptionalQuotes(trimmed);
   return singleAlias ? [singleAlias] : [];
 }
+
+/**
+ * Parse a generic frontmatter list field into an array of strings.
+ * Supports inline YAML list syntax: `[foo, bar]` or a single scalar value.
+ */
+export function parseFrontmatterList(rawValue: string | undefined): string[] {
+  if (!rawValue) return [];
+
+  const trimmed = rawValue.trim();
+  if (!trimmed) return [];
+
+  if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+    const inner = trimmed.slice(1, -1).trim();
+    if (!inner) return [];
+
+    return inner
+      .split(',')
+      .map((item) => stripOptionalQuotes(item))
+      .filter((item) => item.length > 0);
+  }
+
+  const singleValue = stripOptionalQuotes(trimmed);
+  return singleValue ? [singleValue] : [];
+}
