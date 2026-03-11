@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 vi.mock('child_process', () => ({
   execSync: vi.fn(),
+  execFileSync: vi.fn(),
 }));
 
 vi.mock('../installer/index.js', async () => {
@@ -26,7 +27,7 @@ vi.mock('fs', async () => {
   };
 });
 
-import { execSync } from 'child_process';
+import { execSync, execFileSync } from 'child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { homedir } from 'os';
 import { join } from 'path';
@@ -38,6 +39,7 @@ import {
 } from '../features/auto-update.js';
 
 const mockedExecSync = vi.mocked(execSync);
+const mockedExecFileSync = vi.mocked(execFileSync);
 const mockedExistsSync = vi.mocked(existsSync);
 const mockedMkdirSync = vi.mocked(mkdirSync);
 const mockedReadFileSync = vi.mocked(readFileSync);
@@ -45,6 +47,14 @@ const mockedWriteFileSync = vi.mocked(writeFileSync);
 const mockedInstall = vi.mocked(install);
 const mockedIsProjectScopedPlugin = vi.mocked(isProjectScopedPlugin);
 const mockedCheckNodeVersion = vi.mocked(checkNodeVersion);
+const originalPlatformDescriptor = Object.getOwnPropertyDescriptor(process, 'platform');
+
+function mockPlatform(platform: NodeJS.Platform): void {
+  Object.defineProperty(process, 'platform', {
+    configurable: true,
+    value: platform,
+  });
+}
 
 describe('auto-update reconciliation', () => {
   beforeEach(() => {
@@ -80,6 +90,10 @@ describe('auto-update reconciliation', () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
+    delete process.env.OMC_UPDATE_RECONCILE;
+    if (originalPlatformDescriptor) {
+      Object.defineProperty(process, 'platform', originalPlatformDescriptor);
+    }
   });
 
   it('reconciles runtime state and refreshes hooks after update', () => {
@@ -205,8 +219,115 @@ describe('auto-update reconciliation', () => {
     expect(result.success).toBe(false);
     expect(result.errors).toEqual(['Reconciliation failed: boom']);
     expect(mockedWriteFileSync).not.toHaveBeenCalled();
+  });
 
-    delete process.env.OMC_UPDATE_RECONCILE;
+  it('re-execs with omc.cmd on Windows and persists metadata after reconciliation', async () => {
+    mockPlatform('win32');
+
+    mockedExistsSync.mockImplementation((path: Parameters<typeof existsSync>[0]) => {
+      const normalized = String(path).replace(/\\/g, '/');
+      if (normalized.endsWith('/plugins/marketplaces/omc')) {
+        return false;
+      }
+      return true;
+    });
+
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        tag_name: 'v4.1.6',
+        name: '4.1.6',
+        published_at: '2026-02-10T00:00:00.000Z',
+        html_url: 'https://example.com/release',
+        body: 'notes',
+        prerelease: false,
+        draft: false,
+      }),
+    }));
+
+    mockedExecSync.mockImplementation((command: string) => {
+      if (command === 'npm install -g oh-my-claude-sisyphus@latest') {
+        return '';
+      }
+      throw new Error(`Unexpected execSync command: ${command}`);
+    });
+
+    mockedExecFileSync.mockImplementation((command: string) => {
+      if (command === 'where.exe') {
+        return 'C:\\Users\\bellman\\AppData\\Roaming\\npm\\omc.cmd\r\n';
+      }
+      if (command === 'C:\\Users\\bellman\\AppData\\Roaming\\npm\\omc.cmd') {
+        return '';
+      }
+      throw new Error(`Unexpected execFileSync command: ${command}`);
+    });
+
+    const result = await performUpdate({ verbose: false });
+
+    expect(result.success).toBe(true);
+    expect(mockedExecSync).toHaveBeenCalledWith('npm install -g oh-my-claude-sisyphus@latest', expect.objectContaining({
+      windowsHide: true,
+    }));
+    expect(mockedExecFileSync).toHaveBeenNthCalledWith(1, 'where.exe', ['omc.cmd'], expect.objectContaining({
+      encoding: 'utf-8',
+      stdio: 'pipe',
+      timeout: 5000,
+      windowsHide: true,
+    }));
+    expect(mockedExecFileSync).toHaveBeenNthCalledWith(2, 'C:\\Users\\bellman\\AppData\\Roaming\\npm\\omc.cmd', ['update-reconcile'], expect.objectContaining({
+      encoding: 'utf-8',
+      stdio: 'pipe',
+      timeout: 60000,
+      windowsHide: true,
+      env: expect.objectContaining({ OMC_UPDATE_RECONCILE: '1' }),
+    }));
+    expect(mockedWriteFileSync).toHaveBeenCalledWith(expect.stringContaining('.omc-version.json'), expect.stringContaining('"version": "4.1.6"'));
+  });
+
+  it('does not persist metadata when Windows reconcile re-exec fails with ENOENT', async () => {
+    mockPlatform('win32');
+
+    mockedExistsSync.mockImplementation((path: Parameters<typeof existsSync>[0]) => {
+      const normalized = String(path).replace(/\\/g, '/');
+      if (normalized.endsWith('/plugins/marketplaces/omc')) {
+        return false;
+      }
+      return true;
+    });
+
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        tag_name: 'v4.1.6',
+        name: '4.1.6',
+        published_at: '2026-02-10T00:00:00.000Z',
+        html_url: 'https://example.com/release',
+        body: 'notes',
+        prerelease: false,
+        draft: false,
+      }),
+    }));
+
+    mockedExecSync.mockReturnValue('');
+    mockedExecFileSync.mockImplementation((command: string) => {
+      if (command === 'where.exe') {
+        return 'C:\\Users\\bellman\\AppData\\Roaming\\npm\\omc.cmd\r\n';
+      }
+      if (command === 'C:\\Users\\bellman\\AppData\\Roaming\\npm\\omc.cmd') {
+        const error = Object.assign(new Error('spawnSync C:\\Users\\bellman\\AppData\\Roaming\\npm\\omc.cmd ENOENT'), {
+          code: 'ENOENT',
+        });
+        throw error;
+      }
+      throw new Error(`Unexpected execFileSync command: ${command}`);
+    });
+
+    const result = await performUpdate({ verbose: false });
+
+    expect(result.success).toBe(false);
+    expect(result.message).toBe('Updated to 4.1.6, but runtime reconciliation failed');
+    expect(result.errors).toEqual(['spawnSync C:\\Users\\bellman\\AppData\\Roaming\\npm\\omc.cmd ENOENT']);
+    expect(mockedWriteFileSync).not.toHaveBeenCalled();
   });
 
   it('preserves non-OMC hooks when refreshing plugin hooks during reconciliation', () => {
