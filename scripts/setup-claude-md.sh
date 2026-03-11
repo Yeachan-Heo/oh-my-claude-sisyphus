@@ -9,12 +9,16 @@ set -euo pipefail
 
 MODE="${1:?Usage: setup-claude-md.sh <local|global>}"
 DOWNLOAD_URL="https://raw.githubusercontent.com/Yeachan-Heo/oh-my-claudecode/main/docs/CLAUDE.md"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_PLUGIN_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+CANONICAL_CLAUDE_MD="${SCRIPT_PLUGIN_ROOT}/docs/CLAUDE.md"
 
 # Determine target path
 if [ "$MODE" = "local" ]; then
   mkdir -p .claude
   TARGET_PATH=".claude/CLAUDE.md"
 elif [ "$MODE" = "global" ]; then
+  mkdir -p "$HOME/.claude"
   TARGET_PATH="$HOME/.claude/CLAUDE.md"
 else
   echo "ERROR: Invalid mode '$MODE'. Use 'local' or 'global'." >&2
@@ -38,15 +42,32 @@ if [ -f "$TARGET_PATH" ]; then
   echo "Backed up existing CLAUDE.md to $BACKUP_PATH"
 fi
 
-# Download fresh OMC content to temp file
+# Load canonical OMC content to temp file
 TEMP_OMC=$(mktemp /tmp/omc-claude-XXXXXX.md)
 trap 'rm -f "$TEMP_OMC"' EXIT
-curl -fsSL "$DOWNLOAD_URL" -o "$TEMP_OMC"
+
+SOURCE_LABEL=""
+if [ -f "$CANONICAL_CLAUDE_MD" ]; then
+  cp "$CANONICAL_CLAUDE_MD" "$TEMP_OMC"
+  SOURCE_LABEL="$CANONICAL_CLAUDE_MD"
+elif [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && [ -f "${CLAUDE_PLUGIN_ROOT}/docs/CLAUDE.md" ]; then
+  cp "${CLAUDE_PLUGIN_ROOT}/docs/CLAUDE.md" "$TEMP_OMC"
+  SOURCE_LABEL="${CLAUDE_PLUGIN_ROOT}/docs/CLAUDE.md"
+else
+  curl -fsSL "$DOWNLOAD_URL" -o "$TEMP_OMC"
+  SOURCE_LABEL="$DOWNLOAD_URL"
+fi
 
 if [ ! -s "$TEMP_OMC" ]; then
   echo "ERROR: Failed to download CLAUDE.md. Aborting."
   echo "FALLBACK: Manually download from: $DOWNLOAD_URL"
   rm -f "$TEMP_OMC"
+  exit 1
+fi
+
+if ! grep -q '<!-- OMC:START -->' "$TEMP_OMC" || ! grep -q '<!-- OMC:END -->' "$TEMP_OMC"; then
+  echo "ERROR: Canonical CLAUDE.md source is missing required OMC markers: $SOURCE_LABEL" >&2
+  echo "Refusing to install a summarized or malformed CLAUDE.md." >&2
   exit 1
 fi
 
@@ -117,6 +138,11 @@ else
     echo "Migrated existing CLAUDE.md (added OMC markers, preserved old content)"
   fi
   rm -f "$TEMP_OMC"
+fi
+
+if ! grep -q '<!-- OMC:START -->' "$TARGET_PATH" || ! grep -q '<!-- OMC:END -->' "$TARGET_PATH"; then
+  echo "ERROR: Installed CLAUDE.md is missing required OMC markers: $TARGET_PATH" >&2
+  exit 1
 fi
 
 # Extract new version and report

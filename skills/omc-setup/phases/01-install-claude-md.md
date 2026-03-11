@@ -17,13 +17,20 @@ Set `CONFIG_TARGET` to `local` or `global` based on user's choice.
 
 ## Download and Install CLAUDE.md
 
-**MANDATORY**: Always run this command. Do NOT skip. Do NOT use the Write tool. Use bash curl exclusively.
+**MANDATORY**: Always run this command. Do NOT skip. Do NOT use the Write tool. Let the setup script choose the safest canonical source (bundled `docs/CLAUDE.md` first, GitHub fallback only if needed).
 
 ```bash
 bash "${CLAUDE_PLUGIN_ROOT}/scripts/setup-claude-md.sh" <CONFIG_TARGET>
 ```
 
 Replace `<CONFIG_TARGET>` with `local` or `global`.
+
+The script must install the canonical `docs/CLAUDE.md` content and preserve the required
+`<!-- OMC:START -->` / `<!-- OMC:END -->` markers. Do **not** hand-write, summarize, or
+partially reconstruct CLAUDE.md.
+
+After running the script, verify the target file contains both markers. If marker validation
+fails, stop and report the failure instead of writing CLAUDE.md manually.
 
 **FALLBACK** if curl fails:
 Tell user to manually download from:
