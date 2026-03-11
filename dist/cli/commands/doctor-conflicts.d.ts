@@ -2,6 +2,7 @@
  * Conflict diagnostic command
  * Scans for and reports plugin coexistence issues.
  */
+import { inspectUnifiedMcpRegistrySync } from '../../installer/mcp-registry.js';
 export interface ConflictReport {
     hookConflicts: {
         event: string;
@@ -25,6 +26,7 @@ export interface ConflictReport {
     configIssues: {
         unknownFields: string[];
     };
+    mcpRegistrySync: ReturnType<typeof inspectUnifiedMcpRegistrySync>;
     hasConflicts: boolean;
 }
 /**

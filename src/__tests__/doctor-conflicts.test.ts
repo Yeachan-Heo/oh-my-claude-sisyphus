@@ -50,11 +50,15 @@ describe('doctor-conflicts: hook ownership classification', () => {
     }
     mkdirSync(TEST_CLAUDE_DIR, { recursive: true });
     mkdirSync(TEST_PROJECT_CLAUDE_DIR, { recursive: true });
+    process.env.CLAUDE_CONFIG_DIR = TEST_CLAUDE_DIR;
     cwdSpy = vi.spyOn(process, 'cwd').mockReturnValue(TEST_PROJECT_DIR);
   });
 
   afterEach(() => {
     cwdSpy.mockRestore();
+    delete process.env.CLAUDE_CONFIG_DIR;
+    delete process.env.OMC_HOME;
+    delete process.env.CODEX_HOME;
     for (const dir of [TEST_CLAUDE_DIR, TEST_PROJECT_DIR]) {
       if (existsSync(dir)) {
         rmSync(dir, { recursive: true, force: true });
@@ -177,6 +181,74 @@ describe('doctor-conflicts: hook ownership classification', () => {
     expect(postTool?.isOmc).toBe(false);
   });
 
+  it('reports Codex config.toml drift against the unified MCP registry', () => {
+    const registryDir = join(TEST_CLAUDE_DIR, '..', '.omc');
+    const codexDir = join(TEST_CLAUDE_DIR, '..', '.codex');
+    mkdirSync(registryDir, { recursive: true });
+    mkdirSync(codexDir, { recursive: true });
+
+    writeFileSync(join(registryDir, 'mcp-registry.json'), JSON.stringify({
+      gitnexus: { command: 'gitnexus', args: ['mcp'] },
+    }));
+    writeFileSync(join(TEST_CLAUDE_DIR, 'settings.json'), JSON.stringify({
+      mcpServers: {
+        gitnexus: { command: 'gitnexus', args: ['mcp'] },
+      },
+    }));
+    writeFileSync(join(codexDir, 'config.toml'), 'model = "gpt-5"\n');
+
+    process.env.OMC_HOME = registryDir;
+    process.env.CODEX_HOME = codexDir;
+
+    const report = runConflictCheck();
+
+    expect(report.mcpRegistrySync.registryExists).toBe(true);
+    expect(report.mcpRegistrySync.claudeMissing).toEqual([]);
+    expect(report.mcpRegistrySync.codexMissing).toEqual(['gitnexus']);
+    expect(report.hasConflicts).toBe(true);
+
+    delete process.env.OMC_HOME;
+    delete process.env.CODEX_HOME;
+  });
+
+  it('reports mismatched Codex config.toml entries against the unified MCP registry', () => {
+    const registryDir = join(TEST_CLAUDE_DIR, '..', '.omc');
+    const codexDir = join(TEST_CLAUDE_DIR, '..', '.codex');
+    mkdirSync(registryDir, { recursive: true });
+    mkdirSync(codexDir, { recursive: true });
+
+    writeFileSync(join(registryDir, 'mcp-registry.json'), JSON.stringify({
+      gitnexus: { command: 'gitnexus', args: ['mcp'] },
+    }));
+    writeFileSync(join(TEST_CLAUDE_DIR, 'settings.json'), JSON.stringify({
+      mcpServers: {
+        gitnexus: { command: 'gitnexus', args: ['mcp'] },
+      },
+    }));
+    writeFileSync(join(codexDir, 'config.toml'), [
+      '# BEGIN OMC MANAGED MCP REGISTRY',
+      '',
+      '[mcp_servers.gitnexus]',
+      'command = "gitnexus"',
+      'args = ["wrong"]',
+      '',
+      '# END OMC MANAGED MCP REGISTRY',
+      '',
+    ].join('\n'));
+
+    process.env.OMC_HOME = registryDir;
+    process.env.CODEX_HOME = codexDir;
+
+    const report = runConflictCheck();
+
+    expect(report.mcpRegistrySync.codexMissing).toEqual([]);
+    expect(report.mcpRegistrySync.codexMismatched).toEqual(['gitnexus']);
+    expect(report.hasConflicts).toBe(true);
+
+    delete process.env.OMC_HOME;
+    delete process.env.CODEX_HOME;
+  });
+
   it('reports hasConflicts only when non-OMC hooks exist', () => {
     // All-OMC config: no conflicts
     const omcOnlySettings = {
@@ -288,11 +360,15 @@ describe('doctor-conflicts: CLAUDE.md companion file detection (issue #1101)', (
     }
     mkdirSync(TEST_CLAUDE_DIR, { recursive: true });
     mkdirSync(TEST_PROJECT_CLAUDE_DIR, { recursive: true });
+    process.env.CLAUDE_CONFIG_DIR = TEST_CLAUDE_DIR;
     cwdSpy = vi.spyOn(process, 'cwd').mockReturnValue(TEST_PROJECT_DIR);
   });
 
   afterEach(() => {
     cwdSpy.mockRestore();
+    delete process.env.CLAUDE_CONFIG_DIR;
+    delete process.env.OMC_HOME;
+    delete process.env.CODEX_HOME;
     for (const dir of [TEST_CLAUDE_DIR, TEST_PROJECT_DIR]) {
       if (existsSync(dir)) {
         rmSync(dir, { recursive: true, force: true });
@@ -444,11 +520,19 @@ describe('doctor-conflicts: config known fields (issue #1499)', () => {
     }
     mkdirSync(TEST_CLAUDE_DIR, { recursive: true });
     mkdirSync(TEST_PROJECT_CLAUDE_DIR, { recursive: true });
+    mkdirSync(join(TEST_PROJECT_DIR, '.omc'), { recursive: true });
+    mkdirSync(join(TEST_PROJECT_DIR, '.codex'), { recursive: true });
+    process.env.CLAUDE_CONFIG_DIR = TEST_CLAUDE_DIR;
+    process.env.OMC_HOME = join(TEST_PROJECT_DIR, '.omc');
+    process.env.CODEX_HOME = join(TEST_PROJECT_DIR, '.codex');
     cwdSpy = vi.spyOn(process, 'cwd').mockReturnValue(TEST_PROJECT_DIR);
   });
 
   afterEach(() => {
     cwdSpy.mockRestore();
+    delete process.env.CLAUDE_CONFIG_DIR;
+    delete process.env.OMC_HOME;
+    delete process.env.CODEX_HOME;
     for (const dir of [TEST_CLAUDE_DIR, TEST_PROJECT_DIR]) {
       if (existsSync(dir)) {
         rmSync(dir, { recursive: true, force: true });

@@ -16,6 +16,7 @@ import { isWindows, MIN_NODE_VERSION } from './hooks.js';
 import { getRuntimePackageVersion } from '../lib/version.js';
 import { getConfigDir } from '../utils/config-dir.js';
 import { resolveNodeBinary } from '../utils/resolve-node.js';
+import { syncUnifiedMcpRegistryTargets } from './mcp-registry.js';
 /** Claude Code configuration directory */
 export const CLAUDE_CONFIG_DIR = getConfigDir();
 export const AGENTS_DIR = join(CLAUDE_CONFIG_DIR, 'agents');
@@ -942,7 +943,19 @@ export function install(options = {}) {
                 catch {
                     log('  Warning: Could not save node binary path (non-fatal)');
                 }
-                // 4. Single atomic write
+                // 4. Sync unified MCP registry into Claude + Codex config surfaces
+                const mcpSync = syncUnifiedMcpRegistryTargets(existingSettings);
+                existingSettings = mcpSync.settings;
+                if (mcpSync.result.bootstrappedFromClaude) {
+                    log(`  Bootstrapped unified MCP registry: ${mcpSync.result.registryPath}`);
+                }
+                if (mcpSync.result.claudeChanged) {
+                    log(`  Synced ${mcpSync.result.serverNames.length} MCP server(s) into settings.json`);
+                }
+                if (mcpSync.result.codexChanged) {
+                    log(`  Synced ${mcpSync.result.serverNames.length} MCP server(s) into Codex config: ${mcpSync.result.codexConfigPath}`);
+                }
+                // 5. Single atomic write
                 writeFileSync(SETTINGS_FILE, JSON.stringify(existingSettings, null, 2));
                 log('  settings.json updated');
             }
