@@ -65,6 +65,10 @@ const PROTECTION_CONFIGS: Record<SkillProtectionLevel, SkillStateConfig> = {
  * - 'light': Quick utility skills
  * - 'medium': Review/planning skills that run multiple agents
  * - 'heavy': Long-running skills (deepinit, omc-setup)
+ *
+ * IMPORTANT: When adding a new OMC skill, register it here with the
+ * appropriate protection level. Unregistered skills default to 'none'
+ * (no stop-hook protection) to avoid blocking external plugin skills.
  */
 const SKILL_PROTECTION: Record<string, SkillProtectionLevel> = {
   // === Already have mode state → no additional protection ===
@@ -108,35 +112,23 @@ const SKILL_PROTECTION: Record<string, SkillProtectionLevel> = {
 };
 
 // ---------------------------------------------------------------------------
-// OMC skill prefix
-// ---------------------------------------------------------------------------
-
-const OMC_PREFIX = 'oh-my-claudecode:';
-
-// ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
 
 /**
  * Get the protection level for a skill.
  *
- * Only OMC-owned skills (prefixed with 'oh-my-claudecode:') are eligible for
- * stop-hook protection. External plugin skills (e.g., Anthropic's
- * example-skills, document-skills, superpowers, data, etc.) are not managed
- * by OMC and always return 'none'.
+ * Only skills explicitly registered in SKILL_PROTECTION receive stop-hook
+ * protection. Unregistered skills (including external plugin skills like
+ * Anthropic's example-skills, document-skills, superpowers, data, etc.)
+ * default to 'none' so the Stop hook does not block them.
  *
- * Unknown OMC skills still default to 'light' for safety.
+ * Note: bridge.ts strips the 'oh-my-claudecode:' prefix before calling
+ * this function, so skill names arrive in bare form (e.g., 'plan', 'xlsx').
  */
 export function getSkillProtection(skillName: string): SkillProtectionLevel {
-  const lower = skillName.toLowerCase();
-
-  // Non-OMC skills should not be managed by OMC's stop protection
-  if (!lower.startsWith(OMC_PREFIX)) {
-    return 'none';
-  }
-
-  const normalized = lower.replace(new RegExp(`^${OMC_PREFIX}`), '');
-  return SKILL_PROTECTION[normalized] ?? 'light';
+  const normalized = skillName.toLowerCase().replace(/^oh-my-claudecode:/, '');
+  return SKILL_PROTECTION[normalized] ?? 'none';
 }
 
 /**
@@ -179,7 +171,7 @@ export function writeSkillActiveState(
 
   const config = PROTECTION_CONFIGS[protection];
   const now = new Date().toISOString();
-  const normalized = skillName.toLowerCase().replace(new RegExp(`^${OMC_PREFIX}`), '');
+  const normalized = skillName.toLowerCase().replace(/^oh-my-claudecode:/, '');
 
   const state: SkillActiveState = {
     active: true,
