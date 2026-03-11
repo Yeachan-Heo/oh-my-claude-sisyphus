@@ -15,7 +15,13 @@ interface LeaderStalenessResult {
     stale: boolean;
     reason: string;
     pendingTaskCount: number;
+    blockedTaskCount: number;
+    inProgressTaskCount: number;
+    completedTaskCount: number;
+    failedTaskCount: number;
     idleWorkerCount: number;
+    aliveWorkerCount: number;
+    nonReportingWorkerCount: number;
     totalWorkerCount: number;
 }
 export declare function checkLeaderStaleness(params: {

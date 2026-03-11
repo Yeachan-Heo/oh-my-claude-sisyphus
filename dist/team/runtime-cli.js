@@ -9,6 +9,8 @@ import { readdirSync, readFileSync } from 'fs';
 import { readFile, rename, unlink, writeFile } from 'fs/promises';
 import { join } from 'path';
 import { startTeam, monitorTeam, shutdownTeam } from './runtime.js';
+import { appendTeamEvent } from './events.js';
+import { deriveTeamLeaderGuidance } from './leader-nudge-guidance.js';
 import { waitForSentinelReadiness } from './sentinel-gate.js';
 import { isRuntimeV2Enabled, startTeamV2, monitorTeamV2, shutdownTeamV2 } from './runtime-v2.js';
 export function getTerminalStatus(taskCounts, expectedTaskCount) {
@@ -254,6 +256,7 @@ async function main() {
     // ── V2 event-driven poll loop (no watchdog) ────────────────────────────
     if (useV2) {
         process.stderr.write('[runtime-cli] Using runtime v2 (event-driven, no watchdog)\n');
+        let lastLeaderNudgeReason = '';
         while (pollActive) {
             await new Promise(r => setTimeout(r, pollIntervalMs));
             if (!pollActive)
@@ -276,6 +279,36 @@ async function main() {
             }
             catch { /* best-effort panes file write */ }
             process.stderr.write(`[runtime-cli/v2] phase=${snap.phase} pending=${snap.tasks.pending} in_progress=${snap.tasks.in_progress} completed=${snap.tasks.completed} failed=${snap.tasks.failed} dead=${snap.deadWorkers.length} totalMs=${snap.performance.total_ms}\n`);
+            const leaderGuidance = deriveTeamLeaderGuidance({
+                tasks: {
+                    pending: snap.tasks.pending,
+                    blocked: snap.tasks.blocked,
+                    inProgress: snap.tasks.in_progress,
+                    completed: snap.tasks.completed,
+                    failed: snap.tasks.failed,
+                },
+                workers: {
+                    total: snap.workers.length,
+                    alive: snap.workers.filter((worker) => worker.alive).length,
+                    idle: snap.workers.filter((worker) => worker.alive && (worker.status.state === 'idle' || worker.status.state === 'done')).length,
+                    nonReporting: snap.nonReportingWorkers.length,
+                },
+            });
+            process.stderr.write(`[runtime-cli/v2] leader_next_action=${leaderGuidance.nextAction} reason=${leaderGuidance.reason}\n`);
+            if (leaderGuidance.nextAction === 'keep-checking-status') {
+                lastLeaderNudgeReason = '';
+            }
+            if (leaderGuidance.nextAction !== 'keep-checking-status'
+                && leaderGuidance.reason !== lastLeaderNudgeReason) {
+                await appendTeamEvent(teamName, {
+                    type: 'team_leader_nudge',
+                    worker: 'leader-fixed',
+                    reason: leaderGuidance.reason,
+                    next_action: leaderGuidance.nextAction,
+                    message: leaderGuidance.message,
+                }, cwd).catch(() => { });
+                lastLeaderNudgeReason = leaderGuidance.reason;
+            }
             // Terminal check via task counts
             const v2Observed = snap.tasks.pending + snap.tasks.in_progress + snap.tasks.completed + snap.tasks.failed;
             if (v2Observed !== expectedTaskCount) {

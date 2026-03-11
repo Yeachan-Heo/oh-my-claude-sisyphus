@@ -90,6 +90,8 @@ export interface OmxTeamEvent {
   task_id?: string;
   message_id?: string | null;
   reason?: string;
+  next_action?: 'shutdown' | 'reuse-current-team' | 'launch-new-team' | 'keep-checking-status';
+  message?: string;
   created_at: string;
 }
 

@@ -5,6 +5,7 @@
  */
 import type { TeamTaskStatus } from './contracts.js';
 import type { TeamPhase } from './phase-controller.js';
+import type { TeamLeaderNextAction } from './leader-nudge-guidance.js';
 /** Bridge daemon configuration — passed via --config file to bridge-entry.ts */
 export interface BridgeConfig {
     teamName: string;
@@ -281,6 +282,8 @@ export interface TeamEvent {
     task_id?: string;
     message_id?: string | null;
     reason?: string;
+    next_action?: TeamLeaderNextAction;
+    message?: string;
     created_at: string;
 }
 /** Mailbox message between workers */

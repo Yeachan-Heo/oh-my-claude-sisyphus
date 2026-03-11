@@ -25327,6 +25327,13 @@ var init_monitor = __esm({
 });
 
 // src/team/events.ts
+var events_exports = {};
+__export(events_exports, {
+  appendTeamEvent: () => appendTeamEvent,
+  emitMonitorDerivedEvents: () => emitMonitorDerivedEvents,
+  readTeamEvents: () => readTeamEvents,
+  readTeamEventsByType: () => readTeamEventsByType
+});
 async function appendTeamEvent(teamName, event, cwd2) {
   const full = {
     event_id: (0, import_crypto15.randomUUID)(),
@@ -25339,6 +25346,20 @@ async function appendTeamEvent(teamName, event, cwd2) {
   await (0, import_promises12.appendFile)(p, `${JSON.stringify(full)}
 `, "utf8");
   return full;
+}
+async function readTeamEvents(teamName, cwd2) {
+  const p = absPath(cwd2, TeamPaths.events(teamName));
+  if (!(0, import_fs79.existsSync)(p)) return [];
+  try {
+    const raw = await (0, import_promises12.readFile)(p, "utf8");
+    return raw.trim().split("\n").filter(Boolean).map((line) => JSON.parse(line));
+  } catch {
+    return [];
+  }
+}
+async function readTeamEventsByType(teamName, eventType, cwd2) {
+  const all = await readTeamEvents(teamName, cwd2);
+  return all.filter((e) => e.type === eventType);
 }
 async function emitMonitorDerivedEvents(teamName, tasks, workers, previousSnapshot, cwd2) {
   if (!previousSnapshot) return;
@@ -27198,6 +27219,60 @@ var init_runtime = __esm({
     init_worker_bootstrap();
     init_git_worktree();
     init_task_file_ops();
+  }
+});
+
+// src/team/leader-nudge-guidance.ts
+var leader_nudge_guidance_exports = {};
+__export(leader_nudge_guidance_exports, {
+  deriveTeamLeaderGuidance: () => deriveTeamLeaderGuidance
+});
+function activeTaskCount(input) {
+  return input.tasks.pending + input.tasks.blocked + input.tasks.inProgress;
+}
+function deriveTeamLeaderGuidance(input) {
+  const activeTasks = activeTaskCount(input);
+  const totalWorkers = Math.max(0, input.workers.total);
+  const aliveWorkers = Math.max(0, input.workers.alive);
+  const idleWorkers = Math.max(0, input.workers.idle);
+  const nonReportingWorkers = Math.max(0, input.workers.nonReporting);
+  if (activeTasks === 0) {
+    return {
+      nextAction: "shutdown",
+      reason: `all_tasks_terminal:completed=${input.tasks.completed},failed=${input.tasks.failed},workers=${totalWorkers}`,
+      message: "All tasks are in a terminal state. Review any failures, then shut down or clean up the current team."
+    };
+  }
+  if (aliveWorkers === 0) {
+    return {
+      nextAction: "launch-new-team",
+      reason: `no_alive_workers:active=${activeTasks},total_workers=${totalWorkers}`,
+      message: "Active tasks remain, but no workers appear alive. Launch a new team or replace the dead workers."
+    };
+  }
+  if (idleWorkers >= aliveWorkers) {
+    return {
+      nextAction: "reuse-current-team",
+      reason: `all_alive_workers_idle:active=${activeTasks},alive=${aliveWorkers},idle=${idleWorkers}`,
+      message: "Workers are idle while active tasks remain. Reuse the current team and reassign, unblock, or restart the pending work."
+    };
+  }
+  if (nonReportingWorkers >= aliveWorkers) {
+    return {
+      nextAction: "launch-new-team",
+      reason: `all_alive_workers_non_reporting:active=${activeTasks},alive=${aliveWorkers},non_reporting=${nonReportingWorkers}`,
+      message: "Workers are still marked alive, but none are reporting progress. Launch a replacement team or restart the stuck workers."
+    };
+  }
+  return {
+    nextAction: "keep-checking-status",
+    reason: `workers_still_active:active=${activeTasks},alive=${aliveWorkers},idle=${idleWorkers},non_reporting=${nonReportingWorkers}`,
+    message: "Workers still appear active. Keep checking team status before intervening."
+  };
+}
+var init_leader_nudge_guidance = __esm({
+  "src/team/leader-nudge-guidance.ts"() {
+    "use strict";
   }
 });
 
@@ -67327,14 +67402,39 @@ async function handleTeamStatus(teamName, cwd2) {
   const { isRuntimeV2Enabled: isRuntimeV2Enabled2 } = await Promise.resolve().then(() => (init_runtime_v2(), runtime_v2_exports));
   if (isRuntimeV2Enabled2()) {
     const { monitorTeamV2: monitorTeamV22 } = await Promise.resolve().then(() => (init_runtime_v2(), runtime_v2_exports));
+    const { deriveTeamLeaderGuidance: deriveTeamLeaderGuidance2 } = await Promise.resolve().then(() => (init_leader_nudge_guidance(), leader_nudge_guidance_exports));
+    const { readTeamEventsByType: readTeamEventsByType2 } = await Promise.resolve().then(() => (init_events(), events_exports));
     const snapshot2 = await monitorTeamV22(teamName, cwd2);
     if (!snapshot2) {
       console.log(`No team state found for ${teamName}`);
       return;
     }
+    const leaderGuidance = deriveTeamLeaderGuidance2({
+      tasks: {
+        pending: snapshot2.tasks.pending,
+        blocked: snapshot2.tasks.blocked,
+        inProgress: snapshot2.tasks.in_progress,
+        completed: snapshot2.tasks.completed,
+        failed: snapshot2.tasks.failed
+      },
+      workers: {
+        total: snapshot2.workers.length,
+        alive: snapshot2.workers.filter((worker) => worker.alive).length,
+        idle: snapshot2.workers.filter((worker) => worker.alive && (worker.status.state === "idle" || worker.status.state === "done")).length,
+        nonReporting: snapshot2.nonReportingWorkers.length
+      }
+    });
+    const latestLeaderNudge = (await readTeamEventsByType2(teamName, "team_leader_nudge", cwd2)).at(-1);
     console.log(`team=${snapshot2.teamName} phase=${snapshot2.phase}`);
     console.log(`workers: total=${snapshot2.workers.length}`);
     console.log(`tasks: total=${snapshot2.tasks.total} pending=${snapshot2.tasks.pending} blocked=${snapshot2.tasks.blocked} in_progress=${snapshot2.tasks.in_progress} completed=${snapshot2.tasks.completed} failed=${snapshot2.tasks.failed}`);
+    console.log(`leader_next_action=${leaderGuidance.nextAction}`);
+    console.log(`leader_guidance=${leaderGuidance.message}`);
+    if (latestLeaderNudge) {
+      console.log(
+        `latest_leader_nudge action=${latestLeaderNudge.next_action ?? "unknown"} at=${latestLeaderNudge.created_at} reason=${latestLeaderNudge.reason ?? "n/a"}`
+      );
+    }
     return;
   }
   const { monitorTeam: monitorTeam2 } = await Promise.resolve().then(() => (init_runtime(), runtime_exports));

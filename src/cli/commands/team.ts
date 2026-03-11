@@ -472,14 +472,39 @@ async function handleTeamStatus(teamName: string, cwd: string): Promise<void> {
   const { isRuntimeV2Enabled } = await import('../../team/runtime-v2.js');
   if (isRuntimeV2Enabled()) {
     const { monitorTeamV2 } = await import('../../team/runtime-v2.js');
+    const { deriveTeamLeaderGuidance } = await import('../../team/leader-nudge-guidance.js');
+    const { readTeamEventsByType } = await import('../../team/events.js');
     const snapshot = await monitorTeamV2(teamName, cwd);
     if (!snapshot) {
       console.log(`No team state found for ${teamName}`);
       return;
     }
+    const leaderGuidance = deriveTeamLeaderGuidance({
+      tasks: {
+        pending: snapshot.tasks.pending,
+        blocked: snapshot.tasks.blocked,
+        inProgress: snapshot.tasks.in_progress,
+        completed: snapshot.tasks.completed,
+        failed: snapshot.tasks.failed,
+      },
+      workers: {
+        total: snapshot.workers.length,
+        alive: snapshot.workers.filter((worker) => worker.alive).length,
+        idle: snapshot.workers.filter((worker) => worker.alive && (worker.status.state === 'idle' || worker.status.state === 'done')).length,
+        nonReporting: snapshot.nonReportingWorkers.length,
+      },
+    });
+    const latestLeaderNudge = (await readTeamEventsByType(teamName, 'team_leader_nudge', cwd)).at(-1);
     console.log(`team=${snapshot.teamName} phase=${snapshot.phase}`);
     console.log(`workers: total=${snapshot.workers.length}`);
     console.log(`tasks: total=${snapshot.tasks.total} pending=${snapshot.tasks.pending} blocked=${snapshot.tasks.blocked} in_progress=${snapshot.tasks.in_progress} completed=${snapshot.tasks.completed} failed=${snapshot.tasks.failed}`);
+    console.log(`leader_next_action=${leaderGuidance.nextAction}`);
+    console.log(`leader_guidance=${leaderGuidance.message}`);
+    if (latestLeaderNudge) {
+      console.log(
+        `latest_leader_nudge action=${latestLeaderNudge.next_action ?? 'unknown'} at=${latestLeaderNudge.created_at} reason=${latestLeaderNudge.reason ?? 'n/a'}`,
+      );
+    }
     return;
   }
 

@@ -12,6 +12,8 @@
 import { readFile, writeFile, mkdir, rename } from 'fs/promises';
 import { existsSync } from 'fs';
 import { join } from 'path';
+import { appendTeamEvent } from '../team/events.js';
+import { deriveTeamLeaderGuidance } from '../team/leader-nudge-guidance.js';
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -104,7 +106,13 @@ interface LeaderStalenessResult {
   stale: boolean;
   reason: string;
   pendingTaskCount: number;
+  blockedTaskCount: number;
+  inProgressTaskCount: number;
+  completedTaskCount: number;
+  failedTaskCount: number;
   idleWorkerCount: number;
+  aliveWorkerCount: number;
+  nonReportingWorkerCount: number;
   totalWorkerCount: number;
 }
 
@@ -115,7 +123,19 @@ export async function checkLeaderStaleness(params: {
 }): Promise<LeaderStalenessResult> {
   const { stateDir, teamName, nowMs = Date.now() } = params;
   const teamDir = join(stateDir, 'team', teamName);
-  const notStale: LeaderStalenessResult = { stale: false, reason: 'ok', pendingTaskCount: 0, idleWorkerCount: 0, totalWorkerCount: 0 };
+  const notStale: LeaderStalenessResult = {
+    stale: false,
+    reason: 'ok',
+    pendingTaskCount: 0,
+    blockedTaskCount: 0,
+    inProgressTaskCount: 0,
+    completedTaskCount: 0,
+    failedTaskCount: 0,
+    idleWorkerCount: 0,
+    aliveWorkerCount: 0,
+    nonReportingWorkerCount: 0,
+    totalWorkerCount: 0,
+  };
 
   // Read config to get worker list
   const configPath = join(teamDir, 'config.json');
@@ -129,7 +149,8 @@ export async function checkLeaderStaleness(params: {
 
   const staleThresholdMs = resolveLeaderStaleMs();
   let idleWorkerCount = 0;
-  let freshWorkerCount = 0;
+  let aliveWorkerCount = 0;
+  let nonReportingWorkerCount = 0;
 
   for (const worker of workers) {
     const statusPath = join(teamDir, 'workers', worker.name, 'status.json');
@@ -138,9 +159,11 @@ export async function checkLeaderStaleness(params: {
     const heartbeat = await readJsonSafe<{ last_turn_at?: string; alive?: boolean }>(heartbeatPath, {});
 
     if (heartbeat.alive !== false) {
+      aliveWorkerCount++;
       const lastTurnMs = heartbeat.last_turn_at ? Date.parse(heartbeat.last_turn_at) : 0;
-      if (Number.isFinite(lastTurnMs) && (nowMs - lastTurnMs) < staleThresholdMs) {
-        freshWorkerCount++;
+      const isFresh = Number.isFinite(lastTurnMs) && (nowMs - lastTurnMs) < staleThresholdMs;
+      if (!isFresh) {
+        nonReportingWorkerCount++;
       }
     }
 
@@ -152,6 +175,10 @@ export async function checkLeaderStaleness(params: {
   // Count pending/in_progress tasks
   const tasksDir = join(teamDir, 'tasks');
   let pendingTaskCount = 0;
+  let blockedTaskCount = 0;
+  let inProgressTaskCount = 0;
+  let completedTaskCount = 0;
+  let failedTaskCount = 0;
   try {
     if (existsSync(tasksDir)) {
       const { readdir } = await import('fs/promises');
@@ -159,38 +186,88 @@ export async function checkLeaderStaleness(params: {
       for (const entry of entries) {
         if (!entry.endsWith('.json') || entry.startsWith('.')) continue;
         const task = await readJsonSafe<{ status?: string }>(join(tasksDir, entry), {});
-        if (task.status === 'pending' || task.status === 'in_progress' || task.status === 'blocked') {
+        if (task.status === 'pending') {
           pendingTaskCount++;
+        } else if (task.status === 'blocked') {
+          blockedTaskCount++;
+        } else if (task.status === 'in_progress') {
+          inProgressTaskCount++;
+        } else if (task.status === 'completed') {
+          completedTaskCount++;
+        } else if (task.status === 'failed') {
+          failedTaskCount++;
         }
       }
     }
   } catch { /* ignore */ }
 
   const totalWorkerCount = workers.length;
+  const activeTaskCount = pendingTaskCount + blockedTaskCount + inProgressTaskCount;
 
-  // Leader is stale if: all workers are idle AND there are pending tasks
-  if (idleWorkerCount === totalWorkerCount && pendingTaskCount > 0) {
+  // Leader should step in if the team has reached a terminal task state and all workers are idle.
+  if (idleWorkerCount === totalWorkerCount && activeTaskCount === 0 && (completedTaskCount + failedTaskCount) > 0) {
     return {
       stale: true,
-      reason: `all_workers_idle_with_pending_tasks:idle=${idleWorkerCount},pending=${pendingTaskCount}`,
+      reason: `all_workers_idle_with_terminal_tasks:idle=${idleWorkerCount},completed=${completedTaskCount},failed=${failedTaskCount}`,
       pendingTaskCount,
+      blockedTaskCount,
+      inProgressTaskCount,
+      completedTaskCount,
+      failedTaskCount,
       idleWorkerCount,
+      aliveWorkerCount,
+      nonReportingWorkerCount,
       totalWorkerCount,
     };
   }
 
-  // Leader is stale if: no fresh workers AND there are pending tasks
-  if (freshWorkerCount === 0 && pendingTaskCount > 0) {
+  // Leader is stale if: all workers are idle AND active tasks remain
+  if (idleWorkerCount === totalWorkerCount && activeTaskCount > 0) {
     return {
       stale: true,
-      reason: `no_fresh_workers_with_pending_tasks:pending=${pendingTaskCount}`,
+      reason: `all_workers_idle_with_active_tasks:idle=${idleWorkerCount},active=${activeTaskCount}`,
       pendingTaskCount,
+      blockedTaskCount,
+      inProgressTaskCount,
+      completedTaskCount,
+      failedTaskCount,
       idleWorkerCount,
+      aliveWorkerCount,
+      nonReportingWorkerCount,
       totalWorkerCount,
     };
   }
 
-  return { stale: false, reason: 'ok', pendingTaskCount, idleWorkerCount, totalWorkerCount };
+  // Leader is stale if: alive workers exist, but none are reporting progress while active tasks remain.
+  if (aliveWorkerCount > 0 && nonReportingWorkerCount >= aliveWorkerCount && activeTaskCount > 0) {
+    return {
+      stale: true,
+      reason: `no_fresh_workers_with_active_tasks:alive=${aliveWorkerCount},active=${activeTaskCount}`,
+      pendingTaskCount,
+      blockedTaskCount,
+      inProgressTaskCount,
+      completedTaskCount,
+      failedTaskCount,
+      idleWorkerCount,
+      aliveWorkerCount,
+      nonReportingWorkerCount,
+      totalWorkerCount,
+    };
+  }
+
+  return {
+    stale: false,
+    reason: 'ok',
+    pendingTaskCount,
+    blockedTaskCount,
+    inProgressTaskCount,
+    completedTaskCount,
+    failedTaskCount,
+    idleWorkerCount,
+    aliveWorkerCount,
+    nonReportingWorkerCount,
+    totalWorkerCount,
+  };
 }
 
 // ── Nudge execution ────────────────────────────────────────────────────────
@@ -217,6 +294,21 @@ export async function maybeNudgeLeader(params: {
   if (!staleness.stale) {
     return { nudged: false, reason: staleness.reason };
   }
+  const guidance = deriveTeamLeaderGuidance({
+    tasks: {
+      pending: staleness.pendingTaskCount,
+      blocked: staleness.blockedTaskCount,
+      inProgress: staleness.inProgressTaskCount,
+      completed: staleness.completedTaskCount,
+      failed: staleness.failedTaskCount,
+    },
+    workers: {
+      total: staleness.totalWorkerCount,
+      alive: staleness.aliveWorkerCount,
+      idle: staleness.idleWorkerCount,
+      nonReporting: staleness.nonReportingWorkerCount,
+    },
+  });
 
   // Check cooldown
   const nudgeStatePath = join(teamDir, 'leader-nudge-state.json');
@@ -248,7 +340,7 @@ export async function maybeNudgeLeader(params: {
   if (!leaderPaneId) return { nudged: false, reason: 'no_leader_pane_id' };
 
   // Send nudge
-  const message = `[OMC] Leader nudge: ${staleness.idleWorkerCount}/${staleness.totalWorkerCount} workers idle, ${staleness.pendingTaskCount} tasks pending. Please check task assignments. ${INJECT_MARKER}`;
+  const message = `[OMC] Leader nudge (${guidance.nextAction}): ${guidance.message} ${INJECT_MARKER}`;
 
   try {
     await tmux.sendKeys(leaderPaneId, message, true);
@@ -263,8 +355,15 @@ export async function maybeNudgeLeader(params: {
       last_nudge_at_ms: nowMs,
       last_nudge_at: nowIso,
     }).catch(() => {});
+    await appendTeamEvent(teamName, {
+      type: 'team_leader_nudge',
+      worker: 'leader-fixed',
+      reason: guidance.reason,
+      next_action: guidance.nextAction,
+      message: guidance.message,
+    }, params.cwd).catch(() => {});
 
-    return { nudged: true, reason: staleness.reason };
+    return { nudged: true, reason: guidance.reason };
   } catch {
     return { nudged: false, reason: 'tmux_send_failed' };
   }
