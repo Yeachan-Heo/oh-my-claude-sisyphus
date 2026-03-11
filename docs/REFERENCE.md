@@ -10,7 +10,7 @@ Complete reference for oh-my-claudecode. For quick start, see the main [README.m
 - [Configuration](#configuration)
 - [CLI Commands: ask/team/session](#cli-commands-askteamsession)
 - [Legacy MCP Team Runtime Tools (Deprecated)](#legacy-mcp-team-runtime-tools-deprecated)
-- [Agents (28 Total)](#agents-28-total)
+- [Agents (29 Total)](#agents-29-total)
 - [Skills (34 Total)](#skills-34-total)
 - [Slash Commands](#slash-commands)
 - [Hooks System](#hooks-system)
