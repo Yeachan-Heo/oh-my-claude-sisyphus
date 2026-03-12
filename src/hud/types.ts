@@ -110,6 +110,11 @@ export interface SessionHealth {
   health: 'healthy' | 'warning' | 'critical';
 }
 
+export interface LastRequestTokenUsage {
+  inputTokens: number;
+  outputTokens: number;
+}
+
 export interface TranscriptData {
   agents: ActiveAgent[];
   todos: TodoItem[];
@@ -117,6 +122,7 @@ export interface TranscriptData {
   lastActivatedSkill?: SkillInvocation;
   pendingPermission?: PendingPermission;
   thinkingState?: ThinkingState;
+  lastRequestTokenUsage?: LastRequestTokenUsage;
   toolCallCount: number;
   agentCallCount: number;
   skillCallCount: number;
@@ -321,6 +327,9 @@ export interface HudRenderContext {
   /** Session health metrics */
   sessionHealth: SessionHealth | null;
 
+  /** Last-request token usage parsed from transcript message.usage */
+  lastRequestTokenUsage?: LastRequestTokenUsage | null;
+
   /** Installed OMC version (e.g. "4.1.10") */
   omcVersion: string | null;
 
@@ -420,7 +429,7 @@ export interface HudElementConfig {
   sessionHealth: boolean;     // Show session health/duration
   showSessionDuration?: boolean;  // Show session:19m duration display (default: true if sessionHealth is true)
   showHealthIndicator?: boolean;  // Show 🟢/🟡/🔴 health indicator (default: true if sessionHealth is true)
-  showTokens?: boolean;           // Show token count like 79.3k (default: true if sessionHealth is true)
+  showTokens?: boolean;           // Show last-request token usage when enabled (tok:i1.2k/o340)
   useBars: boolean;           // Show visual progress bars instead of/alongside percentages
   showCallCounts?: boolean;   // Show tool/agent/skill call counts on the right of the status line (default: true)
   maxOutputLines: number;     // Max total output lines to prevent input field shrinkage

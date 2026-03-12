@@ -25,6 +25,7 @@ import type {
   ActiveAgent,
   TodoItem,
   PendingPermission,
+  LastRequestTokenUsage,
 } from "./types.js";
 
 // Performance constants
@@ -319,6 +320,11 @@ function processEntry(
 ): void {
   const timestamp = entry.timestamp ? new Date(entry.timestamp) : new Date();
 
+  const usage = extractLastRequestTokenUsage(entry.message?.usage);
+  if (usage) {
+    result.lastRequestTokenUsage = usage;
+  }
+
   // Set session start time from first entry
   if (!result.sessionStart && entry.timestamp) {
     result.sessionStart = timestamp;
@@ -473,10 +479,18 @@ function processEntry(
 // Type Definitions for Transcript Parsing
 // ============================================================================
 
+interface TranscriptUsage {
+  input_tokens?: number;
+  output_tokens?: number;
+  cache_creation_input_tokens?: number;
+  cache_read_input_tokens?: number;
+}
+
 interface TranscriptEntry {
   timestamp?: string;
   message?: {
     content?: ContentBlock[];
+    usage?: TranscriptUsage;
   };
 }
 
@@ -507,6 +521,23 @@ interface TodoWriteInput {
 interface SkillInput {
   skill: string;
   args?: string;
+}
+
+
+function extractLastRequestTokenUsage(usage: TranscriptUsage | undefined): LastRequestTokenUsage | null {
+  if (!usage) return null;
+
+  const inputTokens = typeof usage.input_tokens === "number" ? usage.input_tokens : null;
+  const outputTokens = typeof usage.output_tokens === "number" ? usage.output_tokens : null;
+
+  if (inputTokens == null && outputTokens == null) {
+    return null;
+  }
+
+  return {
+    inputTokens: Math.max(0, Math.round(inputTokens ?? 0)),
+    outputTokens: Math.max(0, Math.round(outputTokens ?? 0)),
+  };
 }
 
 // ============================================================================

@@ -208,6 +208,7 @@ async function main(watchMode = false, skipInit = false): Promise<void> {
         sessionStart,
         getContextPercent(stdin),
       ),
+      lastRequestTokenUsage: transcriptData.lastRequestTokenUsage || null,
       omcVersion,
       updateAvailable,
       toolCallCount: transcriptData.toolCallCount,

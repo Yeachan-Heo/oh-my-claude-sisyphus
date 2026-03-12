@@ -468,3 +468,73 @@ describe('maxWidth wrapMode behavior', () => {
     expect(stringWidth(lines[0] ?? '')).toBeLessThanOrEqual(8);
   });
 });
+
+describe('token usage rendering', () => {
+  const createTokenContext = (): HudRenderContext => ({
+    contextPercent: 30,
+    modelName: 'claude-sonnet-4-5',
+    ralph: null,
+    ultrawork: null,
+    prd: null,
+    autopilot: null,
+    activeAgents: [],
+    todos: [],
+    backgroundTasks: [],
+    cwd: '/home/user/project',
+    lastSkill: null,
+    rateLimitsResult: null,
+    customBuckets: null,
+    pendingPermission: null,
+    thinkingState: null,
+    sessionHealth: { durationMinutes: 10, messageCount: 5, health: 'healthy' },
+    lastRequestTokenUsage: { inputTokens: 1250, outputTokens: 340 },
+    omcVersion: '4.5.4',
+    updateAvailable: null,
+    toolCallCount: 0,
+    agentCallCount: 0,
+    skillCallCount: 0,
+    promptTime: null,
+    apiKeySource: null,
+    profileName: null,
+  });
+
+  const createTokenConfig = (showTokens?: boolean): HudConfig => ({
+    preset: 'focused',
+    elements: {
+      ...DEFAULT_HUD_CONFIG.elements,
+      omcLabel: true,
+      rateLimits: false,
+      ralph: false,
+      autopilot: false,
+      prdStory: false,
+      activeSkills: false,
+      contextBar: false,
+      agents: false,
+      backgroundTasks: false,
+      todos: false,
+      promptTime: false,
+      sessionHealth: true,
+      showTokens,
+      maxOutputLines: 4,
+    },
+    thresholds: DEFAULT_HUD_CONFIG.thresholds,
+    staleTaskThresholdMinutes: 30,
+    contextLimitWarning: {
+      ...DEFAULT_HUD_CONFIG.contextLimitWarning,
+      threshold: 101,
+    },
+    usageApiPollIntervalMs: DEFAULT_HUD_CONFIG.usageApiPollIntervalMs,
+  });
+
+  it('shows last-request token usage when enabled', async () => {
+    const result = await render(createTokenContext(), createTokenConfig(true));
+
+    expect(result).toContain('tok:i1.3k/o340');
+  });
+
+  it('omits last-request token usage when explicitly disabled', async () => {
+    const result = await render(createTokenContext(), createTokenConfig(false));
+
+    expect(result).not.toContain('tok:');
+  });
+});
