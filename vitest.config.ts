@@ -1,3 +1,4 @@
+import path from 'path';
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
@@ -22,7 +23,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@': '/home/bellman/Workspace/Oh-My-ClaudeCode-OMC-b2.0.0/src',
+      '@': path.resolve(__dirname, 'src'),
     },
   },
 });
