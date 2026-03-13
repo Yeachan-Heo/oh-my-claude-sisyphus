@@ -20,6 +20,7 @@ import {
 } from '../lib/worktree-paths.js';
 import { atomicWriteJsonSync } from '../lib/atomic-write.js';
 import { validatePayload } from '../lib/payload-limits.js';
+import { canClearStateForSession } from '../lib/mode-state-io.js';
 import {
   isModeActive,
   getActiveModes,
@@ -469,8 +470,7 @@ export const stateClearTool: ToolDefinition<{
             const legacyPath = getStateFilePath(root, mode as ExecutionMode);
             if (existsSync(legacyPath)) {
               const raw = JSON.parse(readFileSync(legacyPath, 'utf-8')) as Record<string, unknown>;
-              const meta = raw._meta as Record<string, unknown> | undefined;
-              if (!meta || meta.sessionId === sessionId) {
+              if (canClearStateForSession(raw, sessionId)) {
                 unlinkSync(legacyPath);
                 ghostCleaned = true;
               }
@@ -519,8 +519,7 @@ export const stateClearTool: ToolDefinition<{
           const legacyPath = resolveStatePath(mode, root);
           if (existsSync(legacyPath)) {
             const raw = JSON.parse(readFileSync(legacyPath, 'utf-8')) as Record<string, unknown>;
-            const meta = raw._meta as Record<string, unknown> | undefined;
-            if (!meta || meta.sessionId === sessionId) {
+            if (canClearStateForSession(raw, sessionId)) {
               unlinkSync(legacyPath);
               ghostCleaned = true;
             }

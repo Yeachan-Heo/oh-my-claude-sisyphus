@@ -664,10 +664,13 @@ async function main() {
           // Fire-and-forget notification
           sendStopNotification('autopilot', autopilot.state, sessionId, directory).catch(() => {});
 
+          const cancelGuidance = typeof autopilot.state.session_id === "string" && autopilot.state.session_id === sessionId
+            ? " When all phases are complete, run /oh-my-claudecode:cancel to cleanly exit and clean up this session's autopilot state files. If cancel fails, retry with /oh-my-claudecode:cancel --force."
+            : "";
           console.log(
             JSON.stringify({
               continue: false, decision: "block",
-              reason: `[AUTOPILOT - Phase: ${phase}] Autopilot not complete. Continue working. When all phases are complete, run /oh-my-claudecode:cancel to cleanly exit and clean up state files. If cancel fails, retry with /oh-my-claudecode:cancel --force.`,
+              reason: `[AUTOPILOT - Phase: ${phase}] Autopilot not complete. Continue working.${cancelGuidance}`,
             }),
           );
           return;

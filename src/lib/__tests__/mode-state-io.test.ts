@@ -251,6 +251,32 @@ describe('mode-state-io', () => {
       expect(existsSync(legacyPath)).toBe(true);
     });
 
+    it('should NOT delete legacy file owned by a different session via _meta.sessionId', () => {
+      const stateDir = join(tempDir, '.omc', 'state');
+      mkdirSync(stateDir, { recursive: true });
+      const legacyPath = join(stateDir, 'autopilot-state.json');
+      writeFileSync(
+        legacyPath,
+        JSON.stringify({ active: true, _meta: { sessionId: 'session-other-321' } }),
+      );
+
+      clearModeStateFile('autopilot', tempDir, 'session-mine-123');
+      expect(existsSync(legacyPath)).toBe(true);
+    });
+
+    it('should delete legacy file owned by this session via _meta.sessionId', () => {
+      const stateDir = join(tempDir, '.omc', 'state');
+      mkdirSync(stateDir, { recursive: true });
+      const legacyPath = join(stateDir, 'autopilot-state.json');
+      writeFileSync(
+        legacyPath,
+        JSON.stringify({ active: true, _meta: { sessionId: 'session-mine-123' } }),
+      );
+
+      clearModeStateFile('autopilot', tempDir, 'session-mine-123');
+      expect(existsSync(legacyPath)).toBe(false);
+    });
+
     it('should return true when file does not exist (already absent)', () => {
       const result = clearModeStateFile('ralph', tempDir);
       expect(result).toBe(true);

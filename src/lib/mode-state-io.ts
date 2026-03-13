@@ -14,6 +14,33 @@ import {
   ensureOmcDir,
 } from './worktree-paths.js';
 
+export function getStateSessionOwner(state: Record<string, unknown> | null | undefined): string | undefined {
+  if (!state || typeof state !== 'object') {
+    return undefined;
+  }
+
+  const meta = state._meta;
+  if (meta && typeof meta === 'object') {
+    const metaSessionId = (meta as Record<string, unknown>).sessionId;
+    if (typeof metaSessionId === 'string' && metaSessionId) {
+      return metaSessionId;
+    }
+  }
+
+  const topLevelSessionId = state.session_id;
+  return typeof topLevelSessionId === 'string' && topLevelSessionId
+    ? topLevelSessionId
+    : undefined;
+}
+
+export function canClearStateForSession(
+  state: Record<string, unknown> | null | undefined,
+  sessionId: string,
+): boolean {
+  const ownerSessionId = getStateSessionOwner(state);
+  return !ownerSessionId || ownerSessionId === sessionId;
+}
+
 // ---------------------------------------------------------------------------
 // Internal helpers
 // ---------------------------------------------------------------------------
@@ -134,9 +161,9 @@ export function clearModeStateFile(
     if (existsSync(legacyPath)) {
       try {
         const content = readFileSync(legacyPath, 'utf-8');
-        const legacyState = JSON.parse(content);
+        const legacyState = JSON.parse(content) as Record<string, unknown>;
         // Only remove if it belongs to this session or is unowned
-        if (!legacyState.session_id || legacyState.session_id === sessionId) {
+        if (canClearStateForSession(legacyState, sessionId)) {
           unlinkSync(legacyPath);
         }
       } catch {

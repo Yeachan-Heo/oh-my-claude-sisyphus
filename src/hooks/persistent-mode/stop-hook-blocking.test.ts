@@ -600,6 +600,31 @@ describe("Stop Hook Blocking Contract", () => {
       expect(output.decision).toBeUndefined();
     });
 
+
+    it("omits cancel guidance for legacy autopilot state without a session id in cjs script", () => {
+      const stateDir = join(tempDir, ".omc", "state");
+      mkdirSync(stateDir, { recursive: true });
+      writeFileSync(
+        join(stateDir, "autopilot-state.json"),
+        JSON.stringify({
+          active: true,
+          phase: "execution",
+          reinforcement_count: 0,
+          last_checked_at: new Date().toISOString(),
+          started_at: new Date().toISOString(),
+        })
+      );
+
+      const output = runScript({
+        directory: tempDir,
+      });
+
+      expect(output.continue).toBe(false);
+      expect(output.decision).toBe("block");
+      expect(output.reason).toContain("AUTOPILOT");
+      expect(output.reason).not.toContain('/oh-my-claudecode:cancel');
+    });
+
     it("fails open for unknown Team phase in cjs script", () => {
       const sessionId = "team-phase-cjs";
       const sessionDir = join(tempDir, ".omc", "state", "sessions", sessionId);

@@ -117,6 +117,34 @@ describe('cancel-integration', () => {
       // Legacy file should remain (belongs to different session)
       expect(existsSync(join(TEST_DIR, '.omc', 'state', 'ralph-state.json'))).toBe(true);
     });
+
+
+    it('should NOT delete legacy autopilot ghost file owned by a different session via top-level session_id', async () => {
+      const sessionId = 'autopilot-session-mine';
+      const otherSessionId = 'autopilot-session-other';
+      const sessionDir = join(TEST_DIR, '.omc', 'state', 'sessions', sessionId);
+      mkdirSync(sessionDir, { recursive: true });
+
+      writeFileSync(
+        join(sessionDir, 'autopilot-state.json'),
+        JSON.stringify({ active: true, phase: 'execution', session_id: sessionId })
+      );
+
+      writeFileSync(
+        join(TEST_DIR, '.omc', 'state', 'autopilot-state.json'),
+        JSON.stringify({ active: true, phase: 'execution', session_id: otherSessionId })
+      );
+
+      const result = await stateClearTool.handler({
+        mode: 'autopilot',
+        session_id: sessionId,
+        workingDirectory: TEST_DIR,
+      });
+
+      expect(existsSync(join(sessionDir, 'autopilot-state.json'))).toBe(false);
+      expect(existsSync(join(TEST_DIR, '.omc', 'state', 'autopilot-state.json'))).toBe(true);
+      expect(result.content[0].text).not.toContain('ghost legacy file also removed');
+    });
   });
 
   describe('2. Force cancel (no session_id)', () => {
