@@ -338,6 +338,20 @@ Forward Claude Code session events to an [OpenClaw](https://openclaw.ai/) gatewa
 
 See `scripts/openclaw-gateway-demo.mjs` for a reference gateway that relays OpenClaw payloads to Discord via ClawdBot.
 
+## Uninstall
+
+You can uninstall Oh My Claude by removing the global `npm` package and asking Claude for a little help:
+
+```
+npm uninstall -g oh-my-claude-sisyphus
+```
+
+Ask Claude to remove the plugin and it's artifacts (the HUD). Open up Claude Code and:
+
+```
+Uninstall the oh-my-claude plugin and its HUD. Also uninstall the global HUD at ~/.omc.
+```
+
 ---
 
 ## Documentation
