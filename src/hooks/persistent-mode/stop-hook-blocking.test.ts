@@ -296,7 +296,7 @@ describe("Stop Hook Blocking Contract", () => {
       rmSync(tempDir, { recursive: true, force: true });
     });
 
-    it("returns continue: false when ralph is active", () => {
+    it("returns decision: block when ralph is active", () => {
       const sessionId = "ralph-mjs-test";
       const sessionDir = join(tempDir, ".omc", "state", "sessions", sessionId);
       mkdirSync(sessionDir, { recursive: true });
@@ -314,11 +314,10 @@ describe("Stop Hook Blocking Contract", () => {
       );
 
       const output = runScript({ directory: tempDir, sessionId });
-      expect(output.continue).toBe(false);
       expect(output.decision).toBe("block");
     });
 
-    it("returns continue: false when ultrawork is active", () => {
+    it("returns decision: block when ultrawork is active", () => {
       const sessionId = "ultrawork-mjs-test";
       const sessionDir = join(tempDir, ".omc", "state", "sessions", sessionId);
       mkdirSync(sessionDir, { recursive: true });
@@ -335,7 +334,6 @@ describe("Stop Hook Blocking Contract", () => {
       );
 
       const output = runScript({ directory: tempDir, sessionId });
-      expect(output.continue).toBe(false);
       expect(output.decision).toBe("block");
     });
 
@@ -619,7 +617,6 @@ describe("Stop Hook Blocking Contract", () => {
         directory: tempDir,
       });
 
-      expect(output.continue).toBe(false);
       expect(output.decision).toBe("block");
       expect(output.reason).toContain("AUTOPILOT");
       expect(output.reason).not.toContain('/oh-my-claudecode:cancel');
