@@ -135,6 +135,16 @@ describe('runClaude — exit code propagation', () => {
       (resolveLaunchPolicy as ReturnType<typeof vi.fn>).mockReturnValue('direct');
     });
 
+    it('bypasses tmux for --print mode', () => {
+      (execFileSync as ReturnType<typeof vi.fn>).mockReturnValue(Buffer.from(''));
+
+      runClaude('/tmp', ['--print'], 'sid');
+
+      expect(resolveLaunchPolicy).toHaveBeenCalledWith(process.env, ['--print']);
+      expect(vi.mocked(execFileSync).mock.calls.find(([cmd]) => cmd === 'tmux')).toBeUndefined();
+      expect(vi.mocked(execFileSync).mock.calls.find(([cmd]) => cmd === 'claude')?.[1]).toEqual(['--print']);
+    });
+
     it('propagates Claude non-zero exit code', () => {
       const err = Object.assign(new Error('Command failed'), { status: 2 });
       (execFileSync as ReturnType<typeof vi.fn>).mockImplementation(() => { throw err; });

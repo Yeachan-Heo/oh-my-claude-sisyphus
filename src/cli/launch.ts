@@ -253,7 +253,7 @@ export async function preLaunch(_cwd: string, _sessionId: string): Promise<void>
  * 3. direct: tmux not available, run claude directly
  */
 export function runClaude(cwd: string, args: string[], sessionId: string): void {
-  const policy = resolveLaunchPolicy(process.env);
+  const policy = resolveLaunchPolicy(process.env, args);
 
   switch (policy) {
     case 'inside-tmux':
