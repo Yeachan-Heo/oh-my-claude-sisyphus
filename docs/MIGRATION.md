@@ -627,39 +627,7 @@ Version 3.4.0 introduces powerful parallel execution modes and advanced workflow
 
 ### What's New
 
-#### 1. Ultrapilot: Parallel Autopilot
-
-Execute complex tasks with up to 5 concurrent workers for 3-5x speedup:
-
-```bash
-/oh-my-claudecode:ultrapilot "build a fullstack todo app"
-```
-
-**Key Features:**
-
-- Automatic task decomposition into parallelizable subtasks
-- File ownership coordination to prevent conflicts
-- Parallel execution with intelligent coordination
-- State files: `.omc/state/ultrapilot-state.json`, `.omc/state/ultrapilot-ownership.json`
-
-**Best for:** Multi-component systems, fullstack apps, large refactoring
-
-#### 2. Swarm: Coordinated Agent Teams
-
-N coordinated agents with atomic task claiming:
-
-```bash
-/oh-my-claudecode:swarm 5:executor "fix all TypeScript errors"
-```
-
-**Key Features:**
-
-- Shared task pool with atomic claiming (prevents duplicate work)
-- 5-minute timeout per task with auto-release
-- Scales from 2 to 10 workers
-- Clean completion when all tasks done
-
-#### 3. Pipeline: Sequential Agent Chaining
+#### 1. Pipeline: Sequential Agent Chaining
 
 Chain agents with data passing between stages:
 
@@ -685,7 +653,7 @@ Smart cancellation that auto-detects active mode:
 # Or just say: "stop", "cancel", "abort"
 ```
 
-**Auto-detects and cancels:** autopilot, ultrapilot, ralph, ultrawork, ultraqa, swarm, pipeline
+**Auto-detects and cancels:** autopilot, ralph, ultrawork, ultraqa, pipeline
 
 **Deprecation Notice:**
 Individual cancel commands are deprecated but still work:
@@ -782,9 +750,9 @@ Once upgraded, you automatically gain access to:
 
 | Scenario                | Recommended Mode | Why                                            |
 | ----------------------- | ---------------- | ---------------------------------------------- |
-| Multi-component systems | `ultrapilot`     | Parallel workers handle independent components |
-| Many small fixes        | `swarm`          | Atomic task claiming prevents duplicate work   |
-| Sequential dependencies | `pipeline`       | Data passes between stages                     |
+| Multi-component systems | `team N:executor` | Parallel workers handle independent components |
+| Many small fixes        | `team N:executor` | Atomic task claiming prevents duplicate work   |
+| Sequential dependencies | `pipeline`        | Data passes between stages                     |
 | Single complex task     | `autopilot`      | Full autonomous execution                      |
 | Must complete           | `ralph`          | Persistence guarantee                          |
 
@@ -815,21 +783,15 @@ After upgrading, verify new features:
    npm list -g oh-my-claudecode
    ```
 
-2. **Test ultrapilot**:
-
-   ```bash
-   /oh-my-claudecode:ultrapilot "create a simple React component"
-   ```
-
-3. **Test unified cancel**:
+2. **Test unified cancel**:
 
    ```bash
    /oh-my-claudecode:cancel
    ```
 
-4. **Check state directory**:
+3. **Check state directory**:
    ```bash
-   ls -la .omc/state/  # Should see ultrapilot-state.json after running ultrapilot
+   ls -la .omc/state/
    ```
 
 ---

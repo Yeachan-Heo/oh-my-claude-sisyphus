@@ -66,35 +66,6 @@ Project-level type checking via `lsp_diagnostics_directory` tool.
 
 Background agents can be resumed with full context via `resume-session` tool.
 
-## Ultrapilot (v3.4)
-
-Parallel autopilot with up to 20 concurrent workers for 3-5x faster execution.
-
-**Trigger:** "ultrapilot", "parallel build", "swarm build"
-
-**How it works:**
-1. Task decomposition engine breaks complex tasks into parallelizable subtasks
-2. File ownership coordinator assigns non-overlapping file sets to workers
-3. Workers execute in parallel, coordinator manages shared files
-4. Results integrated with conflict detection
-
-**Best for:** Multi-component systems, fullstack apps, large refactoring
-
-**State files:**
-- `.omc/state/ultrapilot-state.json` - Session state
-- `.omc/state/ultrapilot-ownership.json` - File ownership
-
-## Swarm (v3.4)
-
-N coordinated agents with atomic task claiming from shared pool.
-
-**Usage:** `/swarm 5:executor "fix all TypeScript errors"`
-
-**Features:**
-- Shared task list with pending/claimed/done status
-- 5-minute timeout per task with auto-release
-- Clean completion when all tasks done
-
 ## Pipeline (v3.4)
 
 Sequential agent chaining with data passing between stages.
@@ -117,7 +88,7 @@ Smart cancellation that auto-detects active mode.
 
 **Usage:** `/cancel` or just say "cancelomc", "stopomc"
 
-Auto-detects and cancels: autopilot, ultrapilot, ralph, ultrawork, ultraqa, swarm, pipeline
+Auto-detects and cancels: autopilot, ralph, ultrawork, ultraqa, pipeline
 Use `--force` or `--all` to clear ALL states.
 
 ## Verification Module (v3.4)
@@ -141,12 +112,10 @@ Standardized state file locations.
 |------|-----------|
 | ralph | `ralph-state.json` |
 | autopilot | `autopilot-state.json` |
-| ultrapilot | `ultrapilot-state.json` |
 | ultrawork | `ultrawork-state.json` |
 |  | `-state.json` |
 | ultraqa | `ultraqa-state.json` |
 | pipeline | `pipeline-state.json` |
-| swarm | `swarm-summary.json` + `swarm-active.marker` |
 
 **Important:** Never store OMC state in `~/.claude/` - that directory is reserved for Claude Code itself.
 

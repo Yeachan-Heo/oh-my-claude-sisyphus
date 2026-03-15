@@ -11,16 +11,6 @@ autopilot (autonomous end-to-end)
 ├── includes: ultraqa (QA cycling)
 └── includes: plan (strategic thinking)
 
-ultrapilot (parallel autopilot)
-├── includes: file ownership partitioning
-├── includes: worker coordination (up to 20 workers)
-└── falls back to: autopilot (if not parallelizable)
-
-swarm (N-agent coordination)
-├── includes: SQLite task claiming
-├── includes: heartbeat monitoring
-└── orthogonal to: autopilot/ultrapilot (different paradigm)
-
  (token efficiency ONLY)
 └── modifies: agent tier selection (prefer haiku/sonnet)
     (does NOT include persistence - that's ralph's job)
@@ -38,9 +28,7 @@ ultrawork (parallelism engine)
 
 | Mode | Type | Includes | Mutually Exclusive With |
 |------|------|----------|------------------------|
-| autopilot | Standalone | ralph, ultraqa, plan | ultrapilot |
-| ultrapilot | Standalone | file ownership, workers | autopilot |
-| swarm | Standalone | SQLite claiming | - |
+| autopilot | Standalone | ralph, ultraqa, plan | - |
 | ralph | Wrapper | ultrawork | - |
 | ultrawork | Component | - | - |
 |  | Modifier | - | - |
@@ -51,7 +39,7 @@ ultrawork (parallelism engine)
 ```
 Want autonomous execution?
 ├── YES: Is task parallelizable into 3+ independent components?
-│   ├── YES: ultrapilot (parallel autopilot with file ownership)
+│   ├── YES: team N:executor (parallel autonomous with file ownership)
 │   └── NO: autopilot (sequential with ralph phases)
 └── NO: Want parallel execution with manual oversight?
     ├── YES: Do you want cost optimization?
@@ -62,7 +50,7 @@ Want autonomous execution?
         └── NO: Standard orchestration (delegate to agents directly)
 
 Have many similar independent tasks (e.g., "fix 47 errors")?
-└── YES: swarm (N agents claiming from task pool)
+└── YES: team N:executor (N agents claiming from task pool)
 ```
 
 ## Mode Differentiation Matrix
@@ -70,8 +58,7 @@ Have many similar independent tasks (e.g., "fix 47 errors")?
 | Mode | Best For | Parallelism | Persistence | Verification | File Ownership |
 |------|----------|-------------|-------------|--------------|----------------|
 | autopilot | "Build me X" | Via ralph | Yes | Yes | N/A |
-| ultrapilot | Multi-component | 20 workers | Yes | Yes | Partitioned |
-| swarm | Homogeneous tasks | N workers | Per-task | Per-task | Per-task |
+| team | Multi-component/homogeneous | N workers | Per-task | Per-task | Per-task |
 | ralph | "Don't stop" | Via ultrawork | Yes | Mandatory | N/A |
 | ultrawork | Parallel only | Yes | No | No | N/A |
 |  | Cost savings | Modifier | No | No | N/A |
@@ -79,8 +66,8 @@ Have many similar independent tasks (e.g., "fix 47 errors")?
 ## Quick Reference
 
 **Just want to build something?** → `autopilot`
-**Building multi-component system?** → `ultrapilot`
-**Fixing many similar issues?** → `swarm`
+**Building multi-component system?** → `team N:executor`
+**Fixing many similar issues?** → `team N:executor`
 **Want control over execution?** → `ultrawork`
 **Need verified completion?** → `ralph`
 **Want to save tokens?** → `` (combine with other modes)
@@ -93,7 +80,7 @@ Valid combinations:
 - `eco autopilot` = Full autonomous with cost optimization
 
 Invalid combinations:
-- `autopilot ultrapilot` = Mutually exclusive (both are standalone)
+- `autopilot team` = Mutually exclusive (both are standalone)
 - `` alone = Not useful (needs an execution mode)
 
 ## State Management
@@ -108,12 +95,10 @@ All mode state files use standardized locations:
 |------|-----------|
 | ralph | `ralph-state.json` |
 | autopilot | `autopilot-state.json` |
-| ultrapilot | `ultrapilot-state.json` |
 | ultrawork | `ultrawork-state.json` |
 |  | `-state.json` |
 | ultraqa | `ultraqa-state.json` |
 | pipeline | `pipeline-state.json` |
-| swarm | `swarm-summary.json` + `swarm-active.marker` |
 
 **Important:** Never store OMC state in `~/.claude/` - that directory is reserved for Claude Code itself.
 

@@ -593,39 +593,7 @@ npm update -g oh-my-claude-sisyphus
 
 ### 새로운 기능
 
-#### 1. ultrapilot: 병렬 autopilot
-
-최대 5개의 동시 워커로 복잡한 작업을 3-5배 빠르게 실행합니다:
-
-```bash
-/oh-my-claudecode:ultrapilot "build a fullstack todo app"
-```
-
-**주요 기능:**
-
-- 병렬화 가능한 하위 작업으로의 자동 작업 분해
-- 충돌을 방지하는 파일 소유권 조정
-- 지능적 조정을 통한 병렬 실행
-- 상태 파일: `.omc/state/ultrapilot-state.json`, `.omc/state/ultrapilot-ownership.json`
-
-**적합한 경우:** 멀티 컴포넌트 시스템, 풀스택 앱, 대규모 리팩토링
-
-#### 2. swarm: 조정된 에이전트 팀
-
-원자적 작업 클레이밍을 가진 N개의 조정된 에이전트:
-
-```bash
-/oh-my-claudecode:swarm 5:executor "fix all TypeScript errors"
-```
-
-**주요 기능:**
-
-- 원자적 클레이밍이 있는 공유 작업 풀 (중복 작업 방지)
-- 작업당 5분 타임아웃 및 자동 해제
-- 2개에서 10개 워커까지 확장 가능
-- 모든 작업 완료 시 깔끔한 종료
-
-#### 3. pipeline: 순차적 에이전트 체이닝
+#### 1. pipeline: 순차적 에이전트 체이닝
 
 스테이지 간 데이터 전달을 가진 에이전트 체이닝:
 
@@ -665,7 +633,7 @@ npm update -g oh-my-claude-sisyphus
 # 또는 그냥: "stop", "cancel", "abort"
 ```
 
-**자동 감지 및 취소:** autopilot, ultrapilot, ralph, ultrawork, ultraqa, swarm, pipeline
+**자동 감지 및 취소:** autopilot, ralph, ultrawork, ultraqa, pipeline
 
 **폐기 안내:**
 개별 취소 명령어는 폐기되었지만 여전히 작동합니다:
@@ -768,8 +736,6 @@ omc config-agent-tiers --disable-low
 
 업그레이드 후 자동으로 다음에 접근할 수 있습니다:
 
-- ultrapilot (병렬 autopilot)
-- swarm 조정
 - pipeline 워크플로우
 - ecomode 실행
 - 통합 cancel 명령어
@@ -781,8 +747,8 @@ omc config-agent-tiers --disable-low
 
 | 시나리오             | 추천 모드    | 이유                                    |
 | -------------------- | ------------ | --------------------------------------- |
-| 멀티 컴포넌트 시스템 | `ultrapilot` | 병렬 워커가 독립적인 컴포넌트를 처리    |
-| 많은 소규모 수정     | `swarm`      | 원자적 작업 클레이밍으로 중복 작업 방지 |
+| 멀티 컴포넌트 시스템 | `team N:executor` | 병렬 워커가 독립적인 컴포넌트를 처리    |
+| 많은 소규모 수정     | `team N:executor` | 원자적 작업 클레이밍으로 중복 작업 방지 |
 | 순차적 의존성        | `pipeline`   | 스테이지 간 데이터 전달                 |
 | 예산 고려            | ``           | 스마트 라우팅으로 30-50% 토큰 절약      |
 | 단일 복잡한 작업     | `autopilot`  | 완전 자율 실행                          |
@@ -817,21 +783,15 @@ omc config-agent-tiers --disable-low
    npm list -g oh-my-claude-sisyphus
    ```
 
-2. **ultrapilot 테스트**:
-
-   ```bash
-   /oh-my-claudecode:ultrapilot "create a simple React component"
-   ```
-
-3. **통합 cancel 테스트**:
+2. **통합 cancel 테스트**:
 
    ```bash
    /oh-my-claudecode:cancel
    ```
 
-4. **상태 디렉토리 확인**:
+3. **상태 디렉토리 확인**:
    ```bash
-   ls -la .omc/state/  # ultrapilot 실행 후 ultrapilot-state.json이 보여야 합니다
+   ls -la .omc/state/
    ```
 
 ---

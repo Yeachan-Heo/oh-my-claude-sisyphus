@@ -108,7 +108,7 @@ Task(
 상태 파일은 표준화된 위치를 따릅니다:
 
 **로컬 프로젝트 상태:**
-- `.omc/state/{name}.json` - 세션 상태 (ultrapilot, swarm, pipeline)
+- `.omc/state/{name}.json` - 세션 상태 (pipeline, team)
 - `.omc/notepads/{plan-name}/` - 계획 범위의 지식 캡처
 
 **글로벌 상태:**

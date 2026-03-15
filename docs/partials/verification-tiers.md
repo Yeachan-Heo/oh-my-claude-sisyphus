@@ -94,7 +94,7 @@ Estimated savings: ~40% reduction in verification costs by using tiered system v
 
 ## Usage in Modes
 
-All persistence modes (ralph, autopilot, ultrapilot) should use the tier-selector before spawning verification agents:
+All persistence modes (ralph, autopilot) should use the tier-selector before spawning verification agents:
 
 ```typescript
 import { selectVerificationTier, getVerificationAgent } from '../verification/tier-selector';

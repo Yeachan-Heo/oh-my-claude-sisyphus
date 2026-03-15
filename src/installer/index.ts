@@ -237,8 +237,7 @@ export function isOmcStatusLine(statusLine: unknown): boolean {
 
 /**
  * Known OMC hook script filenames installed into .claude/hooks/.
- * Must be kept in sync with getHookScripts() in hooks.ts and
- * HOOKS_SETTINGS_CONFIG_NODE command entries.
+ * Must be kept in sync with HOOKS_SETTINGS_CONFIG_NODE command entries.
  */
 const OMC_HOOK_FILENAMES = new Set([
   'keyword-detector.mjs',

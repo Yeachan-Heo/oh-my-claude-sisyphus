@@ -108,7 +108,7 @@ Skills compose in layers:
 State files follow standardized locations:
 
 **Local Project State:**
-- `.omc/state/{name}.json` - Session state (ultrapilot, swarm, pipeline)
+- `.omc/state/{name}.json` - Session state (pipeline, team)
 - `.omc/notepads/{plan-name}/` - Plan-scoped wisdom capture
 
 **Global State:**

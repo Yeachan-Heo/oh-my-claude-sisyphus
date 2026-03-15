@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { existsSync, rmSync, mkdirSync } from 'fs';
 import { join } from 'path';
-import { initJobDb, closeJobDb, upsertJob, getJob } from '../mcp/job-state-db.js';
+import { initJobDb, closeJobDb, upsertJob, getJob } from '../lib/job-state-db.js';
 import { handleCheckJobStatus, handleListJobs, handleKillJob } from '../mcp/job-management.js';
 import type { JobStatus } from '../mcp/prompt-persistence.js';
 

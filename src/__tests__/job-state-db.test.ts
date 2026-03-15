@@ -17,7 +17,7 @@ import {
   cleanupOldJobs,
   getJobStats,
   getJobSummaryForPreCompact,
-} from '../mcp/job-state-db.js';
+} from '../lib/job-state-db.js';
 import type { JobStatus } from '../mcp/prompt-persistence.js';
 
 // Test fixtures
