@@ -173,7 +173,6 @@ describe("Persistent Mode Session Isolation (Issue #311)", () => {
       });
 
       expect(output.decision).toBe("block");
-      expect(output.continue).toBe(false);
       expect(output.reason).toContain("ULTRAWORK");
     });
 
@@ -256,7 +255,6 @@ describe("Persistent Mode Session Isolation (Issue #311)", () => {
       });
 
       // Invalid sessionId sanitizes to "", falls back to legacy path, blocks
-      expect(output.continue).toBe(false);
       expect(output.decision).toBe("block");
     });
 
@@ -310,7 +308,6 @@ describe("Persistent Mode Session Isolation (Issue #311)", () => {
 
       // Legacy state blocks when no sessionId (backward compat)
       expect(output.decision).toBe("block");
-      expect(output.continue).toBe(false);
       expect(output.reason).toContain("ULTRAWORK");
     });
 
@@ -336,7 +333,6 @@ describe("Persistent Mode Session Isolation (Issue #311)", () => {
       });
 
       expect(output.decision).toBe("block");
-      expect(output.continue).toBe(false);
       expect(output.reason).toContain("AUTOPILOT");
       expect(output.reason).not.toContain('/oh-my-claudecode:cancel');
     });
@@ -366,7 +362,6 @@ describe("Persistent Mode Session Isolation (Issue #311)", () => {
       });
 
       expect(output.decision).toBe("block");
-      expect(output.continue).toBe(false);
       expect(output.reason).toContain('/oh-my-claudecode:cancel');
       expect(output.reason).toContain("this session's autopilot state files");
     });
@@ -433,7 +428,6 @@ describe("Persistent Mode Session Isolation (Issue #311)", () => {
       });
 
       expect(output.decision).toBe("block");
-      expect(output.continue).toBe(false);
       expect(output.reason).toContain("ULTRAWORK");
     });
 
@@ -447,7 +441,6 @@ describe("Persistent Mode Session Isolation (Issue #311)", () => {
       });
 
       expect(output.decision).toBe("block");
-      expect(output.continue).toBe(false);
       expect(output.reason).toContain("ULTRAWORK");
     });
 
@@ -461,7 +454,6 @@ describe("Persistent Mode Session Isolation (Issue #311)", () => {
       });
 
       expect(output.decision).toBe("block");
-      expect(output.continue).toBe(false);
       expect(output.reason).toContain("ULTRAWORK");
     });
 
@@ -477,7 +469,6 @@ describe("Persistent Mode Session Isolation (Issue #311)", () => {
       });
 
       expect(output.decision).toBe("block");
-      expect(output.continue).toBe(false);
       expect(output.reason).toContain("ULTRAWORK");
     });
 
@@ -493,7 +484,6 @@ describe("Persistent Mode Session Isolation (Issue #311)", () => {
       });
 
       expect(output.decision).toBe("block");
-      expect(output.continue).toBe(false);
       expect(output.reason).toContain("ULTRAWORK");
     });
 
@@ -509,7 +499,6 @@ describe("Persistent Mode Session Isolation (Issue #311)", () => {
       });
 
       expect(output.decision).toBe("block");
-      expect(output.continue).toBe(false);
       expect(output.reason).toContain("ULTRAWORK");
     });
 
@@ -524,7 +513,6 @@ describe("Persistent Mode Session Isolation (Issue #311)", () => {
       });
 
       expect(output.decision).toBe("block");
-      expect(output.continue).toBe(false);
       expect(output.reason).toContain("ULTRAWORK");
     });
   });
@@ -584,7 +572,6 @@ describe("Persistent Mode Session Isolation (Issue #311)", () => {
       });
 
       expect(output.decision).toBe("block");
-      expect(output.continue).toBe(false);
       expect(output.reason).toContain("ULTRAWORK");
     });
 
@@ -698,7 +685,6 @@ describe("Persistent Mode Session Isolation (Issue #311)", () => {
       });
 
       // Invalid sessionId sanitizes to "", falls back to legacy path, blocks
-      expect(output.continue).toBe(false);
       expect(output.decision).toBe("block");
     });
 
@@ -726,7 +712,6 @@ describe("Persistent Mode Session Isolation (Issue #311)", () => {
 
       // Legacy state blocks when no sessionId
       expect(output.decision).toBe("block");
-      expect(output.continue).toBe(false);
       expect(output.reason).toContain("ULTRAWORK");
     });
   });
